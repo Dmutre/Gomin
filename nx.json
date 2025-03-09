@@ -37,7 +37,18 @@
       "options": {
         "targetName": "test"
       },
-      "exclude": ["apps/gomin-e2e/**/*"]
+      "exclude": [
+        "apps/gomin-e2e/**/*",
+        "apps/api-gateway-e2e/**/*",
+        "apps/notification-e2e/**/*",
+        "apps/permission-e2e/**/*",
+        "apps/authorization-e2e/**/*",
+        "apps/communication-e2e/**/*"
+      ]
     }
-  ]
+  ],
+  "workspaceLayout": {
+    "appsDir": "apps",
+    "libsDir": "libs"
+  }
 }
