@@ -1,21 +1,23 @@
-/**
- * This is not a production server yet!
- * This is only a minimal backend to get started.
- */
-
-import { Logger } from '@nestjs/common';
+import { Logger } from 'nestjs-pino';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app/app.module';
+import { ServerConfig } from '@gomin/common';
+import { ConfigService } from '@nestjs/config';
 
 async function bootstrap() {
+
   const app = await NestFactory.create(AppModule);
-  const globalPrefix = 'api';
-  app.setGlobalPrefix(globalPrefix);
-  const port = process.env.PORT || 3000;
-  await app.listen(port);
-  Logger.log(
-    `🚀 Application is running on: http://localhost:${port}/${globalPrefix}`
-  );
+
+  const logger = app.get(Logger);
+  const serverConfig: ServerConfig = app.get<ConfigService>(ConfigService).get<ServerConfig>('server');
+
+  app.useLogger(logger);
+
+  const port = serverConfig.port;
+  const host = serverConfig.host;
+  await app.listen(port, host, () => {
+    logger.log(`Apigateway started on PORT: ${port}, HOST: ${host}`)
+  });
 }
 
 bootstrap();
