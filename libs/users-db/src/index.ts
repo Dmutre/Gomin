@@ -1,1 +1,1 @@
-export * from './lib/users-db.module';
+export * from './lib';
