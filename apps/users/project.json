@@ -1,7 +1,7 @@
 {
-  "name": "authorization",
+  "name": "users",
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
-  "sourceRoot": "apps/authorization/src",
+  "sourceRoot": "apps/users/src",
   "projectType": "application",
   "tags": [],
   "targets": {
@@ -22,15 +22,15 @@
       "defaultConfiguration": "development",
       "dependsOn": ["build"],
       "options": {
-        "buildTarget": "authorization:build",
+        "buildTarget": "users:build",
         "runBuildTargetDependencies": false
       },
       "configurations": {
         "development": {
-          "buildTarget": "authorization:build:development"
+          "buildTarget": "users:build:development"
         },
         "production": {
-          "buildTarget": "authorization:build:production"
+          "buildTarget": "users:build:production"
         }
       }
     },

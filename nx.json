@@ -42,7 +42,7 @@
         "apps/api-gateway-e2e/**/*",
         "apps/notification-e2e/**/*",
         "apps/permission-e2e/**/*",
-        "apps/authorization-e2e/**/*",
+        "apps/users-e2e/**/*",
         "apps/communication-e2e/**/*"
       ]
     }

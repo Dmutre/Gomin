@@ -15,9 +15,9 @@
     "skipDefaultLibCheck": true,
     "baseUrl": ".",
     "paths": {
+      "@gomin/users-db": ["libs/users-db/src/index.ts"],
       "@gomin/common": ["libs/common/src/index.ts"],
-      "@gomin/database": ["libs/database/src/index.ts"],
-      "@gomin/utils": ["libs/utils/src/index.ts"],
+      "@gomin/utils": ["libs/utils/src/index.ts"]
     }
   },
   "exclude": ["node_modules", "tmp"]
