@@ -3,6 +3,7 @@ import { AppController } from './app.controller';
 import { ConfigModule } from '@nestjs/config';
 import { ConfigSmith } from '@gomin/common'
 import { LoggerModule } from '@gomin/common'
+import { AuthModule } from '../api/auth/auth.module';
 
 @Module({
   imports: [
@@ -10,6 +11,7 @@ import { LoggerModule } from '@gomin/common'
       load: [ConfigSmith]
     }),
     LoggerModule,
+    AuthModule,
   ],
   controllers: [AppController],
 })

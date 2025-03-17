@@ -1,5 +1,5 @@
-export * from './interfaces/auth-config.interface';
-export * from './interfaces/server-config.interface';
-export * from './interfaces/config.interface';
+export * from './interfaces';
+
+export * from './consts/service.consts';
 
 export * from './factories/config.factory';
