@@ -1,3 +1,4 @@
+import { MicroserviceException } from "@gomin/common";
 import { Injectable } from "@nestjs/common";
 
 @Injectable()

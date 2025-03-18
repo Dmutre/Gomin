@@ -2,7 +2,7 @@ import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app/app.module';
 import { MicroserviceOptions, Transport } from '@nestjs/microservices';
-import { ServerConfig } from '@gomin/common';
+import { MicroserviceExceptionFilter, ServerConfig, MicroserviceValidationExceptionFactory } from '@gomin/common';
 import { ConfigService } from '@nestjs/config';
 import { Logger } from 'nestjs-pino';
 
@@ -30,11 +30,11 @@ async function bootstrap() {
   microservice.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
-      //exceptionFactory: validationExceptionFactory,
+      exceptionFactory: MicroserviceValidationExceptionFactory,
     }),
   );
-  //microservice.useGlobalFilters(new AllExceptionsFilter());
   microservice.useLogger(logger);
+  microservice.useGlobalFilters(new MicroserviceExceptionFilter(logger))
 
   await microservice
     .listen()

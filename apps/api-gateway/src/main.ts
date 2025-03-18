@@ -1,7 +1,7 @@
 import { Logger } from 'nestjs-pino';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app/app.module';
-import { ServerConfig } from '@gomin/common';
+import { GatewayExceptionFilter, ServerConfig } from '@gomin/common';
 import { ConfigService } from '@nestjs/config';
 import { ValidationPipe } from '@nestjs/common';
 import cookieParser from 'cookie-parser';
@@ -33,6 +33,7 @@ async function bootstrap() {
     methods: serverConfig.cors.methods,
     credentials: true,
   });
+  app.useGlobalFilters(new GatewayExceptionFilter(logger))
 
   const options = new DocumentBuilder()
   .setTitle('Gomin API docs')
