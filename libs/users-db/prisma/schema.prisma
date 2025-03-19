@@ -16,6 +16,8 @@ model User {
   lastName            String      @map("last_name")
   password            String
   bio                 String?
+  emailVerified       Boolean     @default(false) @map("email_verified")
+  twoFaEnabled        Boolean     @default(false) @map("two_fa_enabled")
 
   createdAt           DateTime    @default(now()) @map("created_at")
   updatedAt           DateTime    @default(now()) @updatedAt @map("updated_at")

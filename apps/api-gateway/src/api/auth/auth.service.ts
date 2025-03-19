@@ -9,6 +9,6 @@ export class AuthService {
   ) {}
 
   test () {
-    return this.userClient.send(UserMessagePattern.TEST, {});
+    return this.userClient.send(UserMessagePattern.REGISTER_NEW_USER, {});
   }
 }

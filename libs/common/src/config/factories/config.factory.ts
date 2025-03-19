@@ -18,7 +18,6 @@ export function ConfigSmith(): Config {
       ? {
           secret: process.env['JWT_SECRET'] ?? 'secret',
           accessTtl: process.env['JWT_ACCESS_TTL'] ?? '1h',
-          refreshTtl: process.env['JWT_REFRESH_TTL'] ?? '24h',
         }
       : undefined,
     microservices: {
@@ -34,6 +33,13 @@ export function ConfigSmith(): Config {
         options: {
           port: Number(process.env['COMMUNICATION_PORT']),
           host: process.env['COMMUNICATION_HOST'] ?? '0.0.0.0',
+        }
+      },
+      notificationsService: {
+        transport: Transport.TCP,
+        options: {
+          port: Number(process.env['NOTIFICATIONS_PORT']),
+          host: process.env['NOTIFICATIONS_HOST'] ?? '0.0.0.0',
         }
       }
     }
