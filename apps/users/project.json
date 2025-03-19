@@ -5,12 +5,21 @@
   "projectType": "application",
   "tags": [],
   "targets": {
+    "prebuild": {
+      "executor": "nx:run-commands",
+      "options": {
+        "commands": [
+          "nx run users-db:generate-types"
+        ]
+      }
+    },
     "build": {
       "executor": "nx:run-commands",
       "options": {
         "command": "webpack-cli build",
         "args": ["node-env=production"]
       },
+      "dependsOn": ["prebuild"],
       "configurations": {
         "development": {
           "args": ["node-env=development"]
