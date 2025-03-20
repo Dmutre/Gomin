@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { UsersPrismaService } from '@gomin/users-db';
-import { File, Prisma } from '@prisma/client/users';
+import { File, Prisma } from '@my-prisma/client/users';
 
 @Injectable()
 export class FileRepository {

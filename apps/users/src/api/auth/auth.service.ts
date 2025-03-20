@@ -5,7 +5,7 @@ import { UserSettingsRepository } from "../../lib/database/repositories/user-set
 import { TokenRepository } from "../../lib/database/repositories/token.repository";
 import { SessionRepository } from "../../lib/database/repositories/session.repository";
 import { hashPassword, validatePassword } from "@gomin/utils";
-import { Session, User } from "@prisma/client/users";
+import { Session, User } from "@my-prisma/client/users";
 import { Tokens } from "../../lib/interfaces/tokens.interface";
 import { JwtTokenService } from "../../lib/security/jwt-token.service";
 

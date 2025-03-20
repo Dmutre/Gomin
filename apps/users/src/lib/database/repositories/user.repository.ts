@@ -1,6 +1,6 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
 import { USER_FULL_INCLUDE, UserFull, UsersPrismaService } from '@gomin/users-db';
-import { User, Prisma } from '@prisma/client/users';
+import { User, Prisma } from '@my-prisma/client/users';
 import { MicroserviceException } from '@gomin/common';
 
 @Injectable()

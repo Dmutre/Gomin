@@ -1,4 +1,4 @@
-import { Prisma } from '@prisma/client/users';
+import { Prisma } from '@my-prisma/client/users';
 
 export const USER_FULL_INCLUDE: Prisma.UserInclude = {
   tokens: true,
