@@ -43,9 +43,30 @@ export class AuthService {
     return { accessToken, refreshToken };
   }
 
-  private async createUserSession(session: SessionDTO, userId: string): Promise<Session> {
-    return this.sessionService.createSession(session, userId);
+  private async createUserSession(
+    session: SessionDTO,
+    userId: string,
+    notifyUser = false,
+  ): Promise<Session> {
+    const createdSession = await this.sessionService.createSession(session, userId);
+  
+    if (notifyUser) {
+      await this.notifyUserAboutNewSession(userId, session);
+    }
+  
+    return createdSession;
   }
+
+  async notifyUserAboutNewSession(userId: string, session: SessionDTO) {
+    const user = await this.userRepository.findUserById(userId);
+    await this.notificationClient.sendNewSessionNotification(user.email, {
+      deviceName: session.deviceName,
+      userAgent: session.userAgent,
+      ipAddress: session.ipAddress,
+      timestamp: new Date().toISOString(),
+    });
+  }
+  
 
   private async checkIfUserExists(email: string) {
     const user = await this.userRepository.findUserByEmail(email);
@@ -106,7 +127,7 @@ export class AuthService {
     const existingSession = await this.findExistingUserSession(userId, sessionData);
     return existingSession
       ? this.updateExistingSession(existingSession, sessionData)
-      : this.createUserSession(sessionData, userId);
+      : this.createUserSession(sessionData, userId, true);
   }
   
   private async findExistingUserSession(userId: string, sessionData: SessionDTO): Promise<Session | null> {
