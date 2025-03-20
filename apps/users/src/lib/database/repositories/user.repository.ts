@@ -23,8 +23,8 @@ export class UserRepository {
     return user;
   }
 
-  async findUserByEmail(email: string): Promise<User | null> {
-    return this.prisma.user.findUnique({ where: { email } });
+  async findUserByEmail(email: string): Promise<UserFull | null> {
+    return this.prisma.user.findUnique({ where: { email }, include: USER_FULL_INCLUDE });
   }
 
   async updateUser(id: string, data: Partial<User>): Promise<UserFull> {

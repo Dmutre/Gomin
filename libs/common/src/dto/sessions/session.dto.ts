@@ -1,4 +1,4 @@
-import { IsIP, IsNotEmpty, IsString } from "class-validator"
+import { IsIP, IsNotEmpty, IsOptional, IsString } from "class-validator"
 
 export class SessionDTO {
   @IsString()
@@ -12,4 +12,8 @@ export class SessionDTO {
   @IsString()
   @IsNotEmpty()
   userAgent: string;
+
+  @IsString()
+  @IsOptional()
+  location?: string;
 }

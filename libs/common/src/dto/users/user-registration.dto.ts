@@ -1,5 +1,5 @@
 import { Type } from "class-transformer";
-import { SessionDTO } from "./session.dto";
+import { SessionDTO } from "../sessions/session.dto";
 import { RegistrationDTO } from "./registration.dto";
 import { IsObject, ValidateNested } from "class-validator";
 

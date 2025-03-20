@@ -14,6 +14,10 @@ export class TokenRepository {
     return this.prisma.token.findFirst({ where: { value } });
   }
 
+  async find(args: Prisma.TokenFindFirstArgs): Promise<Token | null> {
+    return this.prisma.token.findFirst(args);
+  }
+
   async deleteToken(id: string): Promise<Token> {
     return this.prisma.token.delete({ where: { id } });
   }

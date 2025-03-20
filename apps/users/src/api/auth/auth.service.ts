@@ -1,22 +1,25 @@
-import { MessageDTO, MicroserviceException, SessionDTO, UserRegistrationDTO } from "@gomin/common";
+import { MessageDTO, MicroserviceException, NotificationClient, SessionDTO, UserLoginDTO, UserRegistrationDTO } from "@gomin/common";
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { UserRepository } from "../../lib/database/repositories/user.repository";
 import { UserSettingsRepository } from "../../lib/database/repositories/user-setting.repository";
-import { TokenRepository } from "../../lib/database/repositories/token.repository";
-import { SessionRepository } from "../../lib/database/repositories/session.repository";
 import { hashPassword, validatePassword } from "@gomin/utils";
 import { Session, User } from "@my-prisma/client/users";
 import { Tokens } from "../../lib/interfaces/tokens.interface";
-import { JwtTokenService } from "../../lib/security/jwt-token.service";
+import { JwtTokenService } from "../../lib/security/jwt/jwt-token.service";
+import { TokenService } from "../tokens/token.service";
+import { UserFull } from "@gomin/users-db";
+import { SessionService } from "../../lib/security/sessions/session.service";
 
 @Injectable()
 export class AuthService {
+  private readonly 
   constructor(
     private readonly userRepository: UserRepository,
-    private readonly tokenRepository: TokenRepository,
     private readonly userSettingsRepository: UserSettingsRepository,
-    private readonly sessionRepository: SessionRepository,
+    private readonly sessionService: SessionService,
     private readonly jwtService: JwtTokenService,
+    private readonly notificationClient: NotificationClient,
+    private readonly tokenService: TokenService,
   ) {}
 
   async registrate(data: UserRegistrationDTO): Promise<MessageDTO> {
@@ -34,15 +37,14 @@ export class AuthService {
     return user;
   }
 
-  private async generateTokens(userId: string): Promise<Tokens> {
-    const user = await this.userRepository.findOrThrow(userId);
+  private async generateTokens(user: UserFull): Promise<Tokens> {
     const accessToken = await this.jwtService.generateToken({ sub: user.id });
     const refreshToken = await this.jwtService.generateToken({ sub: user.id }, { expiresIn: `${user.userSetting.sessionDuration}d` });
     return { accessToken, refreshToken };
   }
 
   private async createUserSession(session: SessionDTO, userId: string): Promise<Session> {
-    return this.sessionRepository.createSession({ ...session, userId });
+    return this.sessionService.createSession(session, userId);
   }
 
   private async checkIfUserExists(email: string) {
@@ -74,7 +76,57 @@ export class AuthService {
 
   async requestEmailVerification(email: string): Promise<MessageDTO> {
     const user = await this.userRepository.findUserByEmail(email);
+    if (user.emailVerified) {
+      throw new MicroserviceException('Email is already verified', HttpStatus.BAD_REQUEST);
+    }
+    const token = await this.tokenService.generateEmailVerificationToken(user.id);
+    await this.notificationClient.sendEmailVerificationEmail(email, token);
 
     return { message: 'Email has been sent' };
+  }
+
+  async verifyEmailToken(token: string): Promise<MessageDTO> {
+    const userId = await this.tokenService.verifyOrThrowEmailToken(token);
+    await this.userRepository.updateUser(userId, { emailVerified: true });
+    return { message: 'Email has been verified' };
+  }
+
+  private async checkUserCredentials(email: string, password: string): Promise<UserFull> {
+    const user = await this.userRepository.findUserByEmail(email);
+    if (!user) {
+      throw new MicroserviceException('User with such email does not exist', HttpStatus.BAD_REQUEST);
+    } else if (!user.emailVerified) {
+      throw new MicroserviceException('Email is not verified', HttpStatus.BAD_REQUEST);
+    }
+    await this.comparePasswordsAndThrow(password, user.password);
+    return user;
+  }
+
+  private async getOrCreateUserSession(userId: string, sessionData: SessionDTO): Promise<Session> {
+    const existingSession = await this.findExistingUserSession(userId, sessionData);
+    return existingSession
+      ? this.updateExistingSession(existingSession, sessionData)
+      : this.createUserSession(sessionData, userId);
+  }
+  
+  private async findExistingUserSession(userId: string, sessionData: SessionDTO): Promise<Session | null> {
+    return this.sessionService.findSessionByDeviceNameAndUserAgent(userId, sessionData.deviceName, sessionData.userAgent);
+  }
+  
+  private async updateExistingSession(existingSession: Session, sessionData: SessionDTO): Promise<Session> {
+    if (existingSession.ipAddress !== sessionData.ipAddress) {
+      return this.sessionService.updateSession(existingSession.id, {
+        ipAddress: sessionData.ipAddress
+      });
+    }
+    return existingSession;
+  }
+
+  async login(data: UserLoginDTO) {
+    const user = await this.checkUserCredentials(data.email, data.password);
+    const session = await this.getOrCreateUserSession(user.id, data.session);
+    const tokens = await this.generateTokens(user);
+    await this.sessionService.updateSessionToken(session.id, tokens.refreshToken);
+    return tokens;
   }
 }

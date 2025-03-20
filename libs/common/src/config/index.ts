@@ -1,5 +1,5 @@
 export * from './interfaces';
 
-export * from './consts/service.consts';
+export * from './consts';
 
-export * from './factories/config.factory';
+export * from './factories';
