@@ -1,0 +1,35 @@
+{
+  "name": "permission-db",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/permission-db/src",
+  "projectType": "library",
+  "tags": [],
+  "// targets": "to see all targets run: nx show project permission-db --web",
+  "targets": {
+    "prisma": {
+      "command": "prisma",
+      "options": {
+        "cwd": "libs/permission-db"
+      }
+    },
+    "generate-types": {
+      "command": "prisma generate",
+      "options": {
+        "cwd": "libs/permission-db"
+      }
+    },
+    "migrate": {
+      "command": "prisma migrate dev",
+      "options": {
+        "cwd": "libs/permission-db"
+      }
+    },
+    "lint": {
+      "executor": "@nx/eslint:lint",
+      "outputs": ["{options.outputFile}"],
+      "options": {
+        "lintFilePatterns": ["libs/permission-db/**/*.ts"]
+      }
+    }
+  }
+}

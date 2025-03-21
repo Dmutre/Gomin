@@ -1,0 +1,35 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../../../node_modules/@my-prisma/client/permissions"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL_PERMISSIONS")
+}
+
+model Permission {
+  id            String       @id @default(uuid())
+  code          String       @unique
+  description   String
+  createdAt     DateTime     @default(now())
+}
+
+enum EntityType {
+  GLOBAL
+  GROUP
+  CHANNEL
+  CHAT
+}
+
+model UserPermission {
+  id              String       @id @default(uuid())
+  userId          String
+  permissionId    String
+  entityId        String?      
+  entityType      EntityType   @default(GLOBAL)
+  allowed         Boolean      @default(true)
+  createdAt       DateTime     @default(now())
+
+  @@unique([userId, permissionId, entityId, entityType])
+}
