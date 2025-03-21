@@ -22,6 +22,10 @@ export class TokenRepository {
     return this.prisma.token.delete({ where: { id } });
   }
 
+  async deleteTokenBySessionId(sessionId: string): Promise<void> {
+    await this.prisma.token.deleteMany({ where: { session: { id: sessionId } } });
+  }
+
   async deleteExpiredTokens(): Promise<void> {
     await this.prisma.token.deleteMany({
       where: { expiresAt: { lt: new Date() } },

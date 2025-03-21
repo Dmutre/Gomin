@@ -56,5 +56,9 @@ export class TokenService {
       );
     }
   }
+
+  async deleteSessionToken(sessionId: string): Promise<void> {
+    await this.tokenRepository.deleteTokenBySessionId(sessionId);
+  }
 }
 

@@ -1,14 +1,14 @@
-import { MessageDTO, MicroserviceException, NotificationClient, SessionDTO, UserLoginDTO, UserRegistrationDTO } from "@gomin/common";
+import { MessageDTO, MicroserviceException, NotificationClient, SessionDTO, UserLoginDTO, UserRegistrationDTO, UserSessionsResponse, Tokens, RefreshSessionResponse, UserResponse } from "@gomin/common";
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { UserRepository } from "../../lib/database/repositories/user.repository";
 import { UserSettingsRepository } from "../../lib/database/repositories/user-setting.repository";
 import { hashPassword, validatePassword } from "@gomin/utils";
 import { Session, User } from "@my-prisma/client/users";
-import { Tokens } from "../../lib/interfaces/tokens.interface";
 import { JwtTokenService } from "../../lib/security/jwt/jwt-token.service";
 import { TokenService } from "../tokens/token.service";
 import { UserFull } from "@gomin/users-db";
 import { SessionService } from "../../lib/security/sessions/session.service";
+import { plainToInstance } from "class-transformer";
 
 @Injectable()
 export class AuthService {
@@ -143,11 +143,54 @@ export class AuthService {
     return existingSession;
   }
 
-  async login(data: UserLoginDTO) {
+  async login(data: UserLoginDTO): Promise<RefreshSessionResponse> {
     const user = await this.checkUserCredentials(data.email, data.password);
     const session = await this.getOrCreateUserSession(user.id, data.session);
     const tokens = await this.generateTokens(user);
     await this.sessionService.updateSessionToken(session.id, tokens.refreshToken);
-    return tokens;
+    return { tokens, sessionId: session.id };
+  }
+
+  async logout(sessionId: string): Promise<MessageDTO> {
+    await this.sessionService.deleteSession(sessionId);
+    return { message: 'Logged out successfully' };
+  }
+
+  async getUserSessions(userId: string): Promise<UserSessionsResponse[]> {
+    const sessions = await this.sessionService.findSessionsByUser(userId);
+    return plainToInstance(UserSessionsResponse, sessions);
+  }
+
+  async terminateSession(sessionId: string): Promise<MessageDTO> {
+    await this.sessionService.deleteSession(sessionId);
+    return { message: 'Session has been terminated' };
+  }
+
+  private async validateRefreshToken(token: string): Promise<UserFull> {
+    const payload = await this.jwtService.verifyToken(token);
+    const user = await this.userRepository.findUserById(payload.sub);
+    return user;
+  }
+
+  private async validateSession(token: string, userId: string): Promise<Session> {
+    const session = await this.sessionService.findSessionByTokenAndUserId(token, userId);
+    if (!session) {
+      throw new MicroserviceException('Session not found', HttpStatus.UNAUTHORIZED);
+    }
+    return session;
+  }
+
+  async refreshSession(token: string): Promise<RefreshSessionResponse> {
+    const user = await this.validateRefreshToken(token);
+    const session = await this.validateSession(token, user.id);
+    const tokens = await this.generateTokens(user);
+    await this.sessionService.updateSessionToken(session.id, tokens.refreshToken);
+    return { tokens, sessionId: session.id };
+  }
+
+  async getCurrentUser(token: string): Promise<UserResponse> {
+    const payload = await this.jwtService.verifyToken(token);
+    const user = await this.userRepository.findUserById(payload.sub);
+    return plainToInstance(UserResponse, user);
   }
 }

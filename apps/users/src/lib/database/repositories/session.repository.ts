@@ -28,6 +28,10 @@ export class SessionRepository {
     return this.prisma.session.findMany({ where: { userId } });
   }
 
+  async findSessionByTokenAndUserId(token: string, userId: string): Promise<Session | null> {
+    return this.prisma.session.findFirst({ where: { token: { value: token, userId } } });
+  }
+
   async updateSession(id: string, data: Prisma.SessionUncheckedUpdateInput): Promise<Session> {
     return this.prisma.session.update({ where: { id }, data });
   }
@@ -37,7 +41,7 @@ export class SessionRepository {
   }
 
   async deleteSession(id: string): Promise<Session> {
-    return this.prisma.session.delete({ where: { id } });
+    return this.prisma.session.delete({ where: { id }, });
   }
 
   async deleteAllSessionsForUser(userId: string): Promise<void> {

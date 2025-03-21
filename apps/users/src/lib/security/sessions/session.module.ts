@@ -1,9 +1,10 @@
+import { TokenModule } from "../../../api/tokens/token.module";
 import { DatabaseModule } from "../../database/database.module";
 import { SessionService } from "./session.service";
 import { Module } from "@nestjs/common";
 
 @Module({
-  imports: [DatabaseModule],
+  imports: [DatabaseModule, TokenModule],
   providers: [SessionService],
   exports: [SessionService],
 })

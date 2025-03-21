@@ -1,7 +1,7 @@
-import { Injectable } from "@nestjs/common";
+import { HttpStatus, Injectable } from "@nestjs/common";
 import { JwtPayload } from "../../interfaces/jwt-payload.interface";
 import { JwtService, JwtSignOptions } from "@nestjs/jwt";
-
+import { MicroserviceException } from "@gomin/common";
 @Injectable()
 export class JwtTokenService {
 
@@ -11,5 +11,12 @@ export class JwtTokenService {
 
   async generateToken(payload: JwtPayload, options?: JwtSignOptions): Promise<string> {
     return await this.jwtService.sign(payload, options);
+  }
+
+  async verifyToken(token: string): Promise<JwtPayload> {
+    return await this.jwtService.verify(token)
+      .catch(() => {
+        throw new MicroserviceException('Invalid token', HttpStatus.UNAUTHORIZED);
+      });
   }
 }
