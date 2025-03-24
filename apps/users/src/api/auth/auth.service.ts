@@ -12,7 +12,6 @@ import { plainToInstance } from "class-transformer";
 
 @Injectable()
 export class AuthService {
-  private readonly 
   constructor(
     private readonly userRepository: UserRepository,
     private readonly userSettingsRepository: UserSettingsRepository,
@@ -23,7 +22,7 @@ export class AuthService {
   ) {}
 
   async registrate(data: UserRegistrationDTO): Promise<MessageDTO> {
-    await this.checkIfUserExists(data.email);
+    await this.checkIfUserExists(data.email, data.username);
     data.password = await this.hashPassword(data.password);
     await this.createUser(data);
     return { message: 'User has been successfully registered' };
@@ -68,8 +67,8 @@ export class AuthService {
   }
   
 
-  private async checkIfUserExists(email: string) {
-    const user = await this.userRepository.findUserByEmail(email);
+  private async checkIfUserExists(email: string, username: string) {
+    const user = await this.userRepository.findUser({ where: { OR: [{ email }, { username }] } });
     if (user) {
       throw new MicroserviceException('User with such email already exists', HttpStatus.BAD_REQUEST);
     }
@@ -106,7 +105,7 @@ export class AuthService {
     return { message: 'Email has been sent' };
   }
 
-  async verifyEmailToken(token: string): Promise<MessageDTO> {
+  private async verifyEmailToken(token: string): Promise<MessageDTO> {
     const userId = await this.tokenService.verifyOrThrowEmailToken(token);
     await this.userRepository.updateUser(userId, { emailVerified: true });
     return { message: 'Email has been verified' };

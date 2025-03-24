@@ -27,6 +27,14 @@ export class UserRepository {
     return this.prisma.user.findUnique({ where: { email }, include: USER_FULL_INCLUDE });
   }
 
+  async findUniqueUser(args: Prisma.UserFindUniqueArgs): Promise<UserFull | null> {
+    return this.prisma.user.findUnique({ ...args, include: USER_FULL_INCLUDE });
+  }
+
+  async findUser(args: Prisma.UserFindFirstArgs): Promise<UserFull | null> {
+    return this.prisma.user.findFirst({ ...args, include: USER_FULL_INCLUDE });
+  }
+
   async updateUser(id: string, data: Partial<User>): Promise<UserFull> {
     return this.prisma.user.update({ where: { id }, data, include: USER_FULL_INCLUDE });
   }
