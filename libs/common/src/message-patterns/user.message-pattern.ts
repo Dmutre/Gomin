@@ -1,6 +1,15 @@
 export const UserMessagePattern = {
-  REGISTER_NEW_USER: 'register-new-user',
+  REGISTER_USER: 'register-user',
   LOGIN: 'login',
+  LOGOUT: 'logout',
   REFRESH_TOKENS: 'refresh-tokens',
   GET_CURRENT_USER: 'get-current-user',
+  VERIFY_EMAIL: 'verify-email',
+  REQUEST_EMAIL_VERIFICATION: 'request-email-verification',
+  ENABLE_2FA: 'enable-2fa',
+  VERIFY_2FA: 'verify-2fa',
+  LOGIN_WITH_2FA: 'login-with-2fa',
+  GET_USER_SESSIONS: 'get-user-sessions',
+  TERMINATE_SESSION: 'terminate-session',
+  REFRESH_SESSION: 'refresh-session',
 }

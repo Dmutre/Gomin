@@ -5,12 +5,15 @@ import { DatabaseModule } from "../../lib/database/database.module";
 import { JwtTokenModule } from "../../lib/security/jwt/jwt-token.module";
 import { TokenModule } from "../tokens/token.module";
 import { SessionModule } from "../../lib/security/sessions/session.module";
+import { NotificationClientModule } from "@gomin/common";
+
 @Module({
   imports: [
     DatabaseModule,
     JwtTokenModule,
     TokenModule,
     SessionModule,
+    NotificationClientModule,
   ],
   providers: [AuthService],
   controllers: [AuthController],

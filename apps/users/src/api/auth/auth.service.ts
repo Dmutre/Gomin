@@ -56,7 +56,7 @@ export class AuthService {
     return createdSession;
   }
 
-  async notifyUserAboutNewSession(userId: string, session: SessionDTO) {
+  private async notifyUserAboutNewSession(userId: string, session: SessionDTO) {
     const user = await this.userRepository.findUserById(userId);
     await this.notificationClient.sendNewSessionNotification(user.email, {
       deviceName: session.deviceName,
@@ -105,7 +105,7 @@ export class AuthService {
     return { message: 'Email has been sent' };
   }
 
-  private async verifyEmailToken(token: string): Promise<MessageDTO> {
+  async verifyEmailToken(token: string): Promise<MessageDTO> {
     const userId = await this.tokenService.verifyOrThrowEmailToken(token);
     await this.userRepository.updateUser(userId, { emailVerified: true });
     return { message: 'Email has been verified' };
@@ -194,9 +194,7 @@ export class AuthService {
   async refreshSession(token: string): Promise<RefreshSessionResponse> {
     const user = await this.validateRefreshToken(token);
     const session = await this.validateSession(token, user.id);
-    const tokens = await this.generateTokens(user);
-    await this.sessionService.updateSessionToken(session.id, tokens.refreshToken);
-    return { tokens, sessionId: session.id };
+    return this.finalizeSessionAndTokens(user, session);
   }
 
   private async enable2FAForUser(userId: string) {
@@ -209,7 +207,7 @@ export class AuthService {
     return plainToInstance(UserResponse, user);
   }
 
-  async init2FA({ userId }: UserIdDTO): Promise<QRCodeResponse> {
+  async enable2FA({ userId }: UserIdDTO): Promise<QRCodeResponse> {
     const user = await this.userRepository.findUserById(userId);
     if (user.twoFaEnabled) {
       throw new MicroserviceException('Two factor authentication is already enabled', HttpStatus.BAD_REQUEST);
