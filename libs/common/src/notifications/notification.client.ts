@@ -2,7 +2,7 @@ import { Inject, Injectable } from "@nestjs/common";
 import { NOTIFICATIONS_SERVICE } from "../config";
 import { ClientProxy } from "@nestjs/microservices";
 import { NotificationMessagePatterns } from "../message-patterns";
-import { NewSessionNotificationDTO } from "../dto/sessions/new-session-notification.dto";
+import { NewSessionNotificationDTO } from "../dto/sessions/dto/new-session-notification.dto";
 
 @Injectable()
 export class NotificationClient {

@@ -1,8 +1,8 @@
-import { MessageDTO, MicroserviceException, NotificationClient, SessionDTO, UserLoginDTO, UserRegistrationDTO, UserSessionsResponse, Tokens, RefreshSessionResponse, UserResponse } from "@gomin/common";
+import { MessageDTO, MicroserviceException, NotificationClient, SessionDTO, UserLoginDTO, UserRegistrationDTO, UserSessionsResponse, Tokens, RefreshSessionResponse, UserResponse, Verify2FADTO, UserIdDTO, QRCodeResponse, TwoFaLoginDTO } from "@gomin/common";
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { UserRepository } from "../../lib/database/repositories/user.repository";
 import { UserSettingsRepository } from "../../lib/database/repositories/user-setting.repository";
-import { hashPassword, validatePassword } from "@gomin/utils";
+import { hashPassword, QRCodeUtils, validatePassword } from "@gomin/utils";
 import { Session, User } from "@my-prisma/client/users";
 import { JwtTokenService } from "../../lib/security/jwt/jwt-token.service";
 import { TokenService } from "../tokens/token.service";
@@ -111,16 +111,20 @@ export class AuthService {
     return { message: 'Email has been verified' };
   }
 
-  private async checkUserCredentials(email: string, password: string): Promise<UserFull> {
+  private async checkUserCredentials(email: string, password: string, enforceNo2FA = false): Promise<UserFull> {
     const user = await this.userRepository.findUserByEmail(email);
     if (!user) {
       throw new MicroserviceException('User with such email does not exist', HttpStatus.BAD_REQUEST);
-    } else if (!user.emailVerified) {
+    }
+    if (!user.emailVerified) {
       throw new MicroserviceException('Email is not verified', HttpStatus.BAD_REQUEST);
     }
     await this.comparePasswordsAndThrow(password, user.password);
+    if (enforceNo2FA && user.twoFaEnabled) {
+      throw new MicroserviceException('Two factor authentication is enabled', HttpStatus.FORBIDDEN);
+    }
     return user;
-  }
+  }  
 
   private async getOrCreateUserSession(userId: string, sessionData: SessionDTO): Promise<Session> {
     const existingSession = await this.findExistingUserSession(userId, sessionData);
@@ -142,12 +146,20 @@ export class AuthService {
     return existingSession;
   }
 
-  async login(data: UserLoginDTO): Promise<RefreshSessionResponse> {
-    const user = await this.checkUserCredentials(data.email, data.password);
-    const session = await this.getOrCreateUserSession(user.id, data.session);
+  private async createSessionAndTokens(user: UserFull, sessionData: SessionDTO): Promise<RefreshSessionResponse> {
+    const session = await this.getOrCreateUserSession(user.id, sessionData);
+    return this.finalizeSessionAndTokens(user, session);
+  }
+  
+  private async finalizeSessionAndTokens(user: UserFull, session: Session): Promise<RefreshSessionResponse> {
     const tokens = await this.generateTokens(user);
     await this.sessionService.updateSessionToken(session.id, tokens.refreshToken);
     return { tokens, sessionId: session.id };
+  }
+
+  async login(data: UserLoginDTO): Promise<RefreshSessionResponse> {
+    const user = await this.checkUserCredentials(data.email, data.password, true);
+    return this.createSessionAndTokens(user, data.session);
   }
 
   async logout(sessionId: string): Promise<MessageDTO> {
@@ -187,9 +199,36 @@ export class AuthService {
     return { tokens, sessionId: session.id };
   }
 
+  private async enable2FAForUser(userId: string) {
+    await this.userRepository.updateUser(userId, { twoFaEnabled: true });
+  }  
+
   async getCurrentUser(token: string): Promise<UserResponse> {
     const payload = await this.jwtService.verifyToken(token);
     const user = await this.userRepository.findUserById(payload.sub);
     return plainToInstance(UserResponse, user);
+  }
+
+  async init2FA({ userId }: UserIdDTO): Promise<QRCodeResponse> {
+    const user = await this.userRepository.findUserById(userId);
+    if (user.twoFaEnabled) {
+      throw new MicroserviceException('Two factor authentication is already enabled', HttpStatus.BAD_REQUEST);
+    }
+    const otpauthUrl = await this.tokenService.generate2FAToken(userId);
+    return { qrcode: await QRCodeUtils.generateQRCodeFromUrl(otpauthUrl) };
+  }
+
+  async verify2FA({ userId, code, sessionId }: Verify2FADTO): Promise<RefreshSessionResponse> {
+    const user = await this.userRepository.findUserById(userId);
+    await this.tokenService.verify2FAToken(user.id, code);
+    await this.enable2FAForUser(user.id);
+    const session = await this.sessionService.findSessionById(sessionId);
+    return await this.finalizeSessionAndTokens(user, session);
+  }
+
+  async loginWith2FA(data: TwoFaLoginDTO): Promise<RefreshSessionResponse> {
+    const user = await this.checkUserCredentials(data.email, data.password, false);
+    await this.tokenService.verify2FAToken(user.id, data.code);
+    return await this.createSessionAndTokens(user, data.session);
   }
 }

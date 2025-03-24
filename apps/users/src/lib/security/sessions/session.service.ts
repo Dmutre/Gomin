@@ -48,5 +48,9 @@ export class SessionService {
   async findSessionByTokenAndUserId(token: string, userId: string): Promise<Session | null> {
     return this.sessionRepository.findSessionByTokenAndUserId(token, userId);
   }
+
+  async findSessionById(sessionId: string): Promise<Session | null> {
+    return this.sessionRepository.findSessionById(sessionId);
+  }
 }
 

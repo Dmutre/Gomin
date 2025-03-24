@@ -18,6 +18,10 @@ export class TokenRepository {
     return this.prisma.token.findFirst(args);
   }
 
+  async update(args: Prisma.TokenUpdateArgs): Promise<Token> {
+    return this.prisma.token.update(args);
+  }
+
   async deleteToken(id: string): Promise<Token> {
     return this.prisma.token.delete({ where: { id } });
   }

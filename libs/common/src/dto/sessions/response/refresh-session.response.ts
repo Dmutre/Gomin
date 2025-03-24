@@ -1,4 +1,4 @@
-import { Tokens } from "../../interfaces";
+import { Tokens } from "../../../interfaces";
 
 export interface RefreshSessionResponse {
   tokens: Tokens;

@@ -1,5 +1,5 @@
 import { Type } from "class-transformer";
-import { SessionDTO } from "../sessions";
+import { SessionDTO } from "../../sessions";
 import { LoginDTO } from "./login.dto"
 import { IsNotEmpty, ValidateNested } from "class-validator";
 
