@@ -5,7 +5,7 @@ import { UserSettingsRepository } from "../../lib/database/repositories/user-set
 import { hashPassword, QRCodeUtils, validatePassword } from "@gomin/utils";
 import { Session, User } from "@my-prisma/client/users";
 import { JwtTokenService } from "../../lib/security/jwt/jwt-token.service";
-import { TokenService } from "../tokens/token.service";
+import { TokenService } from "../../lib/tokens/token.service";
 import { UserFull } from "@gomin/users-db";
 import { SessionService } from "../../lib/security/sessions/session.service";
 import { plainToInstance } from "class-transformer";
@@ -58,11 +58,14 @@ export class AuthService {
 
   private async notifyUserAboutNewSession(userId: string, session: SessionDTO) {
     const user = await this.userRepository.findUserById(userId);
-    await this.notificationClient.sendNewSessionNotification(user.email, {
-      deviceName: session.deviceName,
-      userAgent: session.userAgent,
-      ipAddress: session.ipAddress,
-      timestamp: new Date().toISOString(),
+    await this.notificationClient.sendNewSessionNotification({
+      email: user.email,
+      data: {
+        deviceName: session.deviceName,
+        userAgent: session.userAgent,
+        ipAddress: session.ipAddress,
+        timestamp: new Date().toISOString(),
+      },
     });
   }
   
@@ -108,7 +111,7 @@ export class AuthService {
       throw new MicroserviceException('Email is already verified', HttpStatus.BAD_REQUEST);
     }
     const token = await this.tokenService.generateEmailVerificationToken(user.id);
-    await this.notificationClient.sendEmailVerificationEmail(email, token);
+    await this.notificationClient.sendEmailVerificationEmail({ email, code: token });
 
     return { message: 'Email has been sent' };
   }

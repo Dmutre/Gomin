@@ -3,7 +3,7 @@ import { AuthService } from "./auth.service";
 import { AuthController } from "./auth.controller";
 import { DatabaseModule } from "../../lib/database/database.module";
 import { JwtTokenModule } from "../../lib/security/jwt/jwt-token.module";
-import { TokenModule } from "../tokens/token.module";
+import { TokenModule } from "../../lib/tokens/token.module";
 import { SessionModule } from "../../lib/security/sessions/session.module";
 import { NotificationClientModule } from "@gomin/common";
 

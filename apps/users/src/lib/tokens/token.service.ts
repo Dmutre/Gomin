@@ -1,5 +1,5 @@
 import { HttpStatus, Injectable } from "@nestjs/common";
-import { TokenRepository } from "../../lib/database/repositories/token.repository";
+import { TokenRepository } from "../database/repositories/token.repository";
 import { randomBytes } from 'crypto';
 import { TokenType, Prisma, Token } from "@my-prisma/client/users";
 import { MicroserviceException, TIME_CONSTANTS } from "@gomin/common";

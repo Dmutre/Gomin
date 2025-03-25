@@ -3,7 +3,7 @@ import { SessionRepository } from "../../database/repositories/session.repositor
 import { MicroserviceException, SessionDTO, TIME_CONSTANTS, UpdateSessionDTO } from "@gomin/common";
 import { Session } from "@my-prisma/client/users";
 import { IPLocationService } from "@gomin/utils";
-import { TokenService } from "../../../api/tokens/token.service";
+import { TokenService } from "../../tokens/token.service";
 import { SessionFull } from "@gomin/users-db";
 
 @Injectable()

@@ -1,5 +1,5 @@
 import { Module } from "@nestjs/common";
-import { DatabaseModule } from "../../lib/database/database.module";
+import { DatabaseModule } from "../database/database.module";
 import { TokenService } from "./token.service";
 
 @Module({
