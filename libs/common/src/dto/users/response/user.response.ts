@@ -1,6 +1,7 @@
 import { ApiProperty } from "@nestjs/swagger";
 import { Expose, Type } from "class-transformer";
 import { FileResponse } from "../../file/response/file.response";
+import { UserSettingResponse } from "./user-setting.response";
 
 export class UserResponse {
   @Expose()
@@ -31,6 +32,11 @@ export class UserResponse {
   @Type(() => FileResponse)
   @ApiProperty({ type: FileResponse })
   avatar: FileResponse;
+
+  @Expose()
+  @Type(() => UserSettingResponse)
+  @ApiProperty({ type: UserSettingResponse })
+  userSetting: UserSettingResponse;
 }
 
 

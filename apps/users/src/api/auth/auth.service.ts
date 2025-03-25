@@ -38,7 +38,7 @@ export class AuthService {
 
   private async generateTokens(user: UserFull): Promise<Tokens> {
     const accessToken = await this.jwtService.generateToken({ sub: user.id });
-    const refreshToken = await this.jwtService.generateToken({ sub: user.id }, { expiresIn: `${user.userSetting.sessionDuration}d` });
+    const refreshToken = await this.tokenService.generateSessionToken();
     return { accessToken, refreshToken };
   }
 
@@ -67,7 +67,7 @@ export class AuthService {
   }
   
 
-  private async checkIfUserExists(email: string, username: string) {
+  private async checkIfUserExists(email: string, username?: string) {
     const user = await this.userRepository.findUser({ where: { OR: [{ email }, { username }] } });
     if (user) {
       throw new MicroserviceException('User with such email already exists', HttpStatus.BAD_REQUEST);
@@ -94,8 +94,16 @@ export class AuthService {
     return isValid;
   }
 
-  async requestEmailVerification(email: string): Promise<MessageDTO> {
+  private async verifyUserExistance(email: string): Promise<UserFull> {
     const user = await this.userRepository.findUserByEmail(email);
+    if (!user) {
+      throw new MicroserviceException('User with such email does not exist', HttpStatus.BAD_REQUEST);
+    }
+    return user;
+  }
+
+  async requestEmailVerification(email: string): Promise<MessageDTO> {
+    const user = await this.verifyUserExistance(email);
     if (user.emailVerified) {
       throw new MicroserviceException('Email is already verified', HttpStatus.BAD_REQUEST);
     }
@@ -169,7 +177,7 @@ export class AuthService {
 
   async getUserSessions(userId: string): Promise<UserSessionsResponse[]> {
     const sessions = await this.sessionService.findSessionsByUser(userId);
-    return plainToInstance(UserSessionsResponse, sessions);
+    return plainToInstance(UserSessionsResponse, sessions, { excludeExtraneousValues: true });
   }
 
   async terminateSession(sessionId: string): Promise<MessageDTO> {
@@ -178,8 +186,8 @@ export class AuthService {
   }
 
   private async validateRefreshToken(token: string): Promise<UserFull> {
-    const payload = await this.jwtService.verifyToken(token);
-    const user = await this.userRepository.findUserById(payload.sub);
+    const userId = await this.tokenService.verifyOrThrowSessionToken(token);
+    const user = await this.userRepository.findUserById(userId);
     return user;
   }
 
@@ -199,12 +207,12 @@ export class AuthService {
 
   private async enable2FAForUser(userId: string) {
     await this.userRepository.updateUser(userId, { twoFaEnabled: true });
-  }  
+  }
 
   async getCurrentUser(token: string): Promise<UserResponse> {
     const payload = await this.jwtService.verifyToken(token);
     const user = await this.userRepository.findUserById(payload.sub);
-    return plainToInstance(UserResponse, user);
+    return plainToInstance(UserResponse, user, { excludeExtraneousValues: true });
   }
 
   async enable2FA({ userId }: UserIdDTO): Promise<QRCodeResponse> {
@@ -218,9 +226,9 @@ export class AuthService {
 
   async verify2FA({ userId, code, sessionId }: Verify2FADTO): Promise<RefreshSessionResponse> {
     const user = await this.userRepository.findUserById(userId);
+    const session = await this.sessionService.findOrThrowSessionById(sessionId);
     await this.tokenService.verify2FAToken(user.id, code);
     await this.enable2FAForUser(user.id);
-    const session = await this.sessionService.findSessionById(sessionId);
     return await this.finalizeSessionAndTokens(user, session);
   }
 

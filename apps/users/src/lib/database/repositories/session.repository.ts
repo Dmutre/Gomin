@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { UsersPrismaService } from '@gomin/users-db';
+import { SESSION_FULL_INCLUDE, SessionFull, UsersPrismaService } from '@gomin/users-db';
 import { Session, Prisma } from '@my-prisma/client/users';
 
 @Injectable()
@@ -20,8 +20,8 @@ export class SessionRepository {
     }); 
   }
 
-  async findSessionById(id: string): Promise<Session | null> {
-    return this.prisma.session.findUnique({ where: { id } });
+  async findSessionById(id: string): Promise<SessionFull | null> {
+    return this.prisma.session.findUnique({ where: { id }, ...SESSION_FULL_INCLUDE });
   }
 
   async findSessionsByUser(userId: string): Promise<Session[]> {
@@ -36,8 +36,12 @@ export class SessionRepository {
     return this.prisma.session.update({ where: { id }, data });
   }
 
-  async updateSessionToken(id: string, token: string): Promise<Session> {
-    return this.prisma.session.update({ where: { id }, data: { token: { update: { value: token } } } });
+  async updateSessionToken(sessionId: string, tokenData: Prisma.TokenUncheckedUpdateInput): Promise<SessionFull> {
+    return this.prisma.session.update({ where: { id: sessionId }, data: { token: { update: tokenData } }, ...SESSION_FULL_INCLUDE });
+  }
+
+  async createSessionToken(sessionId: string, tokenData: Prisma.TokenUncheckedCreateInput): Promise<SessionFull> {
+    return this.prisma.session.update({ where: { id: sessionId }, data: { token: { create: tokenData } }, ...SESSION_FULL_INCLUDE });
   }
 
   async deleteSession(id: string): Promise<Session> {

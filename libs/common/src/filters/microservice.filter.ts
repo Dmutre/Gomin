@@ -4,7 +4,7 @@ import { RpcException } from '@nestjs/microservices';
 import { MicroserviceException } from '../errors';
 import { Logger } from 'nestjs-pino';
 
-@Catch(RpcException)
+@Catch()
 export class MicroserviceExceptionFilter implements RpcExceptionFilter<RpcException> {
   constructor(private readonly logger: Logger) {}
 

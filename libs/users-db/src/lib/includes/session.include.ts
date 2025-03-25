@@ -1,7 +1,14 @@
 import { Prisma } from "@my-prisma/client/users";
 
-export const SESSION_FULL_INCLUDE: Prisma.SessionInclude = {
-  token: true,
-} as const;
+export const SESSION_FULL_INCLUDE = Prisma.validator<Prisma.SessionDefaultArgs>()({
+  include: {
+    token: true,
+    user: {
+      include: {
+        userSetting: true,
+      },
+    },
+  },
+});
 
-export type SessionFull = Prisma.SessionGetPayload<{ include: typeof SESSION_FULL_INCLUDE }>;
+export type SessionFull = Prisma.SessionGetPayload<typeof SESSION_FULL_INCLUDE>;

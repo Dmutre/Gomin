@@ -1,11 +1,12 @@
 import { Prisma } from '@my-prisma/client/users';
-import { SESSION_FULL_INCLUDE } from './session.include';
 
-export const USER_FULL_INCLUDE: Prisma.UserInclude = {
-  tokens: true,
-  sessions: { include: SESSION_FULL_INCLUDE },
-  files: true,
-  userSetting: true,
-} as const;
+export const USER_FULL_INCLUDE = Prisma.validator<Prisma.UserDefaultArgs>()({
+  include: {
+    tokens: true,
+    sessions: { include: { token: true } },
+    files: true,
+    userSetting: true,
+  }
+});
 
-export type UserFull = Prisma.UserGetPayload<{ include: typeof USER_FULL_INCLUDE }>;
+export type UserFull = Prisma.UserGetPayload<typeof USER_FULL_INCLUDE>;

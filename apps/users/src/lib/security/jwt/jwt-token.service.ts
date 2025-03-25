@@ -14,7 +14,7 @@ export class JwtTokenService {
   }
 
   async verifyToken(token: string): Promise<JwtPayload> {
-    return await this.jwtService.verify(token)
+    return await this.jwtService.verifyAsync(token)
       .catch(() => {
         throw new MicroserviceException('Invalid token', HttpStatus.UNAUTHORIZED);
       });

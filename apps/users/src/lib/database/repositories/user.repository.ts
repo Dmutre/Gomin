@@ -12,7 +12,7 @@ export class UserRepository {
   }
 
   async findUserById(id: string): Promise<UserFull> {
-    return this.prisma.user.findUnique({ where: { id }, include: USER_FULL_INCLUDE });
+    return this.prisma.user.findUnique({ where: { id }, ...USER_FULL_INCLUDE });
   }
 
   async findOrThrow(id: string): Promise<UserFull> {
@@ -24,19 +24,19 @@ export class UserRepository {
   }
 
   async findUserByEmail(email: string): Promise<UserFull | null> {
-    return this.prisma.user.findUnique({ where: { email }, include: USER_FULL_INCLUDE });
+    return this.prisma.user.findUnique({ where: { email }, ...USER_FULL_INCLUDE });
   }
 
   async findUniqueUser(args: Prisma.UserFindUniqueArgs): Promise<UserFull | null> {
-    return this.prisma.user.findUnique({ ...args, include: USER_FULL_INCLUDE });
+    return this.prisma.user.findUnique({ ...args, ...USER_FULL_INCLUDE }) as unknown as UserFull | null;
   }
 
-  async findUser(args: Prisma.UserFindFirstArgs): Promise<UserFull | null> {
-    return this.prisma.user.findFirst({ ...args, include: USER_FULL_INCLUDE });
+  async findUser(args: Omit<Prisma.UserFindFirstArgs, 'include'>): Promise<UserFull | null> {
+    return this.prisma.user.findFirst({ ...args, ...USER_FULL_INCLUDE }) as unknown as UserFull | null;
   }
 
   async updateUser(id: string, data: Partial<User>): Promise<UserFull> {
-    return this.prisma.user.update({ where: { id }, data, include: USER_FULL_INCLUDE });
+    return this.prisma.user.update({ where: { id }, data, ...USER_FULL_INCLUDE });
   }
 
   async deleteUser(id: string): Promise<User> {

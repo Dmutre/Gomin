@@ -11,12 +11,16 @@ export class TokenService {
   private readonly PASSWORD_RESET_TOKEN_EXPIRATION_TIME = TIME_CONSTANTS.MINUTE * 10;
   private readonly MINUTE = TIME_CONSTANTS.MINUTE;
   private readonly TWO_FA_TOKEN_EXPIRATION_TIME = TIME_CONSTANTS.MINUTE * 10;
-  
+  private readonly DAY = TIME_CONSTANTS.DAY;
+
   constructor(private readonly tokenRepository: TokenRepository) {}
 
   async generateEmailVerificationToken(userId: string): Promise<string> {
-    await this.ensureRequestNotTooFrequent({ id: userId }, TokenType.EMAIL)
-
+    await this.ensureRequestNotTooFrequent({
+      type: TokenType.EMAIL,
+      user: { id: userId }
+    })
+    
     const token = this.generateRandomToken()
     await this.tokenRepository.createToken({
       value: token,
@@ -26,6 +30,10 @@ export class TokenService {
     })
 
     return token
+  }
+
+  generateSessionToken(): string {
+    return this.generateRandomToken()
   }
 
   async verifyOrThrowEmailToken(value: string): Promise<string> {
@@ -42,16 +50,30 @@ export class TokenService {
     return randomBytes(length).toString('hex');
   }
 
-  private async ensureRequestNotTooFrequent(user: Prisma.UserWhereUniqueInput, type: TokenType) {
+  private async ensureRequestNotTooFrequent(
+    where: Prisma.TokenWhereInput,
+    options?: {
+      minTimeMs?: number
+      skipUpdatedCheck?: boolean
+    }
+  ) {
+    const { minTimeMs = this.MINUTE, skipUpdatedCheck = true } = options ?? {}
+  
     const dbToken = await this.tokenRepository.find({
-      where: { type, user },
+      where,
       orderBy: { createdAt: 'desc' },
     })
-
-    if (dbToken && Date.now() - dbToken.createdAt.getTime() < this.MINUTE) {
+  
+    if (!dbToken) return
+  
+    const tooSoon = Date.now() - dbToken.createdAt.getTime() < minTimeMs
+    const updatedTooRecently = !skipUpdatedCheck && dbToken.updatedAt > new Date(Date.now() - minTimeMs)
+  
+    if (tooSoon || updatedTooRecently) {
       throw new MicroserviceException('Too many requests', HttpStatus.BAD_REQUEST)
     }
   }
+  
 
   async deleteSessionToken(sessionId: string): Promise<void> {
     await this.tokenRepository.deleteTokenBySessionId(sessionId);
@@ -65,9 +87,11 @@ export class TokenService {
   }
 
   async generate2FAToken(userId: string): Promise<string> {
-    await this.ensureRequestNotTooFrequent({ id: userId }, TokenType.TWO_FA)
-
-    const secret = speakeasy.generateSecret({ length: 20 })
+    await this.ensureRequestNotTooFrequent(
+      { type: TokenType.TWO_FA, userId },
+      { skipUpdatedCheck: false }
+    )
+    const secret = speakeasy.generateSecret({ length: 20, name: 'Gomin' })
 
     const existing = await this.tokenRepository.find({
       where: { userId, type: TokenType.TWO_FA },
@@ -128,6 +152,14 @@ export class TokenService {
     if (!token.expiresAt) return
 
     await this.makeTokenPermanent(token)
+  }
+
+  async verifyOrThrowSessionToken(value: string): Promise<string> {
+    const token = await this.tokenRepository.find({ where: { value, type: TokenType.SESSION } });
+    if (!token || token.expiresAt < new Date()) {
+      throw new MicroserviceException('Invalid or expired token', HttpStatus.BAD_REQUEST);
+    }
+    return token.userId;
   }
 }
 
