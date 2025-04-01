@@ -4,4 +4,5 @@ export interface MicroservicesConfig {
   usersService: ClientOptions;
   communicationService: ClientOptions;
   notificationsService: ClientOptions;
+  permissionsService: ClientOptions;
 }

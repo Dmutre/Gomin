@@ -1,8 +1,8 @@
 import { Inject, Injectable } from "@nestjs/common";
-import { NOTIFICATIONS_SERVICE } from "../config";
+import { NOTIFICATIONS_SERVICE } from "@gomin/common";
 import { ClientProxy } from "@nestjs/microservices";
-import { NotificationMessagePatterns } from "../message-patterns";
-import { EmailVerificationDTO, NewSessionEmailNotificationDTO, PasswordResetDTO, PushNotificationDTO } from "../dto/notifications";
+import { NotificationMessagePatterns } from "@gomin/common";
+import { EmailVerificationDTO, NewSessionEmailNotificationDTO, PasswordResetDTO, PushNotificationDTO } from "@gomin/common";
 
 @Injectable()
 export class NotificationClient {

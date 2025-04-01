@@ -5,5 +5,4 @@ export * from './filters';
 export * from './errors';
 export * from './exception-factory';
 export * from './dto';
-export * from './notifications';
 export * from './interfaces';

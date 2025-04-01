@@ -41,6 +41,13 @@ export function ConfigSmith(): Config {
           port: Number(process.env['NOTIFICATIONS_PORT']),
           host: process.env['NOTIFICATIONS_HOST'] ?? '0.0.0.0',
         }
+      },
+      permissionsService: {
+        transport: Transport.TCP,
+        options: {
+          port: Number(process.env['PERMISSIONS_PORT']),
+          host: process.env['PERMISSIONS_HOST'] ?? '0.0.0.0',
+        }
       }
     }
   };

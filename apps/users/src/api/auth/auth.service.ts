@@ -1,8 +1,8 @@
-import { MessageDTO, MicroserviceException, NotificationClient, SessionDTO, UserLoginDTO, UserRegistrationDTO, UserSessionsResponse, Tokens, RefreshSessionResponse, UserResponse, Verify2FADTO, UserIdDTO, QRCodeResponse, TwoFaLoginDTO } from "@gomin/common";
+import { MessageDTO, MicroserviceException, SessionDTO, UserLoginDTO, UserRegistrationDTO, UserSessionsResponse, Tokens, RefreshSessionResponse, UserResponse, Verify2FADTO, UserIdDTO, QRCodeResponse, TwoFaLoginDTO } from "@gomin/common";
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { UserRepository } from "../../lib/database/repositories/user.repository";
 import { UserSettingsRepository } from "../../lib/database/repositories/user-setting.repository";
-import { hashPassword, QRCodeUtils, validatePassword } from "@gomin/utils";
+import { hashPassword, NotificationClient, QRCodeUtils, validatePassword } from "@gomin/utils";
 import { Session, User } from "@my-prisma/client/users";
 import { JwtTokenService } from "../../lib/security/jwt/jwt-token.service";
 import { TokenService } from "../../lib/tokens/token.service";

@@ -1,6 +1,6 @@
 import { Module } from "@nestjs/common";
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { MicroservicesConfig, NOTIFICATIONS_SERVICE } from "../config";
+import { MicroservicesConfig, NOTIFICATIONS_SERVICE } from "@gomin/common";
 import { ClientOptions, ClientProxyFactory } from "@nestjs/microservices";
 import { NotificationClient } from "./notification.client";
 
