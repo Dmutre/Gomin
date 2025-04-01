@@ -30,6 +30,12 @@
       "options": {
         "lintFilePatterns": ["libs/permission-db/**/*.ts"]
       }
+    },
+    "seed": {
+      "command": "ts-node --require tsconfig-paths/register ./prisma/seed.ts",
+      "options": {
+        "cwd": "libs/permission-db"
+      }
     }
   }
 }
