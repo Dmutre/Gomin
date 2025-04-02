@@ -13,6 +13,8 @@ model Permission {
   code          String       @unique
   description   String
   createdAt     DateTime     @default(now())
+
+  userPermissions UserPermission[]
 }
 
 enum EntityType {
@@ -25,8 +27,9 @@ enum EntityType {
 model UserPermission {
   id              String       @id @default(uuid())
   userId          String
+  permission      Permission   @relation(fields: [permissionId], references: [id], onDelete: Cascade)
   permissionId    String
-  entityId        String?      
+  entityId        String?
   entityType      EntityType   @default(GLOBAL)
   allowed         Boolean      @default(true)
   createdAt       DateTime     @default(now())
