@@ -4,7 +4,6 @@
   "sourceRoot": "libs/common/src",
   "projectType": "library",
   "tags": [],
-  "// targets": "to see all targets run: nx show project common --web",
   "targets": {
     "build": {
       "executor": "@nx/js:tsc",
@@ -13,7 +12,12 @@
           "target": "generate-types",
           "projects": ["permission-db"]
         }
-      ]
+      ],
+      "options": {
+        "main": "libs/common/src/index.ts",
+        "outputPath": "dist/libs/common",
+        "tsConfig": "libs/common/tsconfig.lib.json"
+      }
     }
   }
 }
