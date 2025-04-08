@@ -9,7 +9,7 @@
       "executor": "nx:run-commands",
       "options": {
         "commands": [
-          "nx run communication-db:generate-types"
+          "nx run permission-db:generate-types"
         ]
       }
     },
