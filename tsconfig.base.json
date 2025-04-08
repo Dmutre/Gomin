@@ -16,6 +16,7 @@
     "baseUrl": ".",
     "paths": {
       "@gomin/common": ["libs/common/src/index.ts"],
+      "@gomin/communication-db": ["libs/communication-db/src/index.ts"],
       "@gomin/permission-db": ["libs/permission-db/src/index.ts"],
       "@gomin/users-db": ["libs/users-db/src/index.ts"],
       "@gomin/utils": ["libs/utils/src/index.ts"]

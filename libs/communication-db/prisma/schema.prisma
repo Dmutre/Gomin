@@ -1,0 +1,77 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../../../node_modules/@my-prisma/client/communication"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL_COMMUNICATION")
+}
+
+enum ChatType {
+  PRIVATE
+  GROUP
+  CHANNEL
+}
+
+enum UserChatRole {
+  OWNER
+  ADMIN
+  MEMBER
+  SUBSCRIBER
+}
+
+enum MessageStatus {
+  SENT
+  DELIVERED
+  READ
+  DELETED
+}
+
+model Chat {
+  id          String       @id @default(uuid())
+  type        ChatType
+  name        String?
+  description String?
+  ownerId     String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @default(now()) @updatedAt
+
+  messages    Message[]
+  members     UserChat[]
+
+  @@map("chats")
+}
+
+model UserChat {
+  id          String       @id @default(uuid())
+  userId      String
+  chatId      String
+  role        UserChatRole @default(MEMBER)
+  createdAt   DateTime     @default(now())
+
+  chat        Chat         @relation(fields: [chatId], references: [id])
+
+  @@unique([userId, chatId])
+  @@map("user_chats")
+}
+
+model Message {
+  id          String         @id @default(uuid())
+  chatId      String
+  senderId    String?
+  content     String
+  status      MessageStatus  @default(SENT)
+  isEdited    Boolean        @default(false)
+  isPinned    Boolean        @default(false)
+  replyToId   String?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @default(now()) @updatedAt
+
+  chat        Chat            @relation(fields: [chatId], references: [id])
+  replyTo     Message?        @relation("ReplyTo", fields: [replyToId], references: [id])
+  replies     Message[]       @relation("ReplyTo")
+
+  @@map("messages")
+  @@index([chatId])
+}
