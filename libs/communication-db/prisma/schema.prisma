@@ -50,7 +50,7 @@ model UserChat {
   role        UserChatRole @default(MEMBER)
   createdAt   DateTime     @default(now())
 
-  chat        Chat         @relation(fields: [chatId], references: [id])
+  chat        Chat         @relation(fields: [chatId], references: [id], onDelete: Cascade)
 
   @@unique([userId, chatId])
   @@map("user_chats")
@@ -68,8 +68,8 @@ model Message {
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @default(now()) @updatedAt
 
-  chat        Chat            @relation(fields: [chatId], references: [id])
-  replyTo     Message?        @relation("ReplyTo", fields: [replyToId], references: [id])
+  chat        Chat            @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  replyTo     Message?        @relation("ReplyTo", fields: [replyToId], references: [id], onDelete: SetNull)
   replies     Message[]       @relation("ReplyTo")
 
   @@map("messages")

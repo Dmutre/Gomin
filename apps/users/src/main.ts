@@ -1,6 +1,6 @@
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
-import { AppModule } from './app/app.module';
+import { AppModule } from './app.module';
 import { MicroserviceOptions, Transport } from '@nestjs/microservices';
 import { MicroserviceExceptionFilter, ServerConfig, MicroserviceValidationExceptionFactory } from '@gomin/common';
 import { ConfigService } from '@nestjs/config';

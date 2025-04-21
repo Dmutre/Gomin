@@ -20,5 +20,5 @@ import { PermissionClient } from "./permission.client";
   ],
   exports: [PermissionClient],
 })
-export class PermissionModule {}
+export class PermissionClientModule {}
 
