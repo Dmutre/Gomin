@@ -8,6 +8,8 @@ export const ChatPermission = {
     DELETE_MESSAGES: 'DELETE_MESSAGES',
     EDIT_MESSAGES: 'EDIT_MESSAGES',
     MENTION_USERS: 'MENTION_USERS',
+    UPDATE_CHAT: 'UPDATE_CHAT',
+    ADD_USERS: 'ADD_USERS',
   },
   admin: {
     MANAGE_CHAT: 'MANAGE_CHAT',
@@ -16,6 +18,8 @@ export const ChatPermission = {
     BAN_USERS: 'BAN_USERS',
     PROMOTE_USERS: 'PROMOTE_USERS',
     DEMOTE_USERS: 'DEMOTE_USERS',
+    DELETE_CHAT: 'DELETE_CHAT',
+    REMOVE_USER: 'REMOVE_USER',
   },
   channel: {
     POST_MESSAGES: 'POST_MESSAGES',

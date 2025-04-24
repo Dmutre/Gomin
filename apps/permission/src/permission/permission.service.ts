@@ -20,14 +20,15 @@ export class PermissionService {
     return { message: 'User permissions created successfully' };
   }
 
-  async checkUserPermissions(permission: UserPermissionCodesDTO): Promise<boolean> {
-    const codeSet = new Set(permission.codes);
+  async checkUserPermissions(data: UserPermissionCodesDTO): Promise<boolean> {
+    const codeSet = new Set(data.codes);
     const userPermissions = await this.userPermissionRepository.findUserPermissions({
       where: {
-        userId: permission.userId,
+        userId: data.userId,
         permission: {
           code: { in: Array.from(codeSet) }
-        } 
+        },
+        entityId: data.entityId
       }
     });
 

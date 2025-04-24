@@ -18,8 +18,11 @@ export class ChatService {
     return await this.createChatServie.createChat(data);
   }
 
-  async updateChat(id: string, data: UpdateChatDTO): Promise<ChatFull> {
-    return await this.chatRepo.updateChat(id, data);
+  async updateChat({ chatId, ...updateData }: UpdateChatDTO): Promise<ChatFull> {
+    return await this.chatRepo.updateChat(chatId, {
+      description: updateData.description,
+      name: updateData.name,
+    });
   }
 
   async deleteChat(id: string) {
