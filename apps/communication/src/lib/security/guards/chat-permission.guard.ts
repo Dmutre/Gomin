@@ -4,12 +4,14 @@ import { PERMISSIONS_KEY } from '../decorators/permission.decorator'
 import { MicroserviceException } from '@gomin/common'
 import { PermissionClient } from '@gomin/utils';
 import { firstValueFrom } from 'rxjs';
+import { ChatRepository } from '../../database/repositories/chat.repository';
 
 @Injectable()
 export class ChatPermissionsGuard implements CanActivate {
   constructor(
     private readonly reflector: Reflector,
     private readonly permissionClient: PermissionClient,
+    private readonly chatRepo: ChatRepository
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -29,6 +31,12 @@ export class ChatPermissionsGuard implements CanActivate {
 
     if (!executorId || !chatId) {
       throw new MicroserviceException('Action performance error', HttpStatus.FORBIDDEN);
+    }
+
+    const chat = await this.chatRepo.findOrThrow(chatId);
+
+    if (chat.ownerId === executorId) {
+      return true;
     }
 
     const isAllowedToPerform: boolean = await firstValueFrom(await this.permissionClient.checkUserPermissions({

@@ -1,4 +1,5 @@
 export const CommunicationMessagePattern = {
+  // Chats
   CREATE_CHAT: 'create-chat',
   UPDATE_CHAT: 'update-chat',
   DELETE_CHAT: 'delete-chat',
@@ -6,5 +7,12 @@ export const CommunicationMessagePattern = {
   GET_USER_CHATS: 'get-user-chats',
   ADD_USER_TO_CHAT: 'add-user-to-chat',
   REMOVE_USER_FROM_CHAT: 'remove-user-from-chat',
-  PASS_OWNERSHIP: 'pass-ownership'
+  PASS_OWNERSHIP: 'pass-ownership',
+
+  // Messages
+  SEND_MESSAGE: 'send-message',
+  UPDATE_MESSAGE: 'update-message',
+  DELETE_MESSAGE: 'delete-message',
+  READ_MESSAGES: 'read-messages',
+  DELETE_OTHER_MESSAGES: 'delete-other-messages',
 }

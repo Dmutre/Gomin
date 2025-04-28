@@ -41,4 +41,15 @@ export class UserChatRepository {
   async updateChatUser(where: Prisma.UserChatWhereUniqueInput, data: Prisma.UserChatUncheckedUpdateInput) {
     await this.prisma.userChat.update({ where, data })
   }
+
+  async findUserChat(userId: string, chatId: string) {
+    return await this.prisma.userChat.findUnique({
+      where: {
+        userId_chatId: {
+          userId,
+          chatId,
+        }
+      }
+    })
+  }
 }

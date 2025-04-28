@@ -3,10 +3,12 @@ import { ChatPermissionsGuard } from "./guards/chat-permission.guard";
 import { PermissionClientModule } from "@gomin/utils";
 import { ChatOwnershipGuard } from "./guards/chat-ownership.guard";
 import { DatabaseModule } from "../database/database.module";
+import { ExecutorBelongsToChatGuard } from "./guards/executor-belongs-to-chat.guard";
+import { ExecutorOwnMessageGuard } from "./guards/executor-own-message.guard";
 
 @Module({
-  providers: [ChatPermissionsGuard, ChatOwnershipGuard],
   imports: [PermissionClientModule, DatabaseModule],
-  exports: [ChatPermissionsGuard, ChatOwnershipGuard],
+  providers: [ChatPermissionsGuard, ChatOwnershipGuard, ExecutorBelongsToChatGuard, ExecutorOwnMessageGuard],
+  exports: [ChatPermissionsGuard, ChatOwnershipGuard, ExecutorBelongsToChatGuard, ExecutorOwnMessageGuard],
 })
 export class CommunicationSecurityModule {}
