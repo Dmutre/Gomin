@@ -10,7 +10,7 @@
       "dependsOn": [
         {
           "target": "generate-types",
-          "projects": ["permission-db"]
+          "projects": ["permission-db", "communication-db"]
         }
       ],
       "options": {
