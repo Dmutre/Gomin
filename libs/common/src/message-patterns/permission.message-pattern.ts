@@ -7,5 +7,6 @@ export const PermissionMessagePatterns = {
   DELETE_MANY_USER_PERMISSIONS: 'delete-many-user-permissions',
   UPDATE_MANY_USER_PERMISSIONS: 'update-many-user-permissions',
   UPDATE_USER_PERMISSIONS_ALLOWANCE: 'update-user-permissions-allowance',
+  UPDATE_OR_CREATE_USER_PERMISSIONS: 'update-or-create-user-permissions',
 };
 

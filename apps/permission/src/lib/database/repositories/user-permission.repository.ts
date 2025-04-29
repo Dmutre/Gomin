@@ -1,6 +1,6 @@
 import { PermissionDatabaseService, USER_PERMISSION_FULL_INCLUDE, UserPermissionFull } from "@gomin/permission-db";
-import { Injectable } from "@nestjs/common";
-import { CreateUserPermissionDTO } from "@gomin/common";
+import { HttpStatus, Injectable } from "@nestjs/common";
+import { CreateUserPermissionDTO, MicroserviceException } from "@gomin/common";
 import { Prisma } from "@my-prisma/client/permissions";
 
 @Injectable()
@@ -44,6 +44,42 @@ export class UserPermissionRepository {
       })),
       skipDuplicates: true,
     });
+  }
+
+  async upsertUserPermissions(userPermissions: CreateUserPermissionDTO[]) {
+    return await Promise.all(
+      userPermissions.map(async (permissionDto) => {
+        const permission = await this.prisma.permission.findUnique({
+          where: { code: permissionDto.code },
+          select: { id: true },
+        });
+  
+        if (!permission) {
+          throw new MicroserviceException(`Permission with code '${permissionDto.code}' not found`, HttpStatus.NOT_FOUND);
+        }
+  
+        return this.prisma.userPermission.upsert({
+          where: {
+            userId_permissionId_entityId_entityType: {
+              userId: permissionDto.userId,
+              permissionId: permission.id,
+              entityId: permissionDto.entityId ?? null,
+              entityType: permissionDto.entityType,
+            },
+          },
+          create: {
+            userId: permissionDto.userId,
+            permissionId: permission.id,
+            entityId: permissionDto.entityId,
+            entityType: permissionDto.entityType,
+            allowed: permissionDto.allowed,
+          },
+          update: {
+            allowed: permissionDto.allowed,
+          },
+        });
+      })
+    )
   }
 
   async findUserPermissions(args: Prisma.UserPermissionFindManyArgs): Promise<UserPermissionFull[]> {

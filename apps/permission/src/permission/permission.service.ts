@@ -105,6 +105,11 @@ export class PermissionService {
   
     return { message: 'User permissions deleted successfully' };
   }
+
+  async createOrUpdateUserPermissions(userPermissions: CreateUserPermissionDTO[]): Promise<MessageDTO> {
+    await this.userPermissionRepository.upsertUserPermissions(userPermissions);
+    return { message: 'Update user permissions successfuly' };
+  }
   
 }
 

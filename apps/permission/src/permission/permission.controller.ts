@@ -1,7 +1,7 @@
 import { Controller } from "@nestjs/common";
 import { PermissionService } from "./permission.service";
 import { MessagePattern, Payload } from "@nestjs/microservices";
-import { CreateUserPermissionDTO, DeleteManyUserPermissionsDTO, DeleteUserPermissionDTO, MessageDTO, PermissionMessagePatterns, UpdateUserPermissionsAllowanceDTO, UserIdDTO, UserPermissionCodesDTO } from "@gomin/common";
+import { CreateManyUserPermissions, CreateUserPermissionDTO, DeleteManyUserPermissionsDTO, DeleteUserPermissionDTO, MessageDTO, PermissionMessagePatterns, UpdateUserPermissionsAllowanceDTO, UserIdDTO, UserPermissionCodesDTO } from "@gomin/common";
 import { UserPermissionFull } from "@gomin/permission-db";
 
 @Controller('permission')
@@ -14,8 +14,8 @@ export class PermissionController {
   }
 
   @MessagePattern(PermissionMessagePatterns.CREATE_MANY_USER_PERMISSIONS)
-  async createManyUserPermissions(@Payload() payload: CreateUserPermissionDTO[]): Promise<MessageDTO> {
-    return this.permissionService.createManyUserPermissions(payload);
+  async createManyUserPermissions(@Payload() { userPermissions }: CreateManyUserPermissions): Promise<MessageDTO> {
+    return this.permissionService.createManyUserPermissions(userPermissions);
   }
 
   @MessagePattern(PermissionMessagePatterns.GET_USER_PERMISSIONS)
@@ -41,5 +41,10 @@ export class PermissionController {
   @MessagePattern(PermissionMessagePatterns.DELETE_MANY_USER_PERMISSIONS)
   async deleteManyUserPermissions(@Payload() payload: DeleteManyUserPermissionsDTO): Promise<MessageDTO> {
     return this.permissionService.deleteManyUserPermissions(payload);
+  }
+
+  @MessagePattern(PermissionMessagePatterns.UPDATE_OR_CREATE_USER_PERMISSIONS)
+  updateOrCreateUserPermissions(@Payload() { userPermissions }: CreateManyUserPermissions) {
+    return this.permissionService.createOrUpdateUserPermissions(userPermissions);
   }
 }

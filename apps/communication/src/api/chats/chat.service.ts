@@ -1,10 +1,11 @@
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { ChatRepository } from "../../lib/database/repositories/chat.repository";
-import { CreateChatDTO, MicroserviceException, UpdateChatDTO } from "@gomin/common";
+import { CreateChatDTO, CreateManyUserPermissions, MicroserviceException, UpdateChatDTO } from "@gomin/common";
 import { CreateChatService } from "./strategies/create-chat/create-chat.service";
 import { ChatFull } from "@gomin/communication-db";
 import { Chat, UserChatRole } from "@my-prisma/client/communication";
 import { UserChatRepository } from "../../lib/database/repositories/user-chat.repository";
+import { PermissionClient } from "@gomin/utils";
 
 @Injectable()
 export class ChatService {
@@ -12,6 +13,7 @@ export class ChatService {
     private readonly chatRepo: ChatRepository,
     private readonly createChatServie: CreateChatService,
     private readonly userChatRepo: UserChatRepository,
+    private readonly permissionClient: PermissionClient
   ) {}
 
   async createChat(data: CreateChatDTO): Promise<ChatFull> {
@@ -71,5 +73,9 @@ export class ChatService {
 
   private async updateUserChatRole(userId: string, chatId: string, role: UserChatRole) {
     await this.userChatRepo.updateChatUser({ userId_chatId: { userId, chatId }}, { role });
+  }
+
+  async updateUserPermissions(payload: CreateManyUserPermissions) {
+    return await this.permissionClient.createOrUpdateUserPermissions(payload);
   }
 }

@@ -1,4 +1,4 @@
-import { CreateUserPermissionDTO, DeleteUserPermissionDTO, MessageDTO, PermissionMessagePatterns, PERMISSIONS_SERVICE, UpdateUserPermissionsAllowanceDTO, UserIdDTO, UserPermissionCodesDTO } from "@gomin/common";
+import { CreateManyUserPermissions, CreateUserPermissionDTO, DeleteUserPermissionDTO, MessageDTO, PermissionMessagePatterns, PERMISSIONS_SERVICE, UpdateUserPermissionsAllowanceDTO, UserIdDTO, UserPermissionCodesDTO } from "@gomin/common";
 import { Inject, Injectable } from "@nestjs/common";
 import { ClientProxy } from "@nestjs/microservices";
 import { Observable } from "rxjs";
@@ -35,6 +35,10 @@ export class PermissionClient {
 
   async deleteManyUserPermissions(payload: UserPermissionCodesDTO): Promise<Observable<MessageDTO>> {
     return this.client.send(PermissionMessagePatterns.DELETE_MANY_USER_PERMISSIONS, payload);
+  }
+
+  async createOrUpdateUserPermissions(userPermissions: CreateManyUserPermissions): Promise<Observable<MessageDTO>> {
+    return this.client.send(PermissionMessagePatterns.UPDATE_OR_CREATE_USER_PERMISSIONS, userPermissions);
   }
 }
 
