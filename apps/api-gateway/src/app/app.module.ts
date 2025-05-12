@@ -5,6 +5,8 @@ import { ConfigSmith } from '@gomin/common'
 import { LoggerModule } from '@gomin/common'
 import { AuthModule } from '../api/auth/auth.module';
 import { ClsModule } from 'nestjs-cls';
+import { ChatModule } from '../api/chat/chat.module';
+import { GatewayModule } from '../api/gateway/gateway.module';
 
 @Module({
   imports: [
@@ -17,6 +19,8 @@ import { ClsModule } from 'nestjs-cls';
     }),
     LoggerModule,
     AuthModule,
+    ChatModule,
+    GatewayModule,
   ],
   controllers: [AppController],
 })

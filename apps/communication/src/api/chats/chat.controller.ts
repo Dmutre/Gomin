@@ -23,8 +23,7 @@ export class ChatController {
   return this.chatService.updateChat(data);
   }
 
-  @UseGuards(ChatPermissionsGuard)
-  @PermissionsMetadata(ChatPermission.admin.DELETE_CHAT)
+  @UseGuards(ChatOwnershipGuard)
   @MessagePattern(CommunicationMessagePattern.DELETE_CHAT)
   deleteChat(@Payload() { chatId }: ChatIdDTO) {
   return this.chatService.deleteChat(chatId);
@@ -61,7 +60,7 @@ export class ChatController {
   }
 
   @UseGuards(ChatOwnershipGuard)
-  @MessagePattern(CommunicationMessagePattern.UPDATE_USER_CHAT_PERMiSSIONS)
+  @MessagePattern(CommunicationMessagePattern.UPDATE_USER_CHAT_PERMISSIONS)
   updateUserChatPermissions(@Payload() data: CreateManyUserPermissions) {
     return this.chatService.updateUserPermissions(data);
   }

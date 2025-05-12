@@ -2,7 +2,12 @@ import { Injectable, OnModuleDestroy } from "@nestjs/common";
 import { Logger } from "nestjs-pino";
 import * as WebSocket from 'ws';
 import * as http from 'http';
+import { AuthService } from "../auth/auth.service";
+import { firstValueFrom } from "rxjs";
 
+/**
+ * TODO: Update WebSocket Gateway to connect for a specific amount of time based on token lifetime.
+ */
 @Injectable()
 export class CommunicationGateway implements OnModuleDestroy {
   private server: WebSocket.Server;
@@ -10,6 +15,7 @@ export class CommunicationGateway implements OnModuleDestroy {
 
   constructor(
     private readonly logger: Logger,
+    private readonly authService: AuthService,
   ) {}
 
   onModuleDestroy() {
@@ -21,15 +27,21 @@ export class CommunicationGateway implements OnModuleDestroy {
   public setHttpServer(httpServer: http.Server) {
     this.server = new WebSocket.Server({
       server: httpServer,
-      path: '/matchmaker',
+      path: '/communication',
     });
     this.initialize();
   }
 
     private initialize() {
-    this.server.on('connection', (ws: WebSocket) => {
-      const clientId = 'TODO client authorization';
-      this.clients.set(clientId, ws);
+    this.server.on('connection', async (ws: WebSocket, request: http.IncomingMessage) => {
+      const token = request.headers['token'] as string;
+      const clientId = await this.authorizeUser(token);
+
+      if (!clientId) {
+        this.sendMessage(ws, 'unauthorized', { message: 'Invalid or expired token' });
+        ws.close(4001, 'Unauthorized');
+        return;
+      }
 
       ws.on('message', async (message: string) => {
         try {
@@ -45,9 +57,20 @@ export class CommunicationGateway implements OnModuleDestroy {
       });
 
       ws.on('error', (err) => {
+        ws.close();
         this.clients.delete(clientId);
       });
     });
+  }
+
+  private async authorizeUser(token: string | string[] | undefined): Promise<string | null> {
+    try {
+      if (!token || Array.isArray(token)) return null;
+      const payload = await firstValueFrom(this.authService.getCurrentUser(token));
+      return payload.id;
+    } catch (err) {
+      return null;
+    }
   }
 
   private sendMessage(ws: WebSocket, event: string, data: any) {

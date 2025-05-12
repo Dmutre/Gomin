@@ -8,7 +8,7 @@ export const CommunicationMessagePattern = {
   ADD_USER_TO_CHAT: 'add-user-to-chat',
   REMOVE_USER_FROM_CHAT: 'remove-user-from-chat',
   PASS_OWNERSHIP: 'pass-ownership',
-  UPDATE_USER_CHAT_PERMiSSIONS: 'update-user-chat-permissions',
+  UPDATE_USER_CHAT_PERMISSIONS: 'update-user-chat-permissions',
 
   // Messages
   SEND_MESSAGE: 'send-message',

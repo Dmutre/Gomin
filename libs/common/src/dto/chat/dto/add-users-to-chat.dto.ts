@@ -1,5 +1,5 @@
 import { IsArray, IsNotEmpty, IsString, IsUUID, MinLength } from "class-validator";
-import { ExecutorDTO } from "../common";
+import { ExecutorDTO } from "../../common";
 
 export class AddUsersToChatDTO extends ExecutorDTO {
   @IsUUID()

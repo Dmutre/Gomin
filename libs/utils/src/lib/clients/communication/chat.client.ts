@@ -1,5 +1,5 @@
 import { Inject, Injectable } from "@nestjs/common";
-import { COMMUNICATION_SERVICE } from "@gomin/common";
+import { ChatExecutorDTO, COMMUNICATION_SERVICE } from "@gomin/common";
 import { Observable } from 'rxjs'
 import { Chat } from '@my-prisma/client/communication'
 import { ClientProxy } from "@nestjs/microservices";
@@ -27,7 +27,7 @@ export class ChatClient {
     return this.client.send(CommunicationMessagePattern.UPDATE_CHAT, data)
   }
 
-  deleteChat(data: ChatIdDTO): Observable<{ message: string }> {
+  deleteChat(data: ChatExecutorDTO): Observable<{ message: string }> {
     return this.client.send(CommunicationMessagePattern.DELETE_CHAT, data)
   }
 
@@ -52,6 +52,6 @@ export class ChatClient {
   }
 
   updateUserChatPermissions(data: CreateManyUserPermissions): Observable<{ message: string }> {
-    return this.client.send(CommunicationMessagePattern.UPDATE_USER_CHAT_PERMiSSIONS, data)
+    return this.client.send(CommunicationMessagePattern.UPDATE_USER_CHAT_PERMISSIONS, data)
   }
 }

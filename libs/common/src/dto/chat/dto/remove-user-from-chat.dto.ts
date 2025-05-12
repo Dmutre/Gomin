@@ -1,5 +1,5 @@
 import { IsUUID } from "class-validator";
-import { ExecutorDTO } from "../common";
+import { ExecutorDTO } from "../../common";
 
 export class RemoveUserFromChatDTO extends ExecutorDTO {
   @IsUUID()
