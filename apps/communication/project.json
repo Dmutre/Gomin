@@ -34,6 +34,14 @@
         }
       }
     },
+    "serve:fast": {
+      "executor": "@nx/js:node",
+      "defaultConfiguration": "development",
+      "options": {
+        "buildTarget": "communication:build",
+        "runBuildTargetDependencies": false
+      }
+    },
     "test": {
       "options": {
         "passWithNoTests": true

@@ -4,6 +4,10 @@ import * as WebSocket from 'ws';
 import * as http from 'http';
 import { AuthService } from "../auth/auth.service";
 import { firstValueFrom } from "rxjs";
+import { CommunicationClientEvent, CommunicationEvents } from "../../libs/websocket-events/communication.events";
+import { SendMessageDTO } from "../../../../../libs/common/src";
+import { MessageService } from "../messages/message.service";
+import { ChatService } from "../chat/chat.service";
 
 /**
  * TODO: Update WebSocket Gateway to connect for a specific amount of time based on token lifetime.
@@ -16,6 +20,8 @@ export class CommunicationGateway implements OnModuleDestroy {
   constructor(
     private readonly logger: Logger,
     private readonly authService: AuthService,
+    private readonly messageService: MessageService,
+    private readonly chatService: ChatService,
   ) {}
 
   onModuleDestroy() {
@@ -42,6 +48,8 @@ export class CommunicationGateway implements OnModuleDestroy {
         ws.close(4001, 'Unauthorized');
         return;
       }
+
+      this.clients.set(clientId, ws);
 
       ws.on('message', async (message: string) => {
         try {
@@ -81,13 +89,40 @@ export class CommunicationGateway implements OnModuleDestroy {
 
     private async handleMessage(clientId: string, ws: WebSocket, message: any) {
     if (!message.event) {
-      this.sendMessage(ws, 'error', { message: 'No event specified' });
+      this.sendErrorMessage(ws, 'No event specified');
       return;
     }
 
     switch (message.event) {
+      case CommunicationEvents.SEND_MESSAGE:
+        await this.handleSendMessage(ws, message.data);
+        break;
       default:
-        this.sendMessage(ws, 'error', { message: 'Unknown event' });
+        this.sendErrorMessage(ws, 'Unknown event');
+    }
+  }
+
+  private sendErrorMessage(ws: WebSocket, message: string) {
+    this.sendMessage(ws, 'error', { message });
+  }
+
+  private async handleSendMessage(ws: WebSocket, data: SendMessageDTO) {
+    const chat = await firstValueFrom(this.chatService.getChatById(data.chatId));
+    if (!chat) {
+      this.sendErrorMessage(ws, 'Chat not found');
+    }
+    const message = await this.messageService.sendMessage(data);
+    this.broadcastToUsers(
+      chat.members.map((user) => user.id),
+      CommunicationClientEvent.REVEICE_MESSAGE,
+      message,
+    );
+  }
+
+  private broadcastToUsers(userIds: string[], event: string, data: any) {
+    for (const userId of userIds) {
+      const ws = this.clients.get(userId);
+      if (ws) this.sendMessage(ws, event, data);
     }
   }
 }

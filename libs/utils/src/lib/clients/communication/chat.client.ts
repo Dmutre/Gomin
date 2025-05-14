@@ -1,7 +1,8 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { ChatExecutorDTO, COMMUNICATION_SERVICE } from "@gomin/common";
 import { Observable } from 'rxjs'
-import { Chat } from '@my-prisma/client/communication'
+import { Chat } from '@my-prisma/client/communication';
+import { ChatFull } from '@gomin/communication-db';
 import { ClientProxy } from "@nestjs/microservices";
 import {
   AddUsersToChatDTO,
@@ -31,7 +32,7 @@ export class ChatClient {
     return this.client.send(CommunicationMessagePattern.DELETE_CHAT, data)
   }
 
-  findChatById(data: ChatIdDTO): Observable<Chat> {
+  findChatById(data: ChatIdDTO): Observable<ChatFull> {
     return this.client.send(CommunicationMessagePattern.FIND_CHAT_BY_ID, data)
   }
 
