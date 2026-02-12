@@ -38,7 +38,7 @@
       "options": {
         "targetName": "test"
       },
-      "exclude": ["apps/Gomin-e2e/**/*"]
+      "exclude": ["apps/Gomin-e2e/**/*", "apps/api-gateway-e2e/**/*"]
     }
   ]
 }

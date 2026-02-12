@@ -1,7 +1,7 @@
 {
-  "name": "Gomin",
+  "name": "api-gateway",
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
-  "sourceRoot": "apps/Gomin/src",
+  "sourceRoot": "apps/api-gateway/src",
   "projectType": "application",
   "tags": [],
   "targets": {
@@ -10,7 +10,7 @@
       "options": {
         "command": "webpack-cli build",
         "args": ["--node-env=production"],
-        "cwd": "apps/Gomin"
+        "cwd": "apps/api-gateway"
       },
       "configurations": {
         "development": {
@@ -23,8 +23,8 @@
       "cache": true,
       "executor": "@nx/js:prune-lockfile",
       "outputs": [
-        "{workspaceRoot}/dist/apps/Gomin/package.json",
-        "{workspaceRoot}/dist/apps/Gomin/pnpm-lock.yaml"
+        "{workspaceRoot}/dist/apps/api-gateway/package.json",
+        "{workspaceRoot}/dist/apps/api-gateway/pnpm-lock.yaml"
       ],
       "options": {
         "buildTarget": "build"
@@ -33,7 +33,7 @@
     "copy-workspace-modules": {
       "dependsOn": ["build"],
       "cache": true,
-      "outputs": ["{workspaceRoot}/dist/apps/Gomin/workspace_modules"],
+      "outputs": ["{workspaceRoot}/dist/apps/api-gateway/workspace_modules"],
       "executor": "@nx/js:copy-workspace-modules",
       "options": {
         "buildTarget": "build"
@@ -49,15 +49,15 @@
       "defaultConfiguration": "development",
       "dependsOn": ["build"],
       "options": {
-        "buildTarget": "Gomin:build",
+        "buildTarget": "api-gateway:build",
         "runBuildTargetDependencies": false
       },
       "configurations": {
         "development": {
-          "buildTarget": "Gomin:build:development"
+          "buildTarget": "api-gateway:build:development"
         },
         "production": {
-          "buildTarget": "Gomin:build:production"
+          "buildTarget": "api-gateway:build:production"
         }
       }
     },
