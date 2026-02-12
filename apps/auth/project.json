@@ -1,0 +1,112 @@
+{
+  "name": "auth",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "apps/auth/src",
+  "projectType": "application",
+  "tags": [],
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "webpack-cli build",
+        "args": ["--node-env=production"],
+        "cwd": "apps/auth"
+      },
+      "configurations": {
+        "development": {
+          "args": ["--node-env=development"]
+        }
+      }
+    },
+    "prune-lockfile": {
+      "dependsOn": ["build"],
+      "cache": true,
+      "executor": "@nx/js:prune-lockfile",
+      "outputs": [
+        "{workspaceRoot}/dist/apps/auth/package.json",
+        "{workspaceRoot}/dist/apps/auth/pnpm-lock.yaml"
+      ],
+      "options": {
+        "buildTarget": "build"
+      }
+    },
+    "copy-workspace-modules": {
+      "dependsOn": ["build"],
+      "cache": true,
+      "outputs": ["{workspaceRoot}/dist/apps/auth/workspace_modules"],
+      "executor": "@nx/js:copy-workspace-modules",
+      "options": {
+        "buildTarget": "build"
+      }
+    },
+    "prune": {
+      "dependsOn": ["prune-lockfile", "copy-workspace-modules"],
+      "executor": "nx:noop"
+    },
+    "serve": {
+      "continuous": true,
+      "executor": "@nx/js:node",
+      "defaultConfiguration": "development",
+      "dependsOn": ["build"],
+      "options": {
+        "buildTarget": "auth:build",
+        "runBuildTargetDependencies": false
+      },
+      "configurations": {
+        "development": {
+          "buildTarget": "auth:build:development"
+        },
+        "production": {
+          "buildTarget": "auth:build:production"
+        }
+      }
+    },
+    "test": {
+      "options": {
+        "passWithNoTests": true
+      }
+    },
+    "db:migrate:make": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "knex migrate:make --knexfile apps/auth/knexfile.ts {args.name}",
+        "cwd": "."
+      }
+    },
+    "db:migrate:latest": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "knex migrate:latest --knexfile apps/auth/knexfile.ts",
+        "cwd": "."
+      }
+    },
+    "db:migrate:rollback": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "knex migrate:rollback --knexfile apps/auth/knexfile.ts",
+        "cwd": "."
+      }
+    },
+    "db:migrate:status": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "knex migrate:status --knexfile apps/auth/knexfile.ts",
+        "cwd": "."
+      }
+    },
+    "db:seed:make": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "knex seed:make --knexfile apps/auth/knexfile.ts {args.name}",
+        "cwd": "."
+      }
+    },
+    "db:seed:run": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "knex seed:run --knexfile apps/auth/knexfile.ts",
+        "cwd": "."
+      }
+    }
+  }
+}
