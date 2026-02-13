@@ -35,17 +35,11 @@ export const validationSchema = Joi.object({
     .optional()
     .allow(''),
 
-  // RabbitMQ
-  RABBITMQ_URL: Joi.string()
-    .uri()
-    .required()
-    .messages({
-      'string.uri': 'RABBITMQ_URL must be a valid AMQP connection string',
-      'any.required': 'RABBITMQ_URL is required',
-    }),
-
   // gRPC
   GRPC_PORT: Joi.number()
     .port()
     .default(5000),
+  HOST: Joi.string()
+    .hostname()
+    .default('localhost'),
 });

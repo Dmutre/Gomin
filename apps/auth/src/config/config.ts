@@ -3,7 +3,8 @@ import { CONFIG_NAMESPACES } from './consts';
 
 export const appConfig = registerAs(CONFIG_NAMESPACES.APP, () => ({
   nodeEnv: process.env.NODE_ENV || 'development',
-  port: parseInt(process.env.PORT || '3000', 10),
+  grpcPort: parseInt(process.env.GRPC_PORT || '3000', 10),
+  host: process.env.HOST || 'localhost',
 }));
 
 export const databaseConfig = registerAs(CONFIG_NAMESPACES.DATABASE, () => ({
@@ -22,16 +23,11 @@ export const rabbitmqConfig = registerAs(CONFIG_NAMESPACES.RABBITMQ, () => ({
   url: process.env.RABBITMQ_URL,
 }));
 
-export const grpcConfig = registerAs(CONFIG_NAMESPACES.GRPC, () => ({
-  port: parseInt(process.env.GRPC_PORT || '5000', 10),
-}));
-
 const configs = [
   appConfig,
   databaseConfig,
   redisConfig,
   rabbitmqConfig,
-  grpcConfig,
 ];
 
 export default configs;
