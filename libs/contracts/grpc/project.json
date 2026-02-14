@@ -14,6 +14,13 @@
         "tsConfig": "libs/contracts/grpc/tsconfig.lib.json",
         "assets": ["libs/contracts/grpc/*.md"]
       }
+    },
+    "proto:generate": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "buf generate",
+        "cwd": "libs/contracts/grpc"
+      }
     }
   }
 }

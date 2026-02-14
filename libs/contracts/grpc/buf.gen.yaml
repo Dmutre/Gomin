@@ -1,0 +1,15 @@
+version: v2
+managed:
+  enabled: true
+plugins:
+  - local: protoc-gen-ts_proto
+    out: src/types/generated
+    opt:
+      - outputServices=false
+      - outputClientImpl=false
+      - env=node
+      - esModuleInterop=true
+      - useOptionals=messages
+      - exportCommonSymbols=false
+      - useExactTypes=true
+      - onlyTypes=true

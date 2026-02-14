@@ -1,0 +1,10 @@
+# libs/contracts/grpc/buf.yaml
+version: v2
+modules:
+  - path: src/protos
+lint:
+  use:
+    - STANDARD
+breaking:
+  use:
+    - FILE
