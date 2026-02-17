@@ -14,13 +14,13 @@ const config: Knex.Config = {
   },
   
   migrations: {
-    directory: path.join(__dirname, 'src/database/migrations'),
+    directory: './database/migrations',
     tableName: 'knex_migrations',
     extension: 'ts',
   },
   
   seeds: {
-    directory: path.join(__dirname, 'src/database/seeds'),
+    directory: './database/seeds',
     extension: 'ts',
   },
 };

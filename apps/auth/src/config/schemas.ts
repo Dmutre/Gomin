@@ -1,28 +1,12 @@
 // apps/auth/src/config/validation.schema.ts
 import * as Joi from 'joi';
+import { knexDatabaseValidationSchema } from '@gomin/database';
 
 export const validationSchema = Joi.object({
   // App
   NODE_ENV: Joi.string()
     .valid('development', 'production', 'test')
     .default('development'),
-
-  // Database
-  DATABASE_URL: Joi.string()
-    .uri()
-    .required()
-    .messages({
-      'string.uri': 'DATABASE_URL must be a valid PostgreSQL connection string',
-      'any.required': 'DATABASE_URL is required',
-    }),
-  DB_POOL_MIN: Joi.number()
-    .integer()
-    .min(1)
-    .default(2),
-  DB_POOL_MAX: Joi.number()
-    .integer()
-    .min(1)
-    .default(10),
 
   // Redis
   REDIS_HOST: Joi.string()
@@ -42,4 +26,4 @@ export const validationSchema = Joi.object({
   HOST: Joi.string()
     .hostname()
     .default('localhost'),
-});
+}).concat(knexDatabaseValidationSchema);

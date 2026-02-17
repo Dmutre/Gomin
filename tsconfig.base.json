@@ -15,7 +15,10 @@
     "skipDefaultLibCheck": true,
     "baseUrl": ".",
     "paths": {
-      "@gomin/grpc": ["libs/contracts/grpc/src/index.ts"]
+      "@gomin/grpc": ["libs/contracts/grpc/src/index.ts"],
+      "@gomin/logger": ["libs/infrastructure/logger/src/index.ts"],
+      "@gomin/database": ["libs/infrastructure/database/src/index.ts"],
+      "@gomin/app": ["libs/infrastructure/app/src/index.ts"]
     }
   },
   "exclude": ["node_modules", "tmp"]

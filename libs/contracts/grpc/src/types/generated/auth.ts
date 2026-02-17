@@ -4,7 +4,7 @@
 //   protoc               unknown
 // source: auth.proto
 
-/* eslint-disable */
+ 
 
 export interface LoginRequest {
   username: string;

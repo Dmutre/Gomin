@@ -15,7 +15,14 @@ module.exports = {
       compiler: 'tsc',
       main: './src/main.ts',
       tsConfig: './tsconfig.app.json',
-      assets: ['./src/assets'],
+      assets: [
+        './src/assets',
+        {
+          input: 'libs/contracts/grpc/src/protos',
+          glob: '*.proto',
+          output: './protos',
+        },
+      ],
       optimization: false,
       outputHashing: 'none',
       generatePackageJson: true,

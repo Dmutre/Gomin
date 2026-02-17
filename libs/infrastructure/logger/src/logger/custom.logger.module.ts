@@ -6,7 +6,6 @@ import { LoggerModule } from "nestjs-pino";
     LoggerModule.forRoot({
       pinoHttp: {
         level: 'info',
-
         base: {
           service: 'auth-service',
         },
@@ -20,13 +19,13 @@ import { LoggerModule } from "nestjs-pino";
           censor: '[REDACTED]',
         },
         serializers: {
-          req(req) {
+          req(req: { method: any; url: any; }) {
             return {
               method: req.method,
               url: req.url,
             };
           },
-          res(res) {
+          res(res: { statusCode: any; }) {
             return {
               statusCode: res.statusCode,
             };
