@@ -1,5 +1,4 @@
 import * as dotenv from 'dotenv';
-import * as path from 'path';
 import type { Knex } from 'knex';
 
 dotenv.config();

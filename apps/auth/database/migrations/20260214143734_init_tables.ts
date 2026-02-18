@@ -66,7 +66,7 @@ export async function up(knex: Knex): Promise<void> {
     // Device info
     table.string('deviceId', 255).nullable();
     table.string('deviceName', 255).nullable();
-    table.enum('deviceType', ['mobile', 'desktop', 'tablet', 'web']).nullable();
+    table.enum('deviceType', ['MOBILE', 'DESKTOP', 'TABLET', 'WEB']).nullable();
     table.string('os', 100).nullable();
     table.string('browser', 100).nullable();
     table.string('appVersion', 50).nullable();
@@ -86,15 +86,15 @@ export async function up(knex: Knex): Promise<void> {
     table.boolean('isActive').defaultTo(true);
     table.timestamp('revokedAt').nullable();
     table.enum('revokeReason', [
-      'user_logout',
-      'user_terminated',
-      'user_terminated_all',
-      'expired',
-      'inactivity',
-      'security_breach',
-      'admin_action',
-      'token_reuse_detected',
-      'session_limit_reached',
+      'USER_LOGOUT',
+      'USER_TERMINATED',
+      'USER_TERMINATED_ALL',
+      'EXPIRED',
+      'INACTIVITY',
+      'SECURITY_BREACH',
+      'ADMIN_ACTION',
+      'TOKEN_REUSE_DETECTED',
+      'SESSION_LIMIT_REACHED',
     ]).nullable();
     
     // Indexes

@@ -1,16 +1,132 @@
 syntax = "proto3";
 
-package auth;
+package auth.v1;
+
+import "google/protobuf/timestamp.proto";
 
 service AuthService {
-  rpc Login (LoginRequest) returns (LoginResponse);
+  rpc Register(RegisterRequest) returns (RegisterResponse);
+  rpc Login(LoginRequest) returns (LoginResponse);
+  rpc Logout(LogoutRequest) returns (LogoutResponse);
+  rpc GetActiveSessions(GetActiveSessionsRequest) returns (GetActiveSessionsResponse);
+  rpc TerminateSession(TerminateSessionRequest) returns (TerminateSessionResponse);
+  rpc TerminateAllOtherSessions(TerminateAllOtherSessionsRequest) returns (TerminateAllOtherSessionsResponse);
+}
+
+enum DeviceType {
+  DEVICE_TYPE_UNSPECIFIED = 0;
+  DEVICE_TYPE_MOBILE = 1;
+  DEVICE_TYPE_DESKTOP = 2;
+  DEVICE_TYPE_TABLET = 3;
+  DEVICE_TYPE_WEB = 4;
+}
+
+message DeviceInfo {
+  string device_id = 1;
+  string device_name = 2;
+  DeviceType device_type = 3;
+  string os = 4;
+  string browser = 5;
+  string app_version = 6;
+}
+
+message E2EEKeys {
+  string public_key = 1;
+  string encrypted_private_key = 2;
+  string encryption_salt = 3;
+  string encryption_iv = 4;
+  string encryption_auth_tag = 5;
+}
+
+message UserProfile {
+  string id = 1;
+  string username = 2;
+  string email = 3;
+  string phone = 4;
+  string avatar_url = 5;
+  string bio = 6;
+  bool email_verified = 7;
+  bool phone_verified = 8;
+  bool is_active = 9;
+  google.protobuf.Timestamp created_at = 10;
+}
+
+message SessionInfo {
+  string session_id = 1;
+  string device_name = 2;
+  DeviceType device_type = 3;
+  string os = 4;
+  string browser = 5;
+  string ip_address = 6;
+  string country = 7;
+  string city = 8;
+  google.protobuf.Timestamp created_at = 9;
+  google.protobuf.Timestamp last_activity_at = 10;
+  google.protobuf.Timestamp expires_at = 11;
+  bool is_current = 12;
+}
+
+message RegisterRequest {
+  string username = 1;
+  string email = 2;
+  string password = 3;
+  string phone = 4;
+  E2EEKeys e2ee_keys = 5;
+  DeviceInfo device_info = 6;
+}
+
+message RegisterResponse {
+  UserProfile user = 1;
+  string session_token = 2;
+  string session_id = 3;
+  google.protobuf.Timestamp expires_at = 4;
 }
 
 message LoginRequest {
-  string username = 1;
+  string email = 1;
   string password = 2;
+  DeviceInfo device_info = 3;
 }
 
 message LoginResponse {
-  string sessionToken = 1;
+  UserProfile user = 1;
+  string session_token = 2;
+  string session_id = 3;
+  google.protobuf.Timestamp expires_at = 4;
+  E2EEKeys e2ee_keys = 5;
+}
+
+message LogoutRequest {
+  string session_token = 1;
+}
+
+message LogoutResponse {
+  bool success = 1;
+}
+
+message GetActiveSessionsRequest {
+  string session_token = 1;
+}
+
+message GetActiveSessionsResponse {
+  repeated SessionInfo sessions = 1;
+}
+
+message TerminateSessionRequest {
+  string session_token = 1;
+  string target_session_id = 2;
+  string password = 3;
+}
+
+message TerminateSessionResponse {
+  bool success = 1;
+}
+
+message TerminateAllOtherSessionsRequest {
+  string session_token = 1;
+  string password = 2;
+}
+
+message TerminateAllOtherSessionsResponse {
+  int32 terminated_count = 1;
 }

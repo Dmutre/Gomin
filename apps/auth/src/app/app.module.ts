@@ -4,6 +4,9 @@ import { validationSchema } from "../config/schemas";
 import configs from '../config/config';
 import { CustomLoggerModule } from "@gomin/logger";
 import { KnexDatabaseModule } from "@gomin/database";
+import { UserModule } from "../users/user.module";
+import { UserSessionModule } from "../user-sessions/user-session.module";
+import { AuthModule } from "../auth/auth.module";
 
 @Module({
   imports: [
@@ -14,6 +17,9 @@ import { KnexDatabaseModule } from "@gomin/database";
     }),
     CustomLoggerModule,
     KnexDatabaseModule,
+    UserModule,
+    UserSessionModule,
+    AuthModule,
   ],
 })
 export class AppModule {}

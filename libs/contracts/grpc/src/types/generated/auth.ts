@@ -4,13 +4,123 @@
 //   protoc               unknown
 // source: auth.proto
 
- 
+/* eslint-disable */
+
+export enum DeviceType {
+  DEVICE_TYPE_UNSPECIFIED = 0,
+  DEVICE_TYPE_MOBILE = 1,
+  DEVICE_TYPE_DESKTOP = 2,
+  DEVICE_TYPE_TABLET = 3,
+  DEVICE_TYPE_WEB = 4,
+  UNRECOGNIZED = -1,
+}
+
+export interface DeviceInfo {
+  deviceId: string;
+  deviceName: string;
+  deviceType: DeviceType;
+  os: string;
+  browser: string;
+  appVersion: string;
+}
+
+export interface E2EEKeys {
+  publicKey: string;
+  encryptedPrivateKey: string;
+  encryptionSalt: string;
+  encryptionIv: string;
+  encryptionAuthTag: string;
+}
+
+export interface UserProfile {
+  id: string;
+  username: string;
+  email: string;
+  phone: string;
+  avatarUrl: string;
+  bio: string;
+  emailVerified: boolean;
+  phoneVerified: boolean;
+  isActive: boolean;
+  createdAt?: Date | undefined;
+}
+
+export interface SessionInfo {
+  sessionId: string;
+  deviceName: string;
+  deviceType: DeviceType;
+  os: string;
+  browser: string;
+  ipAddress: string;
+  country: string;
+  city: string;
+  createdAt?: Date | undefined;
+  lastActivityAt?: Date | undefined;
+  expiresAt?: Date | undefined;
+  isCurrent: boolean;
+}
+
+export interface RegisterRequest {
+  username: string;
+  email: string;
+  password: string;
+  phone: string;
+  e2eeKeys?: E2EEKeys | undefined;
+  deviceInfo?: DeviceInfo | undefined;
+}
+
+export interface RegisterResponse {
+  user?: UserProfile | undefined;
+  sessionToken: string;
+  sessionId: string;
+  expiresAt?: Date | undefined;
+}
 
 export interface LoginRequest {
-  username: string;
+  email: string;
   password: string;
+  deviceInfo?: DeviceInfo | undefined;
 }
 
 export interface LoginResponse {
+  user?: UserProfile | undefined;
   sessionToken: string;
+  sessionId: string;
+  expiresAt?: Date | undefined;
+  e2eeKeys?: E2EEKeys | undefined;
+}
+
+export interface LogoutRequest {
+  sessionToken: string;
+}
+
+export interface LogoutResponse {
+  success: boolean;
+}
+
+export interface GetActiveSessionsRequest {
+  sessionToken: string;
+}
+
+export interface GetActiveSessionsResponse {
+  sessions: SessionInfo[];
+}
+
+export interface TerminateSessionRequest {
+  sessionToken: string;
+  targetSessionId: string;
+  password: string;
+}
+
+export interface TerminateSessionResponse {
+  success: boolean;
+}
+
+export interface TerminateAllOtherSessionsRequest {
+  sessionToken: string;
+  password: string;
+}
+
+export interface TerminateAllOtherSessionsResponse {
+  terminatedCount: number;
 }
