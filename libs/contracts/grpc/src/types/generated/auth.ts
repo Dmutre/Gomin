@@ -4,7 +4,7 @@
 //   protoc               unknown
 // source: auth.proto
 
-/* eslint-disable */
+ 
 
 export enum DeviceType {
   DEVICE_TYPE_UNSPECIFIED = 0,

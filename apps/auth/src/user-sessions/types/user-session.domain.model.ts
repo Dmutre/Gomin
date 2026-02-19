@@ -1,4 +1,4 @@
-export enum DeviceType {
+export enum DomainDeviceType {
   MOBILE = 'MOBILE',
   DESKTOP = 'DESKTOP',
   TABLET = 'TABLET',
@@ -23,7 +23,7 @@ export interface UserSessionDomainModel {
   sessionTokenHash: string;
   deviceId: string | null;
   deviceName: string | null;
-  deviceType: DeviceType | null;
+  deviceType: DomainDeviceType | null;
   os: string | null;
   browser: string | null;
   appVersion: string | null;
@@ -38,3 +38,5 @@ export interface UserSessionDomainModel {
   revokedAt: Date | null;
   revokeReason: RevokeReason | null;
 }
+
+export type CreateSessionParams = Omit<UserSessionDomainModel, 'id' | 'sessionTokenHash' | 'createdAt' | 'lastActivityAt' | 'expiresAt' | 'revokeReason' | 'revokedAt' | 'isActive'>;

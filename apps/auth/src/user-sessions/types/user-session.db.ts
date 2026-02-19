@@ -1,4 +1,4 @@
-import type { DeviceType, RevokeReason } from './user-session.domain.model';
+import type { DomainDeviceType, RevokeReason } from './user-session.domain.model';
 
 export type UserSessionDb = {
   id: string;
@@ -6,7 +6,7 @@ export type UserSessionDb = {
   sessionTokenHash: string;
   deviceId: string | null;
   deviceName: string | null;
-  deviceType: DeviceType | null;
+  deviceType: DomainDeviceType | null;
   os: string | null;
   browser: string | null;
   appVersion: string | null;

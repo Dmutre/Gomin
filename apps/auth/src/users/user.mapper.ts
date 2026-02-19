@@ -1,5 +1,5 @@
-import { UserDb } from "./types/user.db"
-import { UserDomainModel } from "./types/user.domain.model"
+import { UserDb } from './types/user.db'
+import { UserDomainModel } from './types/user.domain.model'
 
 export class UserMapper {
   static toDomainModel(user: UserDb): UserDomainModel {

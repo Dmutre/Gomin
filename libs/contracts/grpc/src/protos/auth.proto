@@ -22,20 +22,22 @@ enum DeviceType {
 }
 
 message DeviceInfo {
-  string device_id = 1;
-  string device_name = 2;
-  DeviceType device_type = 3;
+  string deviceId = 1;
+  string deviceName = 2;
+  DeviceType deviceType = 3;
   string os = 4;
   string browser = 5;
-  string app_version = 6;
+  string appVersion = 6;
+  string ipAddress = 7;
+  string userAgent = 8;
 }
 
 message E2EEKeys {
-  string public_key = 1;
-  string encrypted_private_key = 2;
-  string encryption_salt = 3;
-  string encryption_iv = 4;
-  string encryption_auth_tag = 5;
+  string publicKey = 1;
+  string encryptedPrivateKey = 2;
+  string encryptionSalt = 3;
+  string encryptionIv = 4;
+  string encryptionAuthTag = 5;
 }
 
 message UserProfile {
@@ -43,27 +45,27 @@ message UserProfile {
   string username = 2;
   string email = 3;
   string phone = 4;
-  string avatar_url = 5;
+  string avatarUrl = 5;
   string bio = 6;
-  bool email_verified = 7;
-  bool phone_verified = 8;
-  bool is_active = 9;
-  google.protobuf.Timestamp created_at = 10;
+  bool emailVerified = 7;
+  bool phoneVerified = 8;
+  bool isActive = 9;
+  google.protobuf.Timestamp createdAt = 10;
 }
 
 message SessionInfo {
-  string session_id = 1;
-  string device_name = 2;
-  DeviceType device_type = 3;
+  string sessionId = 1;
+  string deviceName = 2;
+  DeviceType deviceType = 3;
   string os = 4;
   string browser = 5;
-  string ip_address = 6;
+  string ipAddress = 6;
   string country = 7;
   string city = 8;
-  google.protobuf.Timestamp created_at = 9;
-  google.protobuf.Timestamp last_activity_at = 10;
-  google.protobuf.Timestamp expires_at = 11;
-  bool is_current = 12;
+  google.protobuf.Timestamp createdAt = 9;
+  google.protobuf.Timestamp lastActivityAt = 10;
+  google.protobuf.Timestamp expiresAt = 11;
+  bool isCurrent = 12;
 }
 
 message RegisterRequest {
@@ -71,33 +73,33 @@ message RegisterRequest {
   string email = 2;
   string password = 3;
   string phone = 4;
-  E2EEKeys e2ee_keys = 5;
-  DeviceInfo device_info = 6;
+  E2EEKeys e2eeKeys = 5;
+  DeviceInfo deviceInfo = 6;
 }
 
 message RegisterResponse {
   UserProfile user = 1;
-  string session_token = 2;
-  string session_id = 3;
-  google.protobuf.Timestamp expires_at = 4;
+  string sessionToken = 2;
+  string sessionId = 3;
+  google.protobuf.Timestamp expiresAt = 4;
 }
 
 message LoginRequest {
   string email = 1;
   string password = 2;
-  DeviceInfo device_info = 3;
+  DeviceInfo deviceInfo = 3;
 }
 
 message LoginResponse {
   UserProfile user = 1;
-  string session_token = 2;
-  string session_id = 3;
-  google.protobuf.Timestamp expires_at = 4;
-  E2EEKeys e2ee_keys = 5;
+  string sessionToken = 2;
+  string sessionId = 3;
+  google.protobuf.Timestamp expiresAt = 4;
+  E2EEKeys e2eeKeys = 5;
 }
 
 message LogoutRequest {
-  string session_token = 1;
+  string sessionId = 1;
 }
 
 message LogoutResponse {
@@ -105,7 +107,7 @@ message LogoutResponse {
 }
 
 message GetActiveSessionsRequest {
-  string session_token = 1;
+  string sessionId = 1;
 }
 
 message GetActiveSessionsResponse {
@@ -113,8 +115,8 @@ message GetActiveSessionsResponse {
 }
 
 message TerminateSessionRequest {
-  string session_token = 1;
-  string target_session_id = 2;
+  string sessionId = 1;
+  string targetSessionId = 2;
   string password = 3;
 }
 
@@ -123,10 +125,10 @@ message TerminateSessionResponse {
 }
 
 message TerminateAllOtherSessionsRequest {
-  string session_token = 1;
+  string currentSessionId = 1;
   string password = 2;
 }
 
 message TerminateAllOtherSessionsResponse {
-  int32 terminated_count = 1;
+  int32 terminatedCount = 1;
 }
