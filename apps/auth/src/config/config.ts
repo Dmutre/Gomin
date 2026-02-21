@@ -18,11 +18,6 @@ export const rabbitmqConfig = registerAs(CONFIG_NAMESPACES.RABBITMQ, () => ({
   url: process.env.RABBITMQ_URL,
 }));
 
-const configs = [
-  appConfig,
-  knexDatabaseConfig,
-  redisConfig,
-  rabbitmqConfig,
-];
+const configs = [appConfig, knexDatabaseConfig, redisConfig, rabbitmqConfig];
 
 export default configs;

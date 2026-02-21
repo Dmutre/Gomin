@@ -20,7 +20,7 @@ export enum RevokeReason {
 export interface UserSessionDomainModel {
   id: string;
   userId: string;
-  sessionTokenHash: string;
+  sessionToken: string;
   deviceId: string | null;
   deviceName: string | null;
   deviceType: DomainDeviceType | null;
@@ -39,4 +39,25 @@ export interface UserSessionDomainModel {
   revokeReason: RevokeReason | null;
 }
 
-export type CreateSessionParams = Omit<UserSessionDomainModel, 'id' | 'sessionTokenHash' | 'createdAt' | 'lastActivityAt' | 'expiresAt' | 'revokeReason' | 'revokedAt' | 'isActive'>;
+export type CreateSessionParams = Omit<
+  UserSessionDomainModel,
+  | 'id'
+  | 'sessionToken'
+  | 'createdAt'
+  | 'lastActivityAt'
+  | 'expiresAt'
+  | 'revokeReason'
+  | 'revokedAt'
+  | 'isActive'
+>;
+
+export type SessionDeviceInfoUpdate = Pick<
+  UserSessionDomainModel,
+  | 'deviceName'
+  | 'deviceType'
+  | 'os'
+  | 'browser'
+  | 'appVersion'
+  | 'ipAddress'
+  | 'userAgent'
+>;

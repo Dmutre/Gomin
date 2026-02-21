@@ -13,7 +13,11 @@ import { DATABASE_CONFIG_NAMESPACE } from './knex.config';
     KnexModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => {
-        const db = configService.get<{ url: string; poolMin: number; poolMax: number }>(DATABASE_CONFIG_NAMESPACE);
+        const db = configService.get<{
+          url: string;
+          poolMin: number;
+          poolMax: number;
+        }>(DATABASE_CONFIG_NAMESPACE);
         return {
           config: {
             client: 'pg',

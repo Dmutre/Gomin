@@ -1,7 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { Knex } from 'knex';
 import { InjectConnection } from 'nest-knexjs';
-import type { UserSessionDomainModel } from './types/user-session.domain.model';
+import type {
+  UserSessionDomainModel,
+  SessionDeviceInfoUpdate,
+} from './types/user-session.domain.model';
 import { RevokeReason } from './types/user-session.domain.model';
 import type { UserSessionDb } from './types/user-session.db';
 import { UserSessionMapper } from './user-session.mapper';
@@ -12,7 +15,9 @@ export class UserSessionRepository {
 
   constructor(@InjectConnection() private readonly knex: Knex) {}
 
-  async createSession(session: UserSessionDomainModel): Promise<UserSessionDomainModel> {
+  async insertSession(
+    session: UserSessionDomainModel,
+  ): Promise<UserSessionDomainModel> {
     const entity = UserSessionMapper.toEntity(session);
     const [sessionDb] = await this.knex<UserSessionDb>(this.tableName)
       .insert(entity)
@@ -20,7 +25,9 @@ export class UserSessionRepository {
     return UserSessionMapper.toDomainModel(sessionDb);
   }
 
-  async findByUserId(userId: string): Promise<UserSessionDomainModel[]> {
+  async getActiveSessionsByUserId(
+    userId: string,
+  ): Promise<UserSessionDomainModel[]> {
     const sessions = await this.knex<UserSessionDb>(this.tableName)
       .where({ userId, isActive: true })
       .where('expiresAt', '>', this.knex.fn.now())
@@ -28,25 +35,75 @@ export class UserSessionRepository {
     return sessions.map(UserSessionMapper.toDomainModel);
   }
 
-  async findById(sessionId: string): Promise<UserSessionDomainModel | null> {
+  async getActiveSessionByToken(
+    sessionToken: string,
+  ): Promise<UserSessionDomainModel | null> {
     const session = await this.knex<UserSessionDb>(this.tableName)
-      .where({ id: sessionId, isActive: true })
+      .where({ sessionToken, isActive: true })
       .where('expiresAt', '>', this.knex.fn.now())
       .first();
     return session ? UserSessionMapper.toDomainModel(session) : null;
   }
 
-  async revokeSession(sessionId: string, reason: RevokeReason): Promise<void> {
-    await this.knex<UserSessionDb>(this.tableName)
-      .where({ id: sessionId })
-      .update({ isActive: false, revokedAt: this.knex.fn.now(), revokeReason: reason });
+  async getActiveSessionByUserIdAndDeviceId(
+    userId: string,
+    deviceId: string,
+  ): Promise<UserSessionDomainModel | null> {
+    const session = await this.knex<UserSessionDb>(this.tableName)
+      .where({ userId, deviceId, isActive: true })
+      .where('expiresAt', '>', this.knex.fn.now())
+      .first();
+    return session ? UserSessionMapper.toDomainModel(session) : null;
   }
 
-  async revokeAllSessionsByUserId(userId: string, excludeSessionId: string, reason: RevokeReason): Promise<number> {
+  async updateSessionDeviceInfoAndExtendValidity(
+    sessionToken: string,
+    deviceInfo: SessionDeviceInfoUpdate,
+    newExpiresAt: Date,
+  ): Promise<UserSessionDomainModel | null> {
+    const [updated] = await this.knex<UserSessionDb>(this.tableName)
+      .where({ sessionToken, isActive: true })
+      .update({
+        deviceName: deviceInfo.deviceName,
+        deviceType: deviceInfo.deviceType,
+        os: deviceInfo.os,
+        browser: deviceInfo.browser,
+        appVersion: deviceInfo.appVersion,
+        ipAddress: deviceInfo.ipAddress,
+        userAgent: deviceInfo.userAgent,
+        lastActivityAt: this.knex.fn.now(),
+        expiresAt: newExpiresAt,
+      })
+      .returning('*');
+    return updated ? UserSessionMapper.toDomainModel(updated) : null;
+  }
+
+  async revokeSessionByToken(
+    sessionToken: string,
+    reason: RevokeReason,
+  ): Promise<void> {
+    await this.knex<UserSessionDb>(this.tableName)
+      .where({ sessionToken })
+      .update({
+        isActive: false,
+        revokedAt: this.knex.fn.now(),
+        revokeReason: reason,
+      });
+  }
+
+  async revokeOtherSessionsByToken(
+    userId: string,
+    excludeSessionToken: string,
+    reason: RevokeReason,
+  ): Promise<number> {
     const result = await this.knex<UserSessionDb>(this.tableName)
       .where({ userId, isActive: true })
-      .whereNot({ id: excludeSessionId })
-      .update({ isActive: false, revokedAt: this.knex.fn.now(), revokeReason: reason });
+      .whereNot({ sessionToken: excludeSessionToken })
+      .update({
+        isActive: false,
+        revokedAt: this.knex.fn.now(),
+        revokeReason: reason,
+      });
     return typeof result === 'number' ? result : 0;
   }
 }

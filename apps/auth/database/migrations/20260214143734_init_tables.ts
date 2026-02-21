@@ -9,38 +9,38 @@ export async function up(knex: Knex): Promise<void> {
   await knex.schema.createTable('Users', (table) => {
     // Primary key
     table.uuid('id').primary().defaultTo(knex.raw('uuid_generate_v4()'));
-    
+
     // Basic info
     table.string('username', 100).notNullable().unique();
     table.string('email', 255).notNullable().unique();
     table.string('phone', 50).nullable().unique();
     table.string('passwordHash', 255).notNullable();
-    
+
     // E2EE keys
     table.text('publicKey').nullable();
     table.text('encryptedPrivateKey').nullable();
     table.string('encryptionSalt', 255).nullable();
     table.string('encryptionIv', 255).nullable();
     table.string('encryptionAuthTag', 255).nullable();
-    
+
     // Profile
     table.string('avatarUrl', 500).nullable();
     table.text('bio').nullable();
-    
+
     // Verification
     table.boolean('emailVerified').defaultTo(false);
     table.boolean('phoneVerified').defaultTo(false);
-    
+
     // Account status
     table.boolean('isActive').defaultTo(true);
     table.boolean('isBanned').defaultTo(false);
     table.timestamp('bannedAt').nullable();
     table.text('banReason').nullable();
-    
+
     // Timestamps
     table.timestamp('createdAt').defaultTo(knex.fn.now());
     table.timestamp('updatedAt').defaultTo(knex.fn.now());
-    
+
     // Indexes
     table.index('email');
     table.index('username');
@@ -54,15 +54,18 @@ export async function up(knex: Knex): Promise<void> {
   await knex.schema.createTable('UserSessions', (table) => {
     // Primary key
     table.uuid('id').primary().defaultTo(knex.raw('uuid_generate_v4()'));
-    
+
     // Foreign key
-    table.uuid('userId').notNullable()
-      .references('id').inTable('Users')
+    table
+      .uuid('userId')
+      .notNullable()
+      .references('id')
+      .inTable('Users')
       .onDelete('CASCADE');
-    
+
     // Session token
-    table.string('sessionTokenHash', 255).notNullable().unique();
-    
+    table.string('sessionToken', 255).notNullable().unique();
+
     // Device info
     table.string('deviceId', 255).nullable();
     table.string('deviceName', 255).nullable();
@@ -70,36 +73,38 @@ export async function up(knex: Knex): Promise<void> {
     table.string('os', 100).nullable();
     table.string('browser', 100).nullable();
     table.string('appVersion', 50).nullable();
-    
+
     // Network info
     table.specificType('ipAddress', 'INET').notNullable();
     table.string('country', 2).nullable();
     table.string('city', 100).nullable();
     table.text('userAgent').nullable();
-    
+
     // Timestamps
     table.timestamp('createdAt').defaultTo(knex.fn.now());
     table.timestamp('lastActivityAt').defaultTo(knex.fn.now());
     table.timestamp('expiresAt').notNullable();
-    
+
     // Status
     table.boolean('isActive').defaultTo(true);
     table.timestamp('revokedAt').nullable();
-    table.enum('revokeReason', [
-      'USER_LOGOUT',
-      'USER_TERMINATED',
-      'USER_TERMINATED_ALL',
-      'EXPIRED',
-      'INACTIVITY',
-      'SECURITY_BREACH',
-      'ADMIN_ACTION',
-      'TOKEN_REUSE_DETECTED',
-      'SESSION_LIMIT_REACHED',
-    ]).nullable();
-    
+    table
+      .enum('revokeReason', [
+        'USER_LOGOUT',
+        'USER_TERMINATED',
+        'USER_TERMINATED_ALL',
+        'EXPIRED',
+        'INACTIVITY',
+        'SECURITY_BREACH',
+        'ADMIN_ACTION',
+        'TOKEN_REUSE_DETECTED',
+        'SESSION_LIMIT_REACHED',
+      ])
+      .nullable();
+
     // Indexes
     table.index('userId');
-    table.index('sessionTokenHash');
+    table.index('sessionToken');
     table.index(['userId', 'isActive']);
     table.index('deviceId');
     table.index('expiresAt');

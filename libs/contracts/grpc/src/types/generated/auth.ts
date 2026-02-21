@@ -4,8 +4,6 @@
 //   protoc               unknown
 // source: auth.proto
 
- 
-
 export enum DeviceType {
   DEVICE_TYPE_UNSPECIFIED = 0,
   DEVICE_TYPE_MOBILE = 1,
@@ -22,6 +20,8 @@ export interface DeviceInfo {
   os: string;
   browser: string;
   appVersion: string;
+  ipAddress: string;
+  userAgent: string;
 }
 
 export interface E2EEKeys {
@@ -46,7 +46,7 @@ export interface UserProfile {
 }
 
 export interface SessionInfo {
-  sessionId: string;
+  sessionToken: string;
   deviceName: string;
   deviceType: DeviceType;
   os: string;
@@ -72,7 +72,6 @@ export interface RegisterRequest {
 export interface RegisterResponse {
   user?: UserProfile | undefined;
   sessionToken: string;
-  sessionId: string;
   expiresAt?: Date | undefined;
 }
 
@@ -85,7 +84,6 @@ export interface LoginRequest {
 export interface LoginResponse {
   user?: UserProfile | undefined;
   sessionToken: string;
-  sessionId: string;
   expiresAt?: Date | undefined;
   e2eeKeys?: E2EEKeys | undefined;
 }
@@ -108,7 +106,7 @@ export interface GetActiveSessionsResponse {
 
 export interface TerminateSessionRequest {
   sessionToken: string;
-  targetSessionId: string;
+  targetSessionToken: string;
   password: string;
 }
 

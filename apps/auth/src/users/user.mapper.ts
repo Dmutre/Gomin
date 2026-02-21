@@ -1,5 +1,5 @@
-import { UserDb } from './types/user.db'
-import { UserDomainModel } from './types/user.domain.model'
+import { UserDb } from './types/user.db';
+import { UserDomainModel } from './types/user.domain.model';
 
 export class UserMapper {
   static toDomainModel(user: UserDb): UserDomainModel {
@@ -24,7 +24,7 @@ export class UserMapper {
       banReason: user.banReason,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
-    }
+    };
   }
 
   static toEntity(user: UserDomainModel): UserDb {
@@ -49,6 +49,6 @@ export class UserMapper {
       banReason: user.banReason,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
-    }
+    };
   }
 }

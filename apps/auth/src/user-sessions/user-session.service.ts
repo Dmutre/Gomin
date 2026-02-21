@@ -1,56 +1,97 @@
 import { Injectable } from '@nestjs/common';
 import { UserSessionRepository } from './user-session.repository';
-import type { CreateSessionParams, UserSessionDomainModel } from './types/user-session.domain.model';
+import type {
+  CreateSessionParams,
+  SessionDeviceInfoUpdate,
+  UserSessionDomainModel,
+} from './types/user-session.domain.model';
 import { RevokeReason } from './types/user-session.domain.model';
-import { createHash, randomBytes, randomUUID } from 'crypto';
+import { randomBytes, randomUUID } from 'crypto';
 
 @Injectable()
 export class UserSessionService {
-  private readonly sessionExpirationTime = 30 * 24 * 60 * 60 * 1000; // 60 days
+  private readonly sessionExpirationMs = 30 * 24 * 60 * 60 * 1000; // 30 days
 
   constructor(private readonly userSessionRepository: UserSessionRepository) {}
 
-  async createSession(session: CreateSessionParams): Promise<{ session: UserSessionDomainModel, token: string }> {
-    const token = randomBytes(32).toString('hex');
-    const sessionTokenHash = await this.hashToken(token);
+  async getOrCreateSessionForDevice(
+    params: CreateSessionParams,
+  ): Promise<UserSessionDomainModel> {
+    const deviceId = params.deviceId?.trim() || null;
+    if (deviceId) {
+      const existingSession =
+        await this.userSessionRepository.getActiveSessionByUserIdAndDeviceId(
+          params.userId,
+          deviceId,
+        );
+      if (existingSession) {
+        const deviceInfo: SessionDeviceInfoUpdate = {
+          deviceName: params.deviceName,
+          deviceType: params.deviceType,
+          os: params.os,
+          browser: params.browser,
+          appVersion: params.appVersion,
+          ipAddress: params.ipAddress,
+          userAgent: params.userAgent,
+        };
+        const newExpiresAt = new Date(Date.now() + this.sessionExpirationMs);
+        const updated =
+          await this.userSessionRepository.updateSessionDeviceInfoAndExtendValidity(
+            existingSession.sessionToken,
+            deviceInfo,
+            newExpiresAt,
+          );
+        if (updated) return updated;
+      }
+    }
+    return this.createNewSession(params);
+  }
+
+  async createNewSession(
+    params: CreateSessionParams,
+  ): Promise<UserSessionDomainModel> {
     const sessionModel: UserSessionDomainModel = {
-      ...session,
+      ...params,
       id: randomUUID(),
-      sessionTokenHash,
+      sessionToken: randomBytes(32).toString('hex'),
       isActive: true,
       createdAt: new Date(),
       lastActivityAt: new Date(),
-      expiresAt: new Date(Date.now() + this.sessionExpirationTime),
+      expiresAt: new Date(Date.now() + this.sessionExpirationMs),
       revokedAt: null,
       revokeReason: null,
     };
-    
-    const createdSession = await this.userSessionRepository.createSession(sessionModel);
-
-    return { session: createdSession, token };
+    return this.userSessionRepository.insertSession(sessionModel);
   }
 
-  private async hashToken(token: string): Promise<string> {
-    return createHash('sha256').update(token).digest('hex');
+  async getActiveSessionByToken(
+    sessionToken: string,
+  ): Promise<UserSessionDomainModel | null> {
+    return this.userSessionRepository.getActiveSessionByToken(sessionToken);
   }
 
-  async findById(sessionId: string): Promise<UserSessionDomainModel | null> {
-    return this.userSessionRepository.findById(sessionId);
-  }
-
-  async findByUserId(userId: string): Promise<UserSessionDomainModel[]> {
-    return this.userSessionRepository.findByUserId(userId);
-  }
-
-  async revokeSession(sessionId: string, reason: RevokeReason = RevokeReason.USER_TERMINATED): Promise<void> {
-    return this.userSessionRepository.revokeSession(sessionId, reason);
-  }
-
-  async revokeAllOtherSessions(
+  async getActiveSessionsByUserId(
     userId: string,
-    excludeSessionId: string,
+  ): Promise<UserSessionDomainModel[]> {
+    return this.userSessionRepository.getActiveSessionsByUserId(userId);
+  }
+
+  async revokeSessionByToken(
+    sessionToken: string,
+    reason: RevokeReason = RevokeReason.USER_TERMINATED,
+  ): Promise<void> {
+    return this.userSessionRepository.revokeSessionByToken(sessionToken, reason);
+  }
+
+  async revokeOtherSessionsByToken(
+    userId: string,
+    excludeSessionToken: string,
     reason: RevokeReason = RevokeReason.USER_TERMINATED_ALL,
   ): Promise<number> {
-    return this.userSessionRepository.revokeAllSessionsByUserId(userId, excludeSessionId, reason);
+    return this.userSessionRepository.revokeOtherSessionsByToken(
+      userId,
+      excludeSessionToken,
+      reason,
+    );
   }
 }

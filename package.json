@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "license": "MIT",
   "scripts": {
-    "lint:fix": "pnpm eslint --fix ./apps ./libs"
+    "lint:fix": "pnpm prettier --write ./apps ./libs"
   },
   "private": true,
   "dependencies": {

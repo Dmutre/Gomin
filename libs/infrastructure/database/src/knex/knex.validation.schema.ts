@@ -12,19 +12,10 @@ import * as Joi from 'joi';
  * ```
  */
 export const knexDatabaseValidationSchema = Joi.object({
-  DATABASE_URL: Joi.string()
-    .uri()
-    .required()
-    .messages({
-      'string.uri': 'DATABASE_URL must be a valid PostgreSQL connection string',
-      'any.required': 'DATABASE_URL is required',
-    }),
-  DB_POOL_MIN: Joi.number()
-    .integer()
-    .min(1)
-    .default(2),
-  DB_POOL_MAX: Joi.number()
-    .integer()
-    .min(1)
-    .default(10),
+  DATABASE_URL: Joi.string().uri().required().messages({
+    'string.uri': 'DATABASE_URL must be a valid PostgreSQL connection string',
+    'any.required': 'DATABASE_URL is required',
+  }),
+  DB_POOL_MIN: Joi.number().integer().min(1).default(2),
+  DB_POOL_MAX: Joi.number().integer().min(1).default(10),
 }).required();

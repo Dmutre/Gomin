@@ -54,7 +54,7 @@ message UserProfile {
 }
 
 message SessionInfo {
-  string sessionId = 1;
+  string sessionToken = 1;
   string deviceName = 2;
   DeviceType deviceType = 3;
   string os = 4;
@@ -80,8 +80,7 @@ message RegisterRequest {
 message RegisterResponse {
   UserProfile user = 1;
   string sessionToken = 2;
-  string sessionId = 3;
-  google.protobuf.Timestamp expiresAt = 4;
+  google.protobuf.Timestamp expiresAt = 3;
 }
 
 message LoginRequest {
@@ -93,13 +92,12 @@ message LoginRequest {
 message LoginResponse {
   UserProfile user = 1;
   string sessionToken = 2;
-  string sessionId = 3;
-  google.protobuf.Timestamp expiresAt = 4;
-  E2EEKeys e2eeKeys = 5;
+  google.protobuf.Timestamp expiresAt = 3;
+  E2EEKeys e2eeKeys = 4;
 }
 
 message LogoutRequest {
-  string sessionId = 1;
+  string sessionToken = 1;
 }
 
 message LogoutResponse {
@@ -107,7 +105,7 @@ message LogoutResponse {
 }
 
 message GetActiveSessionsRequest {
-  string sessionId = 1;
+  string sessionToken = 1;
 }
 
 message GetActiveSessionsResponse {
@@ -115,8 +113,8 @@ message GetActiveSessionsResponse {
 }
 
 message TerminateSessionRequest {
-  string sessionId = 1;
-  string targetSessionId = 2;
+  string sessionToken = 1;
+  string targetSessionToken = 2;
   string password = 3;
 }
 
@@ -125,7 +123,7 @@ message TerminateSessionResponse {
 }
 
 message TerminateAllOtherSessionsRequest {
-  string currentSessionId = 1;
+  string sessionToken = 1;
   string password = 2;
 }
 

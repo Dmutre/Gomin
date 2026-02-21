@@ -9,21 +9,11 @@ export const validationSchema = Joi.object({
     .default('development'),
 
   // Redis
-  REDIS_HOST: Joi.string()
-    .hostname()
-    .default('localhost'),
-  REDIS_PORT: Joi.number()
-    .port()
-    .default(6379),
-  REDIS_PASSWORD: Joi.string()
-    .optional()
-    .allow(''),
+  REDIS_HOST: Joi.string().hostname().default('localhost'),
+  REDIS_PORT: Joi.number().port().default(6379),
+  REDIS_PASSWORD: Joi.string().optional().allow(''),
 
   // gRPC
-  GRPC_PORT: Joi.number()
-    .port()
-    .default(5000),
-  HOST: Joi.string()
-    .hostname()
-    .default('localhost'),
+  GRPC_PORT: Joi.number().port().default(5000),
+  HOST: Joi.string().hostname().default('localhost'),
 }).concat(knexDatabaseValidationSchema);

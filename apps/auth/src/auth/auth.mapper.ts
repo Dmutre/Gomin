@@ -1,6 +1,9 @@
 import { UserProfile, SessionInfo, DeviceType } from '@gomin/grpc';
 import type { UserDomainModel } from '../users/types/user.domain.model';
-import { DomainDeviceType, UserSessionDomainModel } from '../user-sessions/types/user-session.domain.model';
+import {
+  DomainDeviceType,
+  UserSessionDomainModel,
+} from '../user-sessions/types/user-session.domain.model';
 
 export function toUserProfile(user: UserDomainModel): UserProfile {
   return {
@@ -17,7 +20,10 @@ export function toUserProfile(user: UserDomainModel): UserProfile {
   };
 }
 
-function mapDeviceDomainToProtoDeviceType(deviceType: DomainDeviceType): DeviceType {
+function mapDeviceDomainToProtoDeviceType(
+  deviceType: DomainDeviceType | null,
+): DeviceType {
+  if (!deviceType) return DeviceType.DEVICE_TYPE_UNSPECIFIED;
   switch (deviceType) {
     case DomainDeviceType.MOBILE:
       return DeviceType.DEVICE_TYPE_MOBILE;
@@ -25,6 +31,10 @@ function mapDeviceDomainToProtoDeviceType(deviceType: DomainDeviceType): DeviceT
       return DeviceType.DEVICE_TYPE_DESKTOP;
     case DomainDeviceType.TABLET:
       return DeviceType.DEVICE_TYPE_TABLET;
+    case DomainDeviceType.WEB:
+      return DeviceType.DEVICE_TYPE_WEB;
+    default:
+      return DeviceType.DEVICE_TYPE_UNSPECIFIED;
   }
 }
 
@@ -33,7 +43,7 @@ export function toSessionInfo(
   isCurrent: boolean,
 ): SessionInfo {
   return {
-    sessionId: session.id,
+    sessionToken: session.sessionToken,
     deviceName: session.deviceName ?? '',
     deviceType: mapDeviceDomainToProtoDeviceType(session.deviceType),
     os: session.os ?? '',

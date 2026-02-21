@@ -33,7 +33,9 @@ export class UserRepository {
 
   async createUser(user: UserDomainModel): Promise<UserDomainModel> {
     const userEntity = UserMapper.toEntity(user);
-    const [userDb] = await this.knex<UserDb>(this.tableName).insert(userEntity).returning('*');
+    const [userDb] = await this.knex<UserDb>(this.tableName)
+      .insert(userEntity)
+      .returning('*');
     return UserMapper.toDomainModel(userDb);
   }
 }

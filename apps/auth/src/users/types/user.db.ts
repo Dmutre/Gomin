@@ -19,4 +19,4 @@ export type UserDb = {
   banReason: string | null;
   createdAt: Date;
   updatedAt: Date;
-}
+};

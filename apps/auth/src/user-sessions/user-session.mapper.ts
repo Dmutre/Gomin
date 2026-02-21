@@ -6,7 +6,7 @@ export class UserSessionMapper {
     return {
       id: session.id,
       userId: session.userId,
-      sessionTokenHash: session.sessionTokenHash,
+      sessionToken: session.sessionToken,
       deviceId: session.deviceId,
       deviceName: session.deviceName,
       deviceType: session.deviceType,
@@ -30,7 +30,7 @@ export class UserSessionMapper {
     return {
       id: session.id,
       userId: session.userId,
-      sessionTokenHash: session.sessionTokenHash,
+      sessionToken: session.sessionToken,
       deviceId: session.deviceId,
       deviceName: session.deviceName,
       deviceType: session.deviceType,

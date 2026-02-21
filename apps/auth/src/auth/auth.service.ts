@@ -22,7 +22,7 @@ import type {
   TerminateAllOtherSessionsDto,
   DeviceInfoDto,
 } from './dto';
-import { UserDomainModel } from '../users/types/user.domain.model';
+import type { UserDomainModel } from '../users/types/user.domain.model';
 
 // TODO: Add caching so service would works more efficiently
 @Injectable()
@@ -32,18 +32,15 @@ export class AuthService {
     private readonly userSessionService: UserSessionService,
   ) {}
 
-  // TODO: Add mock for email confirmation
-  async register(
-    data: RegisterDto,
-  ): Promise<RegisterResponse> {
+  async register(data: RegisterDto): Promise<RegisterResponse> {
     const user = await this.registerUser(data);
-    const session = await this.createSession(user.id, data.deviceInfo);
-    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    const session = await this.userSessionService.createNewSession(
+      this.toCreateSessionParams(user.id, data.deviceInfo),
+    );
     return {
       user: toUserProfile(user),
-      sessionToken: session.token,
-      sessionId: session.id,
-      expiresAt,
+      sessionToken: session.sessionToken,
+      expiresAt: session.expiresAt,
     };
   }
 
@@ -78,9 +75,7 @@ export class AuthService {
     });
   }
 
-  async login(
-    data: LoginDto,
-  ): Promise<LoginResponse> {
+  async login(data: LoginDto): Promise<LoginResponse> {
     const user = await this.userService.findByEmail(data.email);
     if (!user) {
       throw new UnauthorizedException('Invalid credentials');
@@ -89,13 +84,15 @@ export class AuthService {
     if (!isValid) {
       throw new UnauthorizedException('Invalid credentials');
     }
-    const session = await this.createSession(user.id, data.deviceInfo);
-    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    const sessionParams = data.deviceInfo
+      ? this.toCreateSessionParams(user.id, data.deviceInfo)
+      : this.toCreateSessionParamsWithoutDevice(user.id);
+    const session =
+      await this.userSessionService.getOrCreateSessionForDevice(sessionParams);
     return {
       user: toUserProfile(user),
-      sessionToken: session.token,
-      sessionId: session.id,
-      expiresAt,
+      sessionToken: session.sessionToken,
+      expiresAt: session.expiresAt,
       e2eeKeys: user.publicKey
         ? {
             publicKey: user.publicKey,
@@ -109,28 +106,42 @@ export class AuthService {
   }
 
   async logout(data: LogoutDto): Promise<LogoutResponse> {
-    const session = await this.userSessionService.findById(data.sessionId);
+    const session = await this.userSessionService.getActiveSessionByToken(
+      data.sessionToken,
+    );
     if (session) {
-      await this.userSessionService.revokeSession(session.id, RevokeReason.USER_LOGOUT);
+      await this.userSessionService.revokeSessionByToken(
+        data.sessionToken,
+        RevokeReason.USER_LOGOUT,
+      );
     }
     return { success: true };
   }
 
-  async getActiveSessions(data: GetActiveSessionsDto): Promise<GetActiveSessionsResponse> {
-    const session = await this.userSessionService.findById(data.sessionId);
+  async getActiveSessions(
+    data: GetActiveSessionsDto,
+  ): Promise<GetActiveSessionsResponse> {
+    const session = await this.userSessionService.getActiveSessionByToken(
+      data.sessionToken,
+    );
     if (!session) {
       throw new UnauthorizedException('Invalid session');
     }
-    const sessions = await this.userSessionService.findByUserId(session.userId);
+    const sessions =
+      await this.userSessionService.getActiveSessionsByUserId(session.userId);
     return {
       sessions: sessions.map((s) =>
-        toSessionInfo(s, s.id === session.id),
+        toSessionInfo(s, s.sessionToken === session.sessionToken),
       ),
     };
   }
 
-  async terminateSession(data: TerminateSessionDto): Promise<TerminateSessionResponse> {
-    const session = await this.userSessionService.findById(data.sessionId);
+  async terminateSession(
+    data: TerminateSessionDto,
+  ): Promise<TerminateSessionResponse> {
+    const session = await this.userSessionService.getActiveSessionByToken(
+      data.sessionToken,
+    );
     if (!session) {
       throw new UnauthorizedException('Invalid session');
     }
@@ -142,19 +153,27 @@ export class AuthService {
     if (!isValid) {
       throw new UnauthorizedException('Invalid password');
     }
-    const sessions = await this.userSessionService.findByUserId(session.userId);
-    const targetSession = sessions.find((s) => s.id === data.targetSessionId);
+    const sessions =
+      await this.userSessionService.getActiveSessionsByUserId(session.userId);
+    const targetSession = sessions.find(
+      (s) => s.sessionToken === data.targetSessionToken,
+    );
     if (!targetSession) {
       throw new UnauthorizedException('Session not found');
     }
-    await this.userSessionService.revokeSession(data.targetSessionId, RevokeReason.USER_TERMINATED);
+    await this.userSessionService.revokeSessionByToken(
+      data.targetSessionToken,
+      RevokeReason.USER_TERMINATED,
+    );
     return { success: true };
   }
 
   async terminateAllOtherSessions(
     data: TerminateAllOtherSessionsDto,
   ): Promise<TerminateAllOtherSessionsResponse> {
-    const session = await this.userSessionService.findById(data.currentSessionId);
+    const session = await this.userSessionService.getActiveSessionByToken(
+      data.sessionToken,
+    );
     if (!session) {
       throw new UnauthorizedException('Invalid session');
     }
@@ -166,19 +185,19 @@ export class AuthService {
     if (!isValid) {
       throw new UnauthorizedException('Invalid password');
     }
-    const count = await this.userSessionService.revokeAllOtherSessions(
+    const count = await this.userSessionService.revokeOtherSessionsByToken(
       session.userId,
-      session.id,
+      session.sessionToken,
       RevokeReason.USER_TERMINATED_ALL,
     );
     return { terminatedCount: count };
   }
 
-  private async createSession(
+  private toCreateSessionParams(
     userId: string,
     deviceInfo: DeviceInfoDto,
-  ): Promise<{ id: string; token: string }> {
-    const sessionCreateParams: CreateSessionParams = {
+  ): CreateSessionParams {
+    return {
       userId,
       deviceId: deviceInfo.deviceId,
       deviceName: deviceInfo.deviceName,
@@ -191,8 +210,22 @@ export class AuthService {
       city: null,
       userAgent: deviceInfo.userAgent,
     };
-    const { session, token } =await this.userSessionService.createSession(sessionCreateParams);
-    return { id: session.id, token };
+  }
+
+  private toCreateSessionParamsWithoutDevice(userId: string): CreateSessionParams {
+    return {
+      userId,
+      deviceId: null,
+      deviceName: null,
+      deviceType: null,
+      os: null,
+      browser: null,
+      appVersion: null,
+      ipAddress: '0.0.0.0',
+      country: null,
+      city: null,
+      userAgent: null,
+    };
   }
 
   private hashPassword(password: string): string {

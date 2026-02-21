@@ -3,11 +3,11 @@ import { IsNotEmpty, IsString, MinLength } from 'class-validator';
 export class TerminateSessionDto {
   @IsString()
   @IsNotEmpty()
-  sessionId: string;
+  sessionToken: string;
 
   @IsString()
   @IsNotEmpty()
-  targetSessionId: string;
+  targetSessionToken: string;
 
   @IsString()
   @IsNotEmpty()

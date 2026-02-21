@@ -23,16 +23,12 @@ export class AuthGrpcController {
   constructor(private readonly authService: AuthService) {}
 
   @GrpcMethod('AuthService', 'Register')
-  async register(
-    data: RegisterDto,
-  ): Promise<RegisterResponse> {
+  async register(data: RegisterDto): Promise<RegisterResponse> {
     return this.authService.register(data);
   }
 
   @GrpcMethod('AuthService', 'Login')
-  async login(
-    data: LoginDto,
-  ): Promise<LoginResponse> {
+  async login(data: LoginDto): Promise<LoginResponse> {
     return this.authService.login(data);
   }
 
@@ -42,12 +38,16 @@ export class AuthGrpcController {
   }
 
   @GrpcMethod('AuthService', 'GetActiveSessions')
-  async getActiveSessions(data: GetActiveSessionsDto): Promise<GetActiveSessionsResponse> {
+  async getActiveSessions(
+    data: GetActiveSessionsDto,
+  ): Promise<GetActiveSessionsResponse> {
     return this.authService.getActiveSessions(data);
   }
 
   @GrpcMethod('AuthService', 'TerminateSession')
-  async terminateSession(data: TerminateSessionDto): Promise<TerminateSessionResponse> {
+  async terminateSession(
+    data: TerminateSessionDto,
+  ): Promise<TerminateSessionResponse> {
     return this.authService.terminateSession(data);
   }
 
