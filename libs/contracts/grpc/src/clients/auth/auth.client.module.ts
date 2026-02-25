@@ -1,8 +1,8 @@
 import { Module } from '@nestjs/common';
-import { AuthGrpcClient } from './auth.grpc.client';
+import { UserAuthGrpcClient } from './user-auth.grpc.client';
 
 @Module({
-  providers: [AuthGrpcClient],
-  exports: [AuthGrpcClient],
+  providers: [UserAuthGrpcClient],
+  exports: [UserAuthGrpcClient],
 })
-export class AuthClientModule {}
+export class UserAuthClientModule {}

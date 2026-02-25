@@ -12,7 +12,7 @@ import type {
   TerminateSessionResponse,
   TerminateAllOtherSessionsResponse,
 } from '@gomin/grpc';
-import { toUserProfile, toSessionInfo } from './auth.mapper';
+import { toUserProfile, toSessionInfo } from './user-auth.mapper';
 import type {
   RegisterDto,
   LoginDto,
@@ -26,7 +26,7 @@ import type { UserDomainModel } from '../users/types/user.domain.model';
 
 // TODO: Add caching so service would works more efficiently
 @Injectable()
-export class AuthService {
+export class UserAuthService {
   constructor(
     private readonly userService: UserService,
     private readonly userSessionService: UserSessionService,
@@ -127,8 +127,9 @@ export class AuthService {
     if (!session) {
       throw new UnauthorizedException('Invalid session');
     }
-    const sessions =
-      await this.userSessionService.getActiveSessionsByUserId(session.userId);
+    const sessions = await this.userSessionService.getActiveSessionsByUserId(
+      session.userId,
+    );
     return {
       sessions: sessions.map((s) =>
         toSessionInfo(s, s.sessionToken === session.sessionToken),
@@ -153,8 +154,9 @@ export class AuthService {
     if (!isValid) {
       throw new UnauthorizedException('Invalid password');
     }
-    const sessions =
-      await this.userSessionService.getActiveSessionsByUserId(session.userId);
+    const sessions = await this.userSessionService.getActiveSessionsByUserId(
+      session.userId,
+    );
     const targetSession = sessions.find(
       (s) => s.sessionToken === data.targetSessionToken,
     );
@@ -212,7 +214,9 @@ export class AuthService {
     };
   }
 
-  private toCreateSessionParamsWithoutDevice(userId: string): CreateSessionParams {
+  private toCreateSessionParamsWithoutDevice(
+    userId: string,
+  ): CreateSessionParams {
     return {
       userId,
       deviceId: null,

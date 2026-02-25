@@ -18,6 +18,27 @@ export const rabbitmqConfig = registerAs(CONFIG_NAMESPACES.RABBITMQ, () => ({
   url: process.env.RABBITMQ_URL,
 }));
 
-const configs = [appConfig, knexDatabaseConfig, redisConfig, rabbitmqConfig];
+export interface JwtSigningKeyConfig {
+  keyId: string;
+  privateKey: string;
+  publicKey: string;
+}
+
+export const jwtConfig = registerAs(CONFIG_NAMESPACES.JWT, () => {
+  const raw = process.env.JWT_SIGNING_KEYS || '[]';
+  const keys = JSON.parse(raw) as JwtSigningKeyConfig[];
+  return {
+    signingKeys: keys,
+    activeKey: keys.length > 0 ? keys[keys.length - 1] : null,
+  };
+});
+
+const configs = [
+  appConfig,
+  knexDatabaseConfig,
+  redisConfig,
+  rabbitmqConfig,
+  jwtConfig,
+];
 
 export default configs;

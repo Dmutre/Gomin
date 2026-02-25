@@ -1,0 +1,12 @@
+import { Module } from '@nestjs/common';
+import { UserAuthGrpcController } from './user-auth.grpc.controller';
+import { UserAuthService } from './user-auth.service';
+import { UserModule } from '../users/user.module';
+import { UserSessionModule } from '../user-sessions/user-session.module';
+
+@Module({
+  imports: [UserModule, UserSessionModule],
+  controllers: [UserAuthGrpcController],
+  providers: [UserAuthService],
+})
+export class UserAuthModule {}

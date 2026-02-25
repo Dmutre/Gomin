@@ -76,7 +76,7 @@
 ### Users Module
 - [x] Implement UsersModule with repository and service
 - [x] Add user CRUD operations with E2EE key storage
-- [x] Create gRPC controller endpoints (via AuthModule)
+- [x] Create gRPC controller endpoints (via UserAuthModule)
 
 ### Sessions Module
 - [x] Implement SessionsModule (UserSessionModule) with PostgreSQL storage
@@ -91,7 +91,7 @@
 - [ ] Create cleanup cron job for stale presence
 
 ### Auth Module (Public API)
-- [x] Implement AuthModule with registration and login
+- [x] Implement UserAuthModule with registration and login
 - [x] Add E2EE keys validation (storage)
 - [x] Create session management endpoints (terminate, terminate all with re-auth)
 - [ ] Add password management (verify, change)
@@ -390,6 +390,7 @@
 - [ ] Set up monitoring alerts
 - [ ] Configure automated backups
 - [ ] Prepare rollback plan and incident response
+- [ ] Write README files for every app and lib to explain the purpose of this part
 
 ### Launch
 - [ ] Deploy to production

@@ -1,0 +1,29 @@
+syntax = "proto3";
+
+package service_identity.v1;
+
+service ServiceIdentityService {
+  rpc AuthenticateServiceIdentity(AuthenticateServiceIdentityRequest) returns (AuthenticateServiceIdentityResponse);
+  rpc GetPublicKeys(GetPublicKeysRequest) returns (GetPublicKeysResponse);
+}
+
+message AuthenticateServiceIdentityRequest {
+  string serviceName = 1;
+  string serviceSecret = 2;
+};
+
+message AuthenticateServiceIdentityResponse {
+  string accessToken = 1;
+  int64 expiresAt = 2;
+}
+
+message GetPublicKeysRequest {}
+
+message GetPublicKeysResponse {
+  repeated JwtPublicKey publicKeys = 1;
+}
+
+message JwtPublicKey {
+  string keyId = 1;
+  string publicKey = 2;
+}

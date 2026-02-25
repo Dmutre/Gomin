@@ -1,6 +1,6 @@
 import { Controller } from '@nestjs/common';
 import { GrpcMethod } from '@nestjs/microservices';
-import { AuthService } from './auth.service';
+import { UserAuthService } from './user-auth.service';
 import type {
   RegisterResponse,
   LoginResponse,
@@ -19,42 +19,42 @@ import {
 } from './dto';
 
 @Controller()
-export class AuthGrpcController {
-  constructor(private readonly authService: AuthService) {}
+export class UserAuthGrpcController {
+  constructor(private readonly userAuthService: UserAuthService) {}
 
-  @GrpcMethod('AuthService', 'Register')
+  @GrpcMethod('UserAuthService', 'Register')
   async register(data: RegisterDto): Promise<RegisterResponse> {
-    return this.authService.register(data);
+    return this.userAuthService.register(data);
   }
 
-  @GrpcMethod('AuthService', 'Login')
+  @GrpcMethod('UserAuthService', 'Login')
   async login(data: LoginDto): Promise<LoginResponse> {
-    return this.authService.login(data);
+    return this.userAuthService.login(data);
   }
 
-  @GrpcMethod('AuthService', 'Logout')
+  @GrpcMethod('UserAuthService', 'Logout')
   async logout(data: LogoutDto): Promise<LogoutResponse> {
-    return this.authService.logout(data);
+    return this.userAuthService.logout(data);
   }
 
-  @GrpcMethod('AuthService', 'GetActiveSessions')
+  @GrpcMethod('UserAuthService', 'GetActiveSessions')
   async getActiveSessions(
     data: GetActiveSessionsDto,
   ): Promise<GetActiveSessionsResponse> {
-    return this.authService.getActiveSessions(data);
+    return this.userAuthService.getActiveSessions(data);
   }
 
-  @GrpcMethod('AuthService', 'TerminateSession')
+  @GrpcMethod('UserAuthService', 'TerminateSession')
   async terminateSession(
     data: TerminateSessionDto,
   ): Promise<TerminateSessionResponse> {
-    return this.authService.terminateSession(data);
+    return this.userAuthService.terminateSession(data);
   }
 
-  @GrpcMethod('AuthService', 'TerminateAllOtherSessions')
+  @GrpcMethod('UserAuthService', 'TerminateAllOtherSessions')
   async terminateAllOtherSessions(
     data: TerminateAllOtherSessionsDto,
   ): Promise<TerminateAllOtherSessionsResponse> {
-    return this.authService.terminateAllOtherSessions(data);
+    return this.userAuthService.terminateAllOtherSessions(data);
   }
 }

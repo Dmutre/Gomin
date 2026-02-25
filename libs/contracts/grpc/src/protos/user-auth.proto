@@ -1,10 +1,10 @@
 syntax = "proto3";
 
-package auth.v1;
+package user_auth.v1;
 
 import "google/protobuf/timestamp.proto";
 
-service AuthService {
+service UserAuthService {
   rpc Register(RegisterRequest) returns (RegisterResponse);
   rpc Login(LoginRequest) returns (LoginResponse);
   rpc Logout(LogoutRequest) returns (LogoutResponse);

@@ -2,7 +2,9 @@
 // versions:
 //   protoc-gen-ts_proto  v2.11.2
 //   protoc               unknown
-// source: auth.proto
+// source: user-auth.proto
+
+/* eslint-disable */
 
 export enum DeviceType {
   DEVICE_TYPE_UNSPECIFIED = 0,

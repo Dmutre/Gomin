@@ -80,7 +80,10 @@ export class UserSessionService {
     sessionToken: string,
     reason: RevokeReason = RevokeReason.USER_TERMINATED,
   ): Promise<void> {
-    return this.userSessionRepository.revokeSessionByToken(sessionToken, reason);
+    return this.userSessionRepository.revokeSessionByToken(
+      sessionToken,
+      reason,
+    );
   }
 
   async revokeOtherSessionsByToken(

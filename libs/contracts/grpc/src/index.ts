@@ -1,4 +1,4 @@
-export { DeviceType } from './types/generated/auth';
+export { DeviceType } from './types/generated/user-auth';
 export type {
   DeviceInfo,
   E2EEKeys,
@@ -16,4 +16,11 @@ export type {
   TerminateSessionResponse,
   TerminateAllOtherSessionsRequest,
   TerminateAllOtherSessionsResponse,
-} from './types/generated/auth';
+} from './types/generated/user-auth';
+export type {
+  AuthenticateServiceIdentityRequest,
+  AuthenticateServiceIdentityResponse,
+  GetPublicKeysRequest,
+  GetPublicKeysResponse,
+  JwtPublicKey,
+} from './types/generated/service-identity';

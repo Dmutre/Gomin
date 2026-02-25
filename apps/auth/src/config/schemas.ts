@@ -16,4 +16,7 @@ export const validationSchema = Joi.object({
   // gRPC
   GRPC_PORT: Joi.number().port().default(5000),
   HOST: Joi.string().hostname().default('localhost'),
+
+  // JWT signing keys - JSON array: [{"keyId":"kid1","privateKey":"...","publicKey":"..."}]
+  JWT_SIGNING_KEYS: Joi.string().default('[]'),
 }).concat(knexDatabaseValidationSchema);

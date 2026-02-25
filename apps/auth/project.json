@@ -89,6 +89,20 @@
         "command": "knex seed:run --knexfile apps/auth/knexfile.ts",
         "cwd": "."
       }
+    },
+    "db:seed:service-identity": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "knex seed:run --knexfile apps/auth/knexfile.ts --specific=01_service_identities.ts",
+        "cwd": "."
+      }
+    },
+    "jwt:demo": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "tsx tools/scripts/jwt-demo.ts",
+        "cwd": "apps/auth"
+      }
     }
   }
 }

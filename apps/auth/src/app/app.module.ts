@@ -6,7 +6,8 @@ import { CustomLoggerModule } from '@gomin/logger';
 import { KnexDatabaseModule } from '@gomin/database';
 import { UserModule } from '../users/user.module';
 import { UserSessionModule } from '../user-sessions/user-session.module';
-import { AuthModule } from '../auth/auth.module';
+import { UserAuthModule } from '../user-auth/user-auth.module';
+import { ServiceIdentityModule } from '../service-identity/service-identity.module';
 
 @Module({
   imports: [
@@ -19,7 +20,8 @@ import { AuthModule } from '../auth/auth.module';
     KnexDatabaseModule,
     UserModule,
     UserSessionModule,
-    AuthModule,
+    UserAuthModule,
+    ServiceIdentityModule,
   ],
 })
 export class AppModule {}
