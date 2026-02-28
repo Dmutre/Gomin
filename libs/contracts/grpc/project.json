@@ -12,7 +12,10 @@
         "outputPath": "dist/libs/contracts/grpc",
         "main": "libs/contracts/grpc/src/index.ts",
         "tsConfig": "libs/contracts/grpc/tsconfig.lib.json",
-        "assets": ["libs/contracts/grpc/*.md"]
+        "assets": [
+          "libs/contracts/grpc/*.md",
+          "libs/contracts/grpc/src/protos/*.proto"
+        ]
       }
     },
     "proto:generate": {

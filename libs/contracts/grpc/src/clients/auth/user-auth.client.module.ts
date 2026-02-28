@@ -5,4 +5,4 @@ import { UserAuthGrpcClient } from './user-auth.grpc.client';
   providers: [UserAuthGrpcClient],
   exports: [UserAuthGrpcClient],
 })
-export class UserAuthClientModule {}
+export class AuthClientModule {}

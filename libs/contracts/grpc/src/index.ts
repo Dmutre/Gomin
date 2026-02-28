@@ -24,3 +24,9 @@ export type {
   GetPublicKeysResponse,
   JwtPublicKey,
 } from './types/generated/service-identity';
+export { AuthClientModule } from './clients/auth/user-auth.client.module';
+export {
+  ServiceIdentityClientModule,
+  SERVICE_IDENTITY_CLIENT,
+} from './clients/auth/service-identity.client.module';
+export { ServiceIdentityGrpcClient } from './clients/auth/service-identity.client';

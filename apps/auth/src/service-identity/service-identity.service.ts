@@ -10,7 +10,10 @@ import type {
 import { ServiceIdentityRepository } from './service-identity.repository';
 import type { JwtSigningKeyConfig } from '../config/config';
 import type { ServiceIdentityDomainModel } from './types/service-identity.domain.model';
-import type { ServiceTokenHeader, ServiceTokenPayload } from '@gomin/service-identity';
+import type {
+  ServiceTokenHeader,
+  ServiceTokenPayload,
+} from '@gomin/service-identity';
 
 @Injectable()
 export class ServiceIdentityService {

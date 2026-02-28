@@ -39,12 +39,15 @@ export class ServiceIdentityRepository {
         'ServiceIdentities.secretHash',
         'ServiceIdentities.isActive',
         'ServiceIdentities.createdAt',
-        this.knex.raw(`
+        this.knex.raw(
+          `
           COALESCE(
             json_agg(??.name) FILTER (WHERE ??.name IS NOT NULL),
             '[]'
           ) as permissions
-        `, [this.permissionsTable, this.permissionsTable]),
+        `,
+          [this.permissionsTable, this.permissionsTable],
+        ),
       )
       .groupBy('ServiceIdentities.id');
 

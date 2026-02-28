@@ -51,50 +51,50 @@
     "db:migrate:make": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "knex migrate:make --knexfile apps/auth/knexfile.ts {args.name}",
-        "cwd": "."
+        "command": "node -r tsx/cjs ../../node_modules/knex/bin/cli.js migrate:make --knexfile knexfile.ts {args.name}",
+        "cwd": "apps/auth"
       }
     },
     "db:migrate:latest": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "knex migrate:latest --knexfile apps/auth/knexfile.ts",
-        "cwd": "."
+        "command": "node -r tsx/cjs ../../node_modules/knex/bin/cli.js migrate:latest --knexfile knexfile.ts",
+        "cwd": "apps/auth"
       }
     },
     "db:migrate:rollback": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "knex migrate:rollback --knexfile apps/auth/knexfile.ts",
-        "cwd": "."
+        "command": "node -r tsx/cjs ../../node_modules/knex/bin/cli.js migrate:rollback --knexfile knexfile.ts",
+        "cwd": "apps/auth"
       }
     },
     "db:migrate:status": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "knex migrate:status --knexfile apps/auth/knexfile.ts",
-        "cwd": "."
+        "command": "node -r tsx/cjs ../../node_modules/knex/bin/cli.js migrate:status --knexfile knexfile.ts",
+        "cwd": "apps/auth"
       }
     },
     "db:seed:make": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "knex seed:make --knexfile apps/auth/knexfile.ts {args.name}",
-        "cwd": "."
+        "command": "node -r tsx/cjs ../../node_modules/knex/bin/cli.js seed:make --knexfile knexfile.ts {args.name}",
+        "cwd": "apps/auth"
       }
     },
     "db:seed:run": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "knex seed:run --knexfile apps/auth/knexfile.ts",
-        "cwd": "."
+        "command": "node -r tsx/cjs ../../node_modules/knex/bin/cli.js seed:run --knexfile knexfile.ts",
+        "cwd": "apps/auth"
       }
     },
     "db:seed:service-identity": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "knex seed:run --knexfile apps/auth/knexfile.ts --specific=01_service_identities.ts",
-        "cwd": "."
+        "command": "node -r tsx/cjs ../../node_modules/knex/bin/cli.js seed:run --knexfile knexfile.ts --specific=01_service_identities.ts",
+        "cwd": "apps/auth"
       }
     },
     "jwt:demo": {

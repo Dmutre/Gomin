@@ -147,13 +147,19 @@ function verifyJwt(
   // RSA decrypt signature with public key, compare hash with SHA256(header.payload)
   const verify = createVerify('RSA-SHA256');
   verify.update(`${headerB64}.${payloadB64}`);
-  const isSignatureValid = verify.verify(verifyingKey, signatureB64, 'base64url');
+  const isSignatureValid = verify.verify(
+    verifyingKey,
+    signatureB64,
+    'base64url',
+  );
 
   console.log(`\n✅ Signature valid: ${isSignatureValid}`);
 
   const now = Math.floor(Date.now() / 1000);
   const isExpired = payload.exp < now;
-  console.log(`⏰ Token expires: ${new Date(payload.exp * 1000).toISOString()}`);
+  console.log(
+    `⏰ Token expires: ${new Date(payload.exp * 1000).toISOString()}`,
+  );
   console.log(`⏰ Token expired: ${isExpired}`);
 
   if (!isSignatureValid) throw new Error('Invalid token signature');
@@ -179,10 +185,7 @@ const basePayload: ServiceTokenPayload = {
   exp: now + 3600,
   type: 'service',
   serviceName: 'some-service',
-  permissions: [
-    'user-service:users:read',
-    'auth-service:sessions:read',
-  ],
+  permissions: ['user-service:users:read', 'auth-service:sessions:read'],
 };
 
 // --- Case 1: Successful authentication ---
