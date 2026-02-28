@@ -1,4 +1,6 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { MicroserviceException } from '@gomin/app';
+import { status } from '@grpc/grpc-js';
 import { ConfigService } from '@nestjs/config';
 import * as argon2 from 'argon2';
 import { createSign } from 'crypto';
@@ -34,7 +36,10 @@ export class ServiceIdentityService {
       );
 
     if (!serviceIdentity) {
-      throw new UnauthorizedException('Invalid service credentials');
+      throw new MicroserviceException(
+        'Invalid service credentials',
+        status.UNAUTHENTICATED,
+      );
     }
 
     await this.verifyServiceSecret(serviceIdentity, serviceSecret);
@@ -63,7 +68,10 @@ export class ServiceIdentityService {
     const isValid = await argon2.verify(serviceIdentity.secretHash, rawSecret);
 
     if (!isValid) {
-      throw new UnauthorizedException('Invalid service credentials');
+      throw new MicroserviceException(
+        'Invalid service credentials',
+        status.UNAUTHENTICATED,
+      );
     }
   }
 
@@ -75,7 +83,10 @@ export class ServiceIdentityService {
     );
 
     if (!activeKey) {
-      throw new Error('No JWT signing key configured');
+      throw new MicroserviceException(
+        'No JWT signing key configured',
+        status.FAILED_PRECONDITION,
+      );
     }
 
     const now = Math.floor(Date.now() / 1000);

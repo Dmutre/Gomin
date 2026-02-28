@@ -9,7 +9,8 @@ import { firstValueFrom } from 'rxjs';
 @Injectable()
 export class MicroserviceIdentityStore {
   private publicKeyCache = new Map<string, string>();
-  private authTokenCache: { accessToken: string, expiresAt: number } | null = null;
+  private authTokenCache: { accessToken: string; expiresAt: number } | null =
+    null;
 
   constructor(
     private readonly serviceIdentityClient: ServiceIdentityGrpcClient,
@@ -36,7 +37,7 @@ export class MicroserviceIdentityStore {
     this.authTokenCache = { accessToken, expiresAt };
   }
 
-  getAuthToken(): { accessToken: string, expiresAt: number } | null {
+  getAuthToken(): { accessToken: string; expiresAt: number } | null {
     return this.authTokenCache;
   }
 }

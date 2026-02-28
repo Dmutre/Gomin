@@ -1,5 +1,5 @@
 import { ServiceIdentityGrpcClient } from '@gomin/grpc';
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { firstValueFrom } from 'rxjs';
 import {
   MICROSERVICE_IDENTITY_OPTIONS,
@@ -15,6 +15,8 @@ const TOKEN_BUFFER_MS = 60_000; // re-auth 1 min before expiry
  */
 @Injectable()
 export class MicroserviceIdentityAuthService {
+  private readonly logger = new Logger(MicroserviceIdentityAuthService.name);
+
   constructor(
     private readonly serviceIdentityClient: ServiceIdentityGrpcClient,
     @Inject(MICROSERVICE_IDENTITY_OPTIONS)
@@ -22,9 +24,9 @@ export class MicroserviceIdentityAuthService {
     private readonly store: MicroserviceIdentityStore,
   ) {}
 
-  async getAccessToken(): Promise<string> {
+  async getAccessToken(): Promise<string | null> {
     if (this.isTokenValid()) {
-      return this.store.getAuthToken()!.accessToken;
+      return this.store.getAuthToken()?.accessToken ?? null;
     }
     return this.authenticate();
   }
@@ -35,15 +37,20 @@ export class MicroserviceIdentityAuthService {
     return tokenCache.expiresAt > Date.now() + TOKEN_BUFFER_MS;
   }
 
-  private async authenticate(): Promise<string> {
-    const response = await firstValueFrom(
-      this.serviceIdentityClient.authenticateServiceIdentity({
-        serviceName: this.options.serviceName,
-        serviceSecret: this.options.serviceSecret,
-      }),
-    );
-    this.store.setAuthToken(response.accessToken, response.expiresAt);
+  private async authenticate(): Promise<string | null> {
+    try {
+      const response = await firstValueFrom(
+        this.serviceIdentityClient.authenticateServiceIdentity({
+          serviceName: this.options.serviceName,
+          serviceSecret: this.options.serviceSecret,
+        }),
+      );
+      this.store.setAuthToken(response.accessToken, response.expiresAt);
 
-    return response.accessToken;
+      return response.accessToken;
+    } catch (error) {
+      this.logger.error(error);
+      return null;
+    }
   }
 }

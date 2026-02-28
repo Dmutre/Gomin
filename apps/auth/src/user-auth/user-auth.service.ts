@@ -1,4 +1,6 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { MicroserviceException } from '@gomin/app';
+import { status } from '@grpc/grpc-js';
 import { createHash, randomUUID } from 'crypto';
 import { UserService } from '../users/user.service';
 import { UserSessionService } from '../user-sessions/user-session.service';
@@ -47,7 +49,10 @@ export class UserAuthService {
   private async registerUser(data: RegisterDto): Promise<UserDomainModel> {
     const existingUser = await this.userService.findByEmail(data.email);
     if (existingUser) {
-      throw new UnauthorizedException('Email already registered'); //TODO: Rework exceptions to use custom RPC exception with filters and so on
+      throw new MicroserviceException(
+        'Email already registered',
+        status.ALREADY_EXISTS,
+      );
     }
     const passwordHash = this.hashPassword(data.password);
 
@@ -78,11 +83,11 @@ export class UserAuthService {
   async login(data: LoginDto): Promise<LoginResponse> {
     const user = await this.userService.findByEmail(data.email);
     if (!user) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new MicroserviceException('Invalid credentials', status.UNAUTHENTICATED);
     }
     const isValid = this.verifyPassword(data.password, user.passwordHash);
     if (!isValid) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new MicroserviceException('Invalid credentials', status.UNAUTHENTICATED);
     }
     const sessionParams = data.deviceInfo
       ? this.toCreateSessionParams(user.id, data.deviceInfo)
@@ -125,7 +130,7 @@ export class UserAuthService {
       data.sessionToken,
     );
     if (!session) {
-      throw new UnauthorizedException('Invalid session');
+      throw new MicroserviceException('Invalid session', status.UNAUTHENTICATED);
     }
     const sessions = await this.userSessionService.getActiveSessionsByUserId(
       session.userId,
@@ -144,15 +149,15 @@ export class UserAuthService {
       data.sessionToken,
     );
     if (!session) {
-      throw new UnauthorizedException('Invalid session');
+      throw new MicroserviceException('Invalid session', status.UNAUTHENTICATED);
     }
     const user = await this.userService.findById(session.userId);
     if (!user) {
-      throw new UnauthorizedException('User not found');
+      throw new MicroserviceException('User not found', status.NOT_FOUND);
     }
     const isValid = this.verifyPassword(data.password, user.passwordHash);
     if (!isValid) {
-      throw new UnauthorizedException('Invalid password');
+      throw new MicroserviceException('Invalid password', status.UNAUTHENTICATED);
     }
     const sessions = await this.userSessionService.getActiveSessionsByUserId(
       session.userId,
@@ -161,7 +166,7 @@ export class UserAuthService {
       (s) => s.sessionToken === data.targetSessionToken,
     );
     if (!targetSession) {
-      throw new UnauthorizedException('Session not found');
+      throw new MicroserviceException('Session not found', status.NOT_FOUND);
     }
     await this.userSessionService.revokeSessionByToken(
       data.targetSessionToken,
@@ -177,15 +182,15 @@ export class UserAuthService {
       data.sessionToken,
     );
     if (!session) {
-      throw new UnauthorizedException('Invalid session');
+      throw new MicroserviceException('Invalid session', status.UNAUTHENTICATED);
     }
     const user = await this.userService.findById(session.userId);
     if (!user) {
-      throw new UnauthorizedException('User not found');
+      throw new MicroserviceException('User not found', status.NOT_FOUND);
     }
     const isValid = this.verifyPassword(data.password, user.passwordHash);
     if (!isValid) {
-      throw new UnauthorizedException('Invalid password');
+      throw new MicroserviceException('Invalid password', status.UNAUTHENTICATED);
     }
     const count = await this.userSessionService.revokeOtherSessionsByToken(
       session.userId,
