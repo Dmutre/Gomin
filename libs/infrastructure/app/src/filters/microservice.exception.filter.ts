@@ -25,10 +25,12 @@ export class GrpcExceptionFilter extends BaseRpcExceptionFilter {
         });
       }
 
-      return throwError((): GrpcErrorResponse => ({
-        code: exception.getCode(),
-        message: exception.message,
-      }));
+      return throwError(
+        (): GrpcErrorResponse => ({
+          code: exception.getCode(),
+          message: exception.message,
+        }),
+      );
     }
 
     this.logger.error('Unhandled exception', {
@@ -36,9 +38,11 @@ export class GrpcExceptionFilter extends BaseRpcExceptionFilter {
       stack: exception instanceof Error ? exception.stack : undefined,
     });
 
-    return throwError((): GrpcErrorResponse => ({
-      code: status.INTERNAL,
-      message: 'Internal server error',
-    }));
+    return throwError(
+      (): GrpcErrorResponse => ({
+        code: status.INTERNAL,
+        message: 'Internal server error',
+      }),
+    );
   }
 }

@@ -1,23 +1,24 @@
-import type { ServiceTokenPayload } from '../auth-token/service-identity-token.payload';
-import type { Permission } from '../permissions/permissions.types';
 import {
   CanActivate,
   ExecutionContext,
-  ForbiddenException,
   Injectable,
   SetMetadata,
-  UnauthorizedException,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { RpcException } from '@nestjs/microservices';
+import { status } from '@grpc/grpc-js';
 import type { Metadata } from '@grpc/grpc-js';
+import { MicroserviceException } from '@gomin/app';
+import type { Permission } from '../permissions/permissions.types';
+import type { ServiceTokenPayload } from '../auth-token/service-identity-token.payload';
 import { MicroserviceIdentityStore } from './microservice-identity.store';
-import { verifyJwtRs256 } from './jwt-verifier';
+import { JwtVerificationError, verifyJwtRs256 } from './jwt-verifier';
 
 export const REQUIRE_PERMISSION_KEY = 'requirePermission';
 
-export const RequirePermission = (permission: Permission) =>
-  SetMetadata(REQUIRE_PERMISSION_KEY, permission);
+export const RequirePermission = (...permissions: Permission[]) =>
+  SetMetadata(REQUIRE_PERMISSION_KEY, permissions);
+
+export const SERVICE_PAYLOAD_KEY = 'servicePayload';
 
 @Injectable()
 export class MicroserviceIdentityGuard implements CanActivate {
@@ -27,84 +28,126 @@ export class MicroserviceIdentityGuard implements CanActivate {
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const rpcContext = context.switchToRpc();
-    const metadata = rpcContext.getContext() as Metadata;
-    const data = rpcContext.getData();
+    const metadata = context.switchToRpc().getContext<Metadata>();
 
-    const authHeader = this.getAuthorizationHeader(metadata);
-    if (!authHeader?.startsWith('Bearer ')) {
-      throw new RpcException(
-        new UnauthorizedException('Missing or invalid Authorization header'),
-      );
-    }
-
-    const token = authHeader.slice(7);
+    const token = this.extractToken(metadata);
     const payload = await this.verifyToken(token);
 
-    const requiredPermission = this.reflector.get<Permission | undefined>(
-      REQUIRE_PERMISSION_KEY,
-      context.getHandler(),
-    );
+    this.checkPermissions(context, payload.permissions);
 
-    const permissions = payload.permissions ?? [];
-    if (requiredPermission && !permissions.includes(requiredPermission)) {
-      throw new RpcException(
-        new ForbiddenException(
-          `Permission '${requiredPermission}' is required`,
-        ),
-      );
-    }
+    context.switchToRpc().getData()[SERVICE_PAYLOAD_KEY] = payload;
 
-    this.attachPayload(data, payload);
     return true;
   }
 
-  private getAuthorizationHeader(metadata: Metadata): string | undefined {
+  private extractToken(metadata: Metadata): string {
     const map = metadata.getMap();
-    const auth = map['authorization'] ?? map['Authorization'];
-    return typeof auth === 'string' ? auth : undefined;
+    const authHeader = map['authorization'] ?? map['Authorization'];
+
+    if (typeof authHeader !== 'string' || !authHeader.startsWith('Bearer ')) {
+      throw new MicroserviceException(
+        'Missing or invalid authorization header',
+        status.UNAUTHENTICATED,
+      );
+    }
+
+    return authHeader.slice(7);
   }
 
   private async verifyToken(token: string): Promise<ServiceTokenPayload> {
-    const [headerB64] = token.split('.');
-    if (!headerB64) {
-      throw new RpcException(new UnauthorizedException('Invalid token format'));
+    const kid = this.extractKid(token);
+    const publicKey = await this.resolvePublicKey(kid);
+    let payload: Record<string, unknown>;
+
+    try {
+      const result = verifyJwtRs256(token, publicKey);
+      payload = result.payload;
+    } catch (error) {
+      throw new MicroserviceException(
+        error instanceof JwtVerificationError
+          ? error.message
+          : 'Token verification failed',
+        status.UNAUTHENTICATED,
+      );
     }
 
-    const header = JSON.parse(
-      Buffer.from(
-        headerB64.replace(/-/g, '+').replace(/_/g, '/'),
-        'base64',
-      ).toString('utf8'),
-    ) as { kid?: string };
-
-    const kid = header.kid;
-    if (!kid) {
-      throw new RpcException(new UnauthorizedException('Token missing key id'));
+    if (!payload['type'] || payload['type'] !== 'service') {
+      throw new MicroserviceException(
+        'Invalid token type',
+        status.UNAUTHENTICATED,
+      );
     }
 
-    const publicKey = await this.store.getPublicKey(kid);
-    if (!publicKey) {
-      throw new RpcException(new UnauthorizedException('Unknown signing key'));
-    }
-
-    const { payload } = verifyJwtRs256(token, publicKey);
-
-    if (payload['type'] !== 'service') {
-      throw new RpcException(new UnauthorizedException('Invalid token type'));
+    const now = Math.floor(Date.now() / 1000);
+    if (!payload['exp'] || (payload['exp'] as number) < now) {
+      throw new MicroserviceException('Token expired', status.UNAUTHENTICATED);
     }
 
     return payload as unknown as ServiceTokenPayload;
   }
 
-  private attachPayload(
-    data: Record<string, unknown>,
-    payload: ServiceTokenPayload,
-  ): void {
-    (
-      data as Record<string, unknown> & {
-        _servicePayload?: ServiceTokenPayload;
+  private extractKid(token: string): string {
+    const [headerB64] = token.split('.');
+
+    if (!headerB64) {
+      throw new MicroserviceException(
+        'Invalid token format',
+        status.UNAUTHENTICATED,
+      );
+    }
+
+    try {
+      const header = JSON.parse(
+        Buffer.from(headerB64, 'base64url').toString('utf8'),
+      ) as { kid?: string };
+
+      if (!header.kid) {
+        throw new MicroserviceException(
+          'Token missing key id',
+          status.UNAUTHENTICATED,
+        );
       }
-    )._servicePayload = payload;
+
+      return header.kid;
+    } catch {
+      throw new MicroserviceException(
+        'Invalid token header',
+        status.UNAUTHENTICATED,
+      );
+    }
+  }
+
+  private async resolvePublicKey(kid: string): Promise<string> {
+    const publicKey = await this.store.getPublicKey(kid);
+
+    if (!publicKey) {
+      throw new MicroserviceException(
+        'Unknown signing key',
+        status.UNAUTHENTICATED,
+      );
+    }
+
+    return publicKey;
+  }
+
+  private checkPermissions(
+    context: ExecutionContext,
+    tokenPermissions: Permission[],
+  ): void {
+    const required = this.reflector.get<Permission[] | undefined>(
+      REQUIRE_PERMISSION_KEY,
+      context.getHandler(),
+    );
+
+    if (!required?.length) return;
+
+    const missing = required.filter((p) => !tokenPermissions.includes(p));
+
+    if (missing.length > 0) {
+      throw new MicroserviceException(
+        `Missing permissions: ${missing.join(', ')}`,
+        status.PERMISSION_DENIED,
+      );
+    }
   }
 }

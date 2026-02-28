@@ -26,7 +26,7 @@ async function bootstrap() {
   const logger = app.get<Logger>(Logger);
 
   app.useLogger(logger);
-  app.useGlobalFilters(new GrpcExceptionFilter())
+  app.useGlobalFilters(new GrpcExceptionFilter());
 
   await app.listen().then(() => {
     logger.log(

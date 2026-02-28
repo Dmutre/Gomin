@@ -83,11 +83,17 @@ export class UserAuthService {
   async login(data: LoginDto): Promise<LoginResponse> {
     const user = await this.userService.findByEmail(data.email);
     if (!user) {
-      throw new MicroserviceException('Invalid credentials', status.UNAUTHENTICATED);
+      throw new MicroserviceException(
+        'Invalid credentials',
+        status.UNAUTHENTICATED,
+      );
     }
     const isValid = this.verifyPassword(data.password, user.passwordHash);
     if (!isValid) {
-      throw new MicroserviceException('Invalid credentials', status.UNAUTHENTICATED);
+      throw new MicroserviceException(
+        'Invalid credentials',
+        status.UNAUTHENTICATED,
+      );
     }
     const sessionParams = data.deviceInfo
       ? this.toCreateSessionParams(user.id, data.deviceInfo)
@@ -130,7 +136,10 @@ export class UserAuthService {
       data.sessionToken,
     );
     if (!session) {
-      throw new MicroserviceException('Invalid session', status.UNAUTHENTICATED);
+      throw new MicroserviceException(
+        'Invalid session',
+        status.UNAUTHENTICATED,
+      );
     }
     const sessions = await this.userSessionService.getActiveSessionsByUserId(
       session.userId,
@@ -149,7 +158,10 @@ export class UserAuthService {
       data.sessionToken,
     );
     if (!session) {
-      throw new MicroserviceException('Invalid session', status.UNAUTHENTICATED);
+      throw new MicroserviceException(
+        'Invalid session',
+        status.UNAUTHENTICATED,
+      );
     }
     const user = await this.userService.findById(session.userId);
     if (!user) {
@@ -157,7 +169,10 @@ export class UserAuthService {
     }
     const isValid = this.verifyPassword(data.password, user.passwordHash);
     if (!isValid) {
-      throw new MicroserviceException('Invalid password', status.UNAUTHENTICATED);
+      throw new MicroserviceException(
+        'Invalid password',
+        status.UNAUTHENTICATED,
+      );
     }
     const sessions = await this.userSessionService.getActiveSessionsByUserId(
       session.userId,
@@ -182,7 +197,10 @@ export class UserAuthService {
       data.sessionToken,
     );
     if (!session) {
-      throw new MicroserviceException('Invalid session', status.UNAUTHENTICATED);
+      throw new MicroserviceException(
+        'Invalid session',
+        status.UNAUTHENTICATED,
+      );
     }
     const user = await this.userService.findById(session.userId);
     if (!user) {
@@ -190,7 +208,10 @@ export class UserAuthService {
     }
     const isValid = this.verifyPassword(data.password, user.passwordHash);
     if (!isValid) {
-      throw new MicroserviceException('Invalid password', status.UNAUTHENTICATED);
+      throw new MicroserviceException(
+        'Invalid password',
+        status.UNAUTHENTICATED,
+      );
     }
     const count = await this.userSessionService.revokeOtherSessionsByToken(
       session.userId,
