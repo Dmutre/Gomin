@@ -4,6 +4,6 @@ import { LocalIdentityService } from './local-identity.service';
 
 @Module({
   providers: [LocalIdentityService, LocalIdentityGuard],
-  exports: [LocalIdentityGuard],
+  exports: [LocalIdentityService, LocalIdentityGuard],
 })
 export class LocalIdentityModule {}

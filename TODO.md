@@ -57,6 +57,7 @@
 ### Logger Infrastructure
 - [x] Create `libs/infrastructure/logger` with Pino
 - [x] Configure structured logging (JSON format)
+- [ ] Replace or configure logger to be possible to have context passed to it
 - [ ] Add correlation ID (traceId) support
 - [ ] Create logging interceptors
 

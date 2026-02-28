@@ -4,4 +4,5 @@ export enum Permission {
   AUTH_SERVICE_SESSIONS_READ = 'auth-service:sessions:read',
   AUTH_SERVICE_SESSIONS_WRITE = 'auth-service:sessions:write',
   AUTH_SERVICE_SESSIONS_INVALIDATE = 'auth-service:sessions:invalidate',
+  SERVICE_IDENTITY_GET_PUBLIC_KEYS = 'service-identity:public-keys:get',
 }

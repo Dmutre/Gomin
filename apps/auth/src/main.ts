@@ -13,7 +13,7 @@ async function bootstrap() {
       bufferLogs: true,
       transport: Transport.GRPC,
       options: {
-        package: ['user_auth', 'service_identity'],
+        package: ['user_auth.v1', 'service_identity.v1'],
         url: microserviceUrl,
         protoPath: [
           join(__dirname, 'protos', 'user-auth.proto'),

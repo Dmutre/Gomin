@@ -14,6 +14,7 @@ export class GrpcExceptionFilter extends BaseRpcExceptionFilter {
   private readonly logger = new Logger(GrpcExceptionFilter.name);
 
   override catch(exception: unknown): Observable<never> {
+    this.logger.error(exception);
     if (exception instanceof MicroserviceException) {
       const details = exception.getDetails();
 

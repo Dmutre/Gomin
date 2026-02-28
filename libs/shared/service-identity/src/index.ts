@@ -26,3 +26,6 @@ export {
   JwtVerificationError,
   verifyJwtRs256,
 } from './microservice-identity/jwt-verifier';
+export { microserviceIdentityValidationSchema } from './microservice-identity/microservice-identity.validation.schema';
+export { microserviceIdentityConfig } from './microservice-identity/microservice-identity.config';
+export { MICROSERVICE_IDENTITY_CONFIG_NAMESPACE } from './microservice-identity/microservice-identity.config';

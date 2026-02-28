@@ -26,4 +26,8 @@ export const PERMISSIONS_REGISTRY: PermissionMeta[] = [
     name: Permission.AUTH_SERVICE_SESSIONS_INVALIDATE,
     description: 'Invalidate user sessions in auth service',
   },
+  {
+    name: Permission.SERVICE_IDENTITY_GET_PUBLIC_KEYS,
+    description: 'Get public keys for service identity',
+  },
 ];
