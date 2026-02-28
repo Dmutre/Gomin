@@ -1,5 +1,5 @@
 export { PERMISSIONS_REGISTRY } from './permissions/permissions.registry';
-export type { Permission } from './permissions/permissions.types';
+export { Permission } from './permissions/permissions.types';
 export { ServiceIdentity } from './service-identities/service.registry';
 export { SERVICES_SEED_CONFIG } from './seeding/seeding.config';
 export type { ServiceSeedConfig } from './seeding/seeding.config';
@@ -19,4 +19,10 @@ export { MicroserviceIdentityStore } from './microservice-identity/microservice-
 export {
   MicroserviceIdentityGuard,
   RequirePermission,
+  REQUIRE_PERMISSION_KEY,
+  SERVICE_PAYLOAD_KEY,
 } from './microservice-identity/microservice-identity.guard';
+export {
+  JwtVerificationError,
+  verifyJwtRs256,
+} from './microservice-identity/jwt-verifier';

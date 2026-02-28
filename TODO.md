@@ -1,5 +1,35 @@
 # Gomin Messenger - Development Roadmap
 
+## ✅ Recent Completed: Service Identity & Auth Guards
+
+### Service Identity (`@gomin/service-identity`)
+- [x] Service identity seeding (Permissions, ServiceIdentities, ServicePermissions)
+- [x] MicroserviceIdentityModule (forRoot/forRootAsync) with gRPC client
+- [x] MicroserviceIdentityAuthService (token fetch, re-auth)
+- [x] MicroserviceIdentityStore (public key cache via getPublicKeys)
+- [x] MicroserviceIdentityGuard (token + permission validation for consumers)
+- [x] RequirePermission decorator, SERVICE_PAYLOAD_KEY
+- [x] Permissions: USERS_READ, USERS_WRITE, SESSIONS_READ, SESSIONS_WRITE, SESSIONS_INVALIDATE
+- [x] JWT verifier (verifyJwtRs256, JwtVerificationError) exported
+
+### gRPC Client (`@gomin/grpc`)
+- [x] ServiceIdentityGrpcClient (authenticateServiceIdentity, getPublicKeys)
+- [x] ServiceIdentityClientModule (register/registerAsync with optional URL)
+
+### Auth Service
+- [x] MicroserviceException handling (user-auth, service-identity services)
+- [x] GrpcExceptionFilter for gRPC error responses
+- [x] LocalIdentityModule (LocalIdentityGuard, LocalIdentityService)
+- [x] LocalIdentityGuard – validates service tokens using local JWT config (no self-calls)
+- [x] UserAuthGrpcController – guard + RequirePermission on all methods
+- [x] Service identity seeding via ts-node (path alias @gomin/service-identity/seeding)
+
+### Seed & Tooling
+- [x] Knex seeds run with ts-node + tsconfig-paths
+- [x] Path alias for seeding-only import (avoids decorator/grpc in seed context)
+
+---
+
 ## 🎯 Phase 0: Project Foundation
 
 ### Monorepo Setup & Infrastructure
@@ -48,9 +78,9 @@
 
 ### Common Utilities
 - [ ] Create `libs/common/validators` with password validators
-- [ ] Create `libs/common/guards` (GrpcAuthGuard, ServiceAuthGuard)
+- [x] Create `libs/common/guards` (MicroserviceIdentityGuard, LocalIdentityGuard)
 - [ ] Create `libs/common/interceptors` (Logging, Timeout, Error handling)
-- [ ] Create `libs/common/filters` (Exception filters)
+- [x] Create `libs/common/filters` (GrpcExceptionFilter, MicroserviceException)
 - [ ] Create `libs/common/decorators` (@CurrentUser, @GrpcUser)
 
 ### Models & Types
@@ -65,12 +95,13 @@
 ### Database Setup
 - [x] Create Knex migrations (users, sessions)
 - [x] Set up UUID extension
+- [x] Create migrations (ServiceIdentities, Permissions, ServicePermissions)
 - [ ] Create migrations (contacts, service_tenants, audit_logs)
-- [ ] Create seed data for development
+- [x] Create seed data for service identities
 
 ### gRPC Contracts
 - [x] Create `auth.proto` for public API (Register, Login, Sessions management)
-- [ ] Create `identity.proto` for internal API (ValidateToken, GetUser, CheckPermission)
+- [x] Create `identity.proto` for internal API (ValidateToken, GetUser, CheckPermission)
 - [x] Configure buf CLI and generate TypeScript types
 
 ### Users Module
@@ -97,10 +128,10 @@
 - [ ] Add password management (verify, change)
 
 ### Identity Module (Internal API)
-- [ ] Implement IdentityModule for service-to-service communication
-- [ ] Add token validation endpoint
+- [x] Implement ServiceIdentityModule for service-to-service auth (AuthenticateServiceIdentity, GetPublicKeys)
+- [x] Add token validation (MicroserviceIdentityGuard, LocalIdentityGuard)
 - [ ] Add user data access endpoints (GetUserById, GetPublicKey)
-- [ ] Add permission checking endpoints
+- [x] Add permission checking (RequirePermission decorator)
 
 ### Contacts Module (Optional for MVP)
 - [ ] Implement ContactsModule with add/accept/block functionality

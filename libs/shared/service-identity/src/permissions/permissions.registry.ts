@@ -19,6 +19,10 @@ export const PERMISSIONS_REGISTRY: PermissionMeta[] = [
     description: 'Read session data from auth service',
   },
   {
+    name: Permission.AUTH_SERVICE_SESSIONS_WRITE,
+    description: 'Create sessions in auth service',
+  },
+  {
     name: Permission.AUTH_SERVICE_SESSIONS_INVALIDATE,
     description: 'Invalidate user sessions in auth service',
   },

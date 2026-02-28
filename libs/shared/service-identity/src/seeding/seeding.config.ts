@@ -13,6 +13,7 @@ export const SERVICES_SEED_CONFIG: ServiceSeedConfig[] = [
       Permission.AUTH_SERVICE_USERS_READ,
       Permission.AUTH_SERVICE_USERS_WRITE,
       Permission.AUTH_SERVICE_SESSIONS_READ,
+      Permission.AUTH_SERVICE_SESSIONS_WRITE,
       Permission.AUTH_SERVICE_SESSIONS_INVALIDATE,
     ],
   },
@@ -20,7 +21,9 @@ export const SERVICES_SEED_CONFIG: ServiceSeedConfig[] = [
     serviceName: ServiceIdentity.GATEWAY_SERVICE,
     permissions: [
       Permission.AUTH_SERVICE_USERS_READ,
+      Permission.AUTH_SERVICE_USERS_WRITE,
       Permission.AUTH_SERVICE_SESSIONS_READ,
+      Permission.AUTH_SERVICE_SESSIONS_WRITE,
       Permission.AUTH_SERVICE_SESSIONS_INVALIDATE,
     ],
   },
