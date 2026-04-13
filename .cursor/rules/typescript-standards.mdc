@@ -1,0 +1,34 @@
+---
+description: TypeScript coding standards — typing, function size, error handling
+globs: **/*.ts
+alwaysApply: false
+---
+
+# TypeScript Standards
+
+## Typing
+- No `any`. Use `unknown` + type narrowing, or generate types from protos via `ts-proto`.
+- Explicit return types on all public methods and service functions.
+- Prefer `type` for object shapes, `interface` for contracts that may be extended.
+- Domain models (`*.domain.model.ts`) and DB types (`*.db.ts`) are always separate — never reuse one as the other.
+
+## Function size & SRP
+- Max ~20 lines per function body. Extract named helpers if logic grows.
+- One level of abstraction per function: orchestration functions call other functions, not inline logic.
+- `max-params` is 4 (ESLint enforced). If more args needed, accept an options object with a typed interface.
+
+## Error handling
+```typescript
+// ❌ swallow or rethrow raw
+} catch (e) { throw e; }
+
+// ✅ wrap with domain error, log once
+} catch (e) {
+  this.logger.error('Failed to …', { error: e });
+  throw new MicroserviceException(Status.INTERNAL, 'Descriptive message');
+}
+```
+
+## Misc
+- `class-validator` decorators only on DTO classes, not on domain models.
+- Avoid barrel re-exports inside feature folders; use them only in `src/index.ts` of each lib.

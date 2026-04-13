@@ -1,0 +1,38 @@
+---
+description: NestJS patterns — modules, repositories, mappers, DTOs, gRPC controllers
+globs: apps/**/*.ts,libs/**/*.ts
+alwaysApply: false
+---
+
+# NestJS Patterns
+
+## Layer separation
+```
+GrpcController → Service → Repository → DB
+     ↓               ↓
+   DTOs          Domain Models  ←→  Mapper  ←→  DbTypes
+```
+- Controllers handle only request/response mapping. No business logic.
+- Services own business logic; they never touch Knex directly.
+- Repositories return domain models (via Mapper), never raw DB rows.
+
+## Mappers
+- Every entity has a `*.mapper.ts` with static `toDomain(db: UserDb): UserDomainModel` and `toDb(domain: UserDomainModel): UserDb`.
+- Mappers are stateless — do not inject them; use static methods.
+
+## DTOs
+- One DTO file per use-case (e.g. `login.dto.ts`, `register.dto.ts`).
+- Use `class-validator` + `class-transformer`. Nest DTOs for complex inputs (e.g. `DeviceInfoDto` inside `LoginDto`).
+
+## gRPC controllers
+- Decorated with `@GrpcMethod('ServiceName', 'MethodName')`.
+- Accept proto-generated request type, return proto-generated response type.
+- Delegate to a use-case service immediately; no logic in the controller body.
+
+## Guards & decorators
+- Service-to-service auth: `LocalIdentityGuard` + `@RequirePermission(...)` from `@gomin/service-identity`.
+- Do not write custom JWT parsing in app code — always go through the shared guard.
+
+## Config
+- All env vars validated via Joi `validationSchema` in `ConfigModule.forRoot`.
+- Compose schemas: `validationSchema: knexDatabaseValidationSchema.concat(appSchema)`.

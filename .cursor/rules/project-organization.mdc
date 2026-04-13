@@ -1,0 +1,38 @@
+---
+description: Monorepo structure — what lives in apps vs libs, path aliases, naming
+alwaysApply: true
+---
+
+# Project Organization
+
+## Monorepo layout
+```
+apps/          – runnable NestJS services (thin, business-logic heavy)
+libs/
+  contracts/grpc/       – proto files, Buf config, ts-proto generated types, gRPC client modules
+  infrastructure/app/   – shared Nest bootstrap (filters, exceptions)
+  infrastructure/database/ – Knex module & DB config
+  infrastructure/logger/   – Pino logger module
+  shared/<name>/        – domain-agnostic shared logic (guards, JWT, permissions)
+```
+
+## When to create a lib
+- Logic used by ≥2 apps → extract to `libs/shared/<name>` or `libs/infrastructure/<name>`.
+- External-facing contracts (proto, events schema) → always in `libs/contracts/`.
+- App-specific logic stays in `apps/<service>/src/`.
+
+## Inter-service communication
+- **gRPC** is the only approved transport for synchronous service calls.
+- Proto files live in `libs/contracts/grpc/protos/`. Generate types with Buf (`buf generate`).
+- Each service exposes a `<Service>GrpcClient` NestJS module from `libs/contracts/grpc` — consume that, never call `@grpc/grpc-js` directly in app code.
+- RabbitMQ / Redis are reserved for async workflows — add client modules to `libs/contracts/` when introduced.
+
+## Path aliases
+Use `@gomin/<lib-name>` (defined in `tsconfig.base.json`). Never use relative `../../libs/` imports across package boundaries.
+
+## Naming conventions
+- Files: `kebab-case`. Classes: `PascalCase`. Constants/enums: `SCREAMING_SNAKE_CASE`.
+- Domain model: `user.domain.model.ts` / `UserDomainModel`.
+- DB type: `user.db.ts` / `UserDb`.
+- Repository: `user.repository.ts` / `UserRepository`.
+- Mapper: `user.mapper.ts` / `UserMapper`.
