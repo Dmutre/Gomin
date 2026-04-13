@@ -251,12 +251,15 @@ service IdentityService {
 }
 ```
 
-**Database Schema:**
+**Database Schema (Auth / users):**
 ```sql
-users (id, username, email, password_hash, public_key, avatar_url, ...)
-user_settings (user_id, notifications, privacy, ...)
-contacts (user_id, contact_user_id, status, ...)
-sessions (id, user_id, token, expires_at, ...)
+Users (
+  id, username, email, password_hash,  -- Argon2
+  public_key, encrypted_private_key,
+  encryption_salt, encryption_iv, encryption_auth_tag,
+  avatar_url, ...
+)
+UserSessions (id, user_id, session_token, device_id, ...)
 ```
 
 ---
@@ -309,12 +312,16 @@ service CommunicationService {
 }
 ```
 
-**Database Schema:**
+**Database Schema (E2EE-oriented fields):**
 ```sql
-chats (id, type, name, avatar_url, created_by, ...)
-chat_members (chat_id, user_id, role, last_read_message_id, ...)
-messages (id, chat_id, user_id, encrypted_content, type, created_at, ...)
-  -- PARTITIONED BY created_at or chat_id
+chats (id, type, name, key_version, ...)
+chat_members (chat_id, user_id, joined_at, can_read_from, ...)
+messages (
+  id, chat_id, sender_id,
+  encrypted_content, iv, auth_tag, key_version,
+  type, created_at, ...
+)
+message_keys (message_id, user_id, encrypted_key)  -- RSA-OAEP wrapped AES key per recipient
 message_reactions (message_id, user_id, emoji, ...)
 message_status (message_id, user_id, status, delivered_at, read_at)
 ```
@@ -443,56 +450,104 @@ device_tokens (user_id, token, platform, device_info)
 
 ## 🔒 Security
 
-### End-to-End Encryption (E2EE)
+### End-to-end encryption (E2EE) model
 
-**Key Management:**
-- Each user generates RSA-2048 key pair on registration
-- Public key stored on server
-- Private key encrypted with user password, stored locally (IndexedDB/Secure Storage)
+This section describes the cryptography and data model the platform targets. **Message payloads and per-message keys live in the Communication service** (not implemented in this repo yet). The **Auth service** stores user identity material needed for E2EE and session management.
 
-**Message Encryption Flow:**
-```
-Sender (Alice) → Receiver (Bob)
+#### User key material (Auth service / client)
 
-1. Alice generates random AES-256 key
-2. Alice encrypts message with AES key
-3. Alice encrypts AES key with Bob's RSA public key
-4. Server stores:
-   - encrypted_content (AES encrypted message)
-   - encrypted_key (RSA encrypted AES key for Bob)
+| Data | Server | Client only |
+|------|--------|-------------|
+| RSA public key (e.g. SPKI, base64) | Stored; readable by authenticated services | — |
+| RSA private key (plaintext) | Never | After unlock: memory / IndexedDB |
+| Encrypted private key + AES-GCM metadata | Stored (`encryptedPrivateKey`, `encryptionIv`, `encryptionAuthTag`) | — |
+| PBKDF2/Argon2 salt for wrapping the private key | Stored (`encryptionSalt`) | — |
+| Account password | Never stored in plaintext | User entry; used locally to derive the wrap key and sent over TLS only for verification |
 
-5. Bob downloads encrypted message
-6. Bob decrypts AES key with his RSA private key
-7. Bob decrypts message with AES key
-```
+**Password has two independent roles:**
 
-**Group Chats:**
-- One AES key per message
-- AES key encrypted separately for each member's public key
-- Stored in `message_keys` table
+1. **Authentication:** the server stores an **Argon2** hash of the password (separate from the E2EE salt). Login compares the password to this hash over HTTPS.
+2. **Private key wrapping:** the client derives a symmetric key with **PBKDF2 (or Argon2) + `encryptionSalt`**, then **AES-256-GCM** decrypts `encryptedPrivateKey`. That salt is not the same as the Argon2 salt used for `passwordHash`.
 
-**What Server Cannot Do:**
-- ❌ Read message content (E2EE)
-- ❌ Search encrypted messages (client-side only)
-- ❌ Show message preview in push notifications
+**Registration (client):** generate RSA-2048 (or agreed size); wrap `privateKey` with AES-GCM using a key derived from the password; upload `publicKey`, ciphertext, salt, IV, auth tag. Never send the raw private key or plaintext password except the password over TLS for hashing.
 
-**Database Schema for E2EE:**
-```sql
-user_keys (user_id, public_key, created_at)
+**Login:** after password verification, the Auth service returns the E2EE bundle so the client can unlock the private key locally. **Multi-device** uses the same encrypted blob from the server and the same account password on each device; no extra sync protocol is required for the same user account.
 
-messages (
-  id, chat_id, sender_id,
-  encrypted_content,  -- AES encrypted
-  created_at
-)
+**gRPC (Auth):** `Login` / `Register` return session tokens; `Login` includes `e2eeKeys` when the bundle is complete. `GetUserPublicKey` returns another user’s public key for encrypting message keys (callers pass a valid `sessionToken`). `ChangePassword` updates the Argon2 password hash and **replaces** the stored E2EE bundle (client must re-wrap the private key with a new key derived from the new password; RSA public key can stay the same).
 
-message_keys (
-  message_id, user_id,
-  encrypted_key  -- RSA encrypted AES key
-)
-```
+#### Hybrid encryption for messages (Communication service — planned)
 
-### Authentication & Authorization
+RSA-2048 (OAEP) encrypts at most ~190 bytes per operation, so **message bodies are not RSA-encrypted**. The intended pattern matches TLS/PGP-style hybrid encryption:
+
+1. Per message: random **AES-256** key + **AES-GCM** for `encryptedContent` (with IV + auth tag).
+2. That AES key is encrypted for each recipient with **RSA-OAEP** using each recipient’s **public** key.
+3. **Direct chat:** two `message_keys` rows (sender and recipient). **Group chat:** N rows for N members; one `messages` row, N wrapped keys.
+
+**Scaling groups:** wrapping the AES key per member is **O(N) RSA operations per message**, which does not scale to very large groups. Production messengers (e.g. Signal/WhatsApp-style **sender keys**) reduce send cost by distributing a symmetric key to members once and rotating on membership changes. Gomin may use **per-message wrapping for small groups** and **sender keys for large groups** as a product decision.
+
+#### Sender keys (group chats, design)
+
+This is **not** “one admin generates a key and everyone derives the rest from it.” Each **sender** has their **own** sender key material. Everyone else stores a local copy of **each participant’s** chain state so they can decrypt that sender’s messages.
+
+**Per sender**
+
+- Alice encrypts her traffic with **her** sender chain (`senderKey` / chain state for Alice).
+- Bob encrypts with **his** chain.
+- Vasyl encrypts with **his** chain.
+
+So there is no single shared chain for the whole group; there are **parallel chains**, one logical stream per sender.
+
+**Distributing a sender key (one-time, pairwise RSA)**
+
+When Alice joins or creates a group, she generates her sender key (random material + chain state as defined by the chosen protocol, e.g. Signal-style sender-key derivation). She must give **her** key to Bob and Vasyl **confidentially**:
+
+- `RSA-OAEP(senderKey_payload, publicKey_bob)` → to Bob  
+- `RSA-OAEP(senderKey_payload, publicKey_vasyl)` → to Vasyl  
+
+Bob and Vasyl do the same for their peers. The server may **relay** these blobs but cannot decrypt them without private keys.
+
+**Sending a normal message**
+
+- Alice advances **her** chain to derive a **message key**, encrypts the plaintext with **AES-GCM** (or the agreed AEAD), uploads **one** ciphertext blob to the server.
+- The server fans out the **same** blob to all members (no per-member RSA on each message).
+- Recipients who have Alice’s sender state locally derive the **same** message key from the **same** chain step (deterministic KDF/HMAC chain), then decrypt.
+
+**Chain / “next keys”**
+
+Implementations use a **KDF chain** (conceptually: derive a message key from the current chain step, then ratchet the chain forward). Sender and receivers stay in sync because the derivation is deterministic **as long as** they process messages in a consistent order for **that sender’s** stream.
+
+**Forward secrecy (per message key)**
+
+Past message keys are discarded after use; compromising today’s chain state should not recover older plaintexts (exact properties depend on the ratchet design—Signal’s sender keys document the intended guarantees).
+
+**Concurrency and ordering**
+
+- **Two different people** send at the same time: **no conflict**—they use **different** sender chains and different message keys.
+- **The same person** sends two messages quickly and they **arrive out of order**: recipients may see message with **iteration / counter** `6` before `5`. Real protocols attach metadata (e.g. `distributionId`, chain step, **message counter / iteration**) so the receiver can:
+  - advance the chain forward and **buffer** skipped message keys, or
+  - delay decrypt until the missing index arrives,
+
+so decryption stays consistent with the sender’s chain. (Signal uses explicit counters/skipping logic in the sender-key message format.)
+
+**Removing a member**
+
+A removed user must not be able to derive **future** keys. You **do not** only “continue the same chain” if they could have observed prior state. Typically each remaining member generates **new** random sender key material (**v2**), redistributes it via **RSA pairwise among remaining members**, and **stops using v1** for new traffic. The removed user keeps old ciphertext but cannot decrypt new messages.
+
+#### Sender key distribution — transport (Communication service — planned)
+
+Key distribution is **session-oriented and often real-time** (push to online clients, queue for offline). A plain **request/response HTTP** handler alone is a poor fit for “everyone must receive key updates quickly”; the natural options in a NestJS stack are:
+
+- **WebSocket gateway** (e.g. namespace `/keys` or under the main chat socket): events such as `distribute_sender_key` (payload: `groupId`, `recipientId`, `encryptedSenderKey`), and `sender_key_received` on the recipient; **or**
+- **gRPC streaming** / long-lived channel from Communication service to clients (mobile/web may still prefer WebSockets).
+
+The server may **persist pending** encrypted blobs (e.g. Redis + DB) keyed by `recipientId` + `groupId` so offline users fetch them on reconnect (`fetch_pending_keys`-style). The service only ever stores **RSA ciphertext**; it never holds users’ private keys.
+
+#### Group membership and keys (Communication service — planned)
+
+- **Add member:** existing members (or an admin) decrypt their copy of the message key (with their private key) and encrypt it for the new member’s public key; batch-insert new `message_keys`. Optionally limit history (e.g. last N messages) or use `canReadFrom` / `joinedAt` so the server only exposes keys for allowed messages.
+- **Remove member:** delete that user’s `message_keys` rows; bump **`keyVersion`** on the chat; new messages use the new version so the server can **omit** wrapped keys for removed users.
+
+#### Authentication & Authorization
 
 - **JWT-based authentication**
 - Access tokens (15 min expiry)

@@ -16,6 +16,10 @@ export type {
   TerminateSessionResponse,
   TerminateAllOtherSessionsRequest,
   TerminateAllOtherSessionsResponse,
+  GetUserPublicKeyRequest,
+  GetUserPublicKeyResponse,
+  ChangePasswordRequest,
+  ChangePasswordResponse,
 } from './types/generated/user-auth';
 export type {
   AuthenticateServiceIdentityRequest,

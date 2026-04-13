@@ -1,7 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { MicroserviceException } from '@gomin/app';
 import { status } from '@grpc/grpc-js';
-import { createHash, randomUUID } from 'crypto';
+import * as argon2 from 'argon2';
+import { randomUUID } from 'crypto';
 import { UserService } from '../users/user.service';
 import { UserSessionService } from '../user-sessions/user-session.service';
 import { CreateSessionParams } from '../user-sessions/types/user-session.domain.model';
@@ -13,6 +14,8 @@ import type {
   GetActiveSessionsResponse,
   TerminateSessionResponse,
   TerminateAllOtherSessionsResponse,
+  GetUserPublicKeyResponse,
+  ChangePasswordResponse,
 } from '@gomin/grpc';
 import { toUserProfile, toSessionInfo } from './user-auth.mapper';
 import type {
@@ -23,6 +26,8 @@ import type {
   TerminateSessionDto,
   TerminateAllOtherSessionsDto,
   DeviceInfoDto,
+  GetUserPublicKeyDto,
+  ChangePasswordDto,
 } from './dto';
 import type { UserDomainModel } from '../users/types/user.domain.model';
 
@@ -54,7 +59,7 @@ export class UserAuthService {
         status.ALREADY_EXISTS,
       );
     }
-    const passwordHash = this.hashPassword(data.password);
+    const passwordHash = await this.hashPassword(data.password);
 
     return await this.userService.createUser({
       id: randomUUID(),
@@ -62,11 +67,11 @@ export class UserAuthService {
       email: data.email,
       phone: data.phone ?? null,
       passwordHash,
-      publicKey: data.e2eeKeys?.publicKey ?? null,
-      encryptedPrivateKey: data.e2eeKeys?.encryptedPrivateKey ?? null,
-      encryptionSalt: data.e2eeKeys?.encryptionSalt ?? null,
-      encryptionIv: data.e2eeKeys?.encryptionIv ?? null,
-      encryptionAuthTag: data.e2eeKeys?.encryptionAuthTag ?? null,
+      publicKey: data.e2eeKeys.publicKey,
+      encryptedPrivateKey: data.e2eeKeys.encryptedPrivateKey,
+      encryptionSalt: data.e2eeKeys.encryptionSalt,
+      encryptionIv: data.e2eeKeys.encryptionIv,
+      encryptionAuthTag: data.e2eeKeys.encryptionAuthTag,
       avatarUrl: null,
       bio: null,
       emailVerified: false,
@@ -88,31 +93,21 @@ export class UserAuthService {
         status.UNAUTHENTICATED,
       );
     }
-    const isValid = this.verifyPassword(data.password, user.passwordHash);
+    const isValid = await this.verifyPassword(data.password, user.passwordHash);
     if (!isValid) {
       throw new MicroserviceException(
         'Invalid credentials',
         status.UNAUTHENTICATED,
       );
     }
-    const sessionParams = data.deviceInfo
-      ? this.toCreateSessionParams(user.id, data.deviceInfo)
-      : this.toCreateSessionParamsWithoutDevice(user.id);
+    const sessionParams = this.toCreateSessionParams(user.id, data.deviceInfo);
     const session =
       await this.userSessionService.getOrCreateSessionForDevice(sessionParams);
     return {
       user: toUserProfile(user),
       sessionToken: session.sessionToken,
       expiresAt: session.expiresAt,
-      e2eeKeys: user.publicKey
-        ? {
-            publicKey: user.publicKey,
-            encryptedPrivateKey: user.encryptedPrivateKey ?? '',
-            encryptionSalt: user.encryptionSalt ?? '',
-            encryptionIv: user.encryptionIv ?? '',
-            encryptionAuthTag: user.encryptionAuthTag ?? '',
-          }
-        : undefined,
+      e2eeKeys: this.buildE2eeKeysResponse(user),
     };
   }
 
@@ -167,7 +162,7 @@ export class UserAuthService {
     if (!user) {
       throw new MicroserviceException('User not found', status.NOT_FOUND);
     }
-    const isValid = this.verifyPassword(data.password, user.passwordHash);
+    const isValid = await this.verifyPassword(data.password, user.passwordHash);
     if (!isValid) {
       throw new MicroserviceException(
         'Invalid password',
@@ -206,7 +201,7 @@ export class UserAuthService {
     if (!user) {
       throw new MicroserviceException('User not found', status.NOT_FOUND);
     }
-    const isValid = this.verifyPassword(data.password, user.passwordHash);
+    const isValid = await this.verifyPassword(data.password, user.passwordHash);
     if (!isValid) {
       throw new MicroserviceException(
         'Invalid password',
@@ -219,6 +214,67 @@ export class UserAuthService {
       RevokeReason.USER_TERMINATED_ALL,
     );
     return { terminatedCount: count };
+  }
+
+  async getUserPublicKey(
+    data: GetUserPublicKeyDto,
+  ): Promise<GetUserPublicKeyResponse> {
+    const session = await this.userSessionService.getActiveSessionByToken(
+      data.sessionToken,
+    );
+    if (!session) {
+      throw new MicroserviceException(
+        'Invalid session',
+        status.UNAUTHENTICATED,
+      );
+    }
+    const target = await this.userService.findById(data.targetUserId);
+    if (!target) {
+      throw new MicroserviceException('User not found', status.NOT_FOUND);
+    }
+    return { publicKey: target.publicKey ?? '' };
+  }
+
+  async changePassword(
+    data: ChangePasswordDto,
+  ): Promise<ChangePasswordResponse> {
+    const session = await this.userSessionService.getActiveSessionByToken(
+      data.sessionToken,
+    );
+    if (!session) {
+      throw new MicroserviceException(
+        'Invalid session',
+        status.UNAUTHENTICATED,
+      );
+    }
+    const user = await this.userService.findById(session.userId);
+    if (!user) {
+      throw new MicroserviceException('User not found', status.NOT_FOUND);
+    }
+    const isValid = await this.verifyPassword(
+      data.currentPassword,
+      user.passwordHash,
+    );
+    if (!isValid) {
+      throw new MicroserviceException(
+        'Invalid credentials',
+        status.UNAUTHENTICATED,
+      );
+    }
+    await this.userSessionService.revokeOtherSessionsByToken(
+      user.id,
+      session.sessionToken,
+      RevokeReason.USER_PASSWORD_CHANGED,
+    );
+    await this.userService.updateUser(user.id, {
+      passwordHash: await this.hashPassword(data.newPassword),
+      publicKey: data.e2eeKeys.publicKey,
+      encryptedPrivateKey: data.e2eeKeys.encryptedPrivateKey,
+      encryptionSalt: data.e2eeKeys.encryptionSalt,
+      encryptionIv: data.e2eeKeys.encryptionIv,
+      encryptionAuthTag: data.e2eeKeys.encryptionAuthTag,
+    });
+    return { success: true };
   }
 
   private toCreateSessionParams(
@@ -258,11 +314,45 @@ export class UserAuthService {
     };
   }
 
-  private hashPassword(password: string): string {
-    return createHash('sha256').update(password).digest('hex');
+  private async hashPassword(password: string): Promise<string> {
+    return argon2.hash(password);
   }
 
-  private verifyPassword(password: string, hash: string): boolean {
-    return this.hashPassword(password) === hash;
+  private async verifyPassword(
+    password: string,
+    hash: string,
+  ): Promise<boolean> {
+    try {
+      return await argon2.verify(hash, password);
+    } catch {
+      return false;
+    }
+  }
+
+  private buildE2eeKeysResponse(user: UserDomainModel):
+    | {
+        publicKey: string;
+        encryptedPrivateKey: string;
+        encryptionSalt: string;
+        encryptionIv: string;
+        encryptionAuthTag: string;
+      }
+    | undefined {
+    if (
+      !user.publicKey ||
+      !user.encryptedPrivateKey ||
+      !user.encryptionSalt ||
+      !user.encryptionIv ||
+      !user.encryptionAuthTag
+    ) {
+      return undefined;
+    }
+    return {
+      publicKey: user.publicKey,
+      encryptedPrivateKey: user.encryptedPrivateKey,
+      encryptionSalt: user.encryptionSalt,
+      encryptionIv: user.encryptionIv,
+      encryptionAuthTag: user.encryptionAuthTag,
+    };
   }
 }

@@ -11,6 +11,8 @@ service UserAuthService {
   rpc GetActiveSessions(GetActiveSessionsRequest) returns (GetActiveSessionsResponse);
   rpc TerminateSession(TerminateSessionRequest) returns (TerminateSessionResponse);
   rpc TerminateAllOtherSessions(TerminateAllOtherSessionsRequest) returns (TerminateAllOtherSessionsResponse);
+  rpc GetUserPublicKey(GetUserPublicKeyRequest) returns (GetUserPublicKeyResponse);
+  rpc ChangePassword(ChangePasswordRequest) returns (ChangePasswordResponse);
 }
 
 enum DeviceType {
@@ -129,4 +131,24 @@ message TerminateAllOtherSessionsRequest {
 
 message TerminateAllOtherSessionsResponse {
   int32 terminatedCount = 1;
+}
+
+message GetUserPublicKeyRequest {
+  string sessionToken = 1;
+  string targetUserId = 2;
+}
+
+message GetUserPublicKeyResponse {
+  string publicKey = 1;
+}
+
+message ChangePasswordRequest {
+  string sessionToken = 1;
+  string currentPassword = 2;
+  string newPassword = 3;
+  E2EEKeys e2eeKeys = 4;
+}
+
+message ChangePasswordResponse {
+  bool success = 1;
 }

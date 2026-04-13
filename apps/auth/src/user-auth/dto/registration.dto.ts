@@ -15,18 +15,23 @@ import { DomainDeviceType } from '../../user-sessions/types/user-session.domain.
 
 export class E2EEKeysDto {
   @IsString()
+  @IsNotEmpty()
   publicKey: string;
 
   @IsString()
+  @IsNotEmpty()
   encryptedPrivateKey: string;
 
   @IsString()
+  @IsNotEmpty()
   encryptionSalt: string;
 
   @IsString()
+  @IsNotEmpty()
   encryptionIv: string;
 
   @IsString()
+  @IsNotEmpty()
   encryptionAuthTag: string;
 }
 

@@ -124,3 +124,23 @@ export interface TerminateAllOtherSessionsRequest {
 export interface TerminateAllOtherSessionsResponse {
   terminatedCount: number;
 }
+
+export interface GetUserPublicKeyRequest {
+  sessionToken: string;
+  targetUserId: string;
+}
+
+export interface GetUserPublicKeyResponse {
+  publicKey: string;
+}
+
+export interface ChangePasswordRequest {
+  sessionToken: string;
+  currentPassword: string;
+  newPassword: string;
+  e2eeKeys?: E2EEKeys | undefined;
+}
+
+export interface ChangePasswordResponse {
+  success: boolean;
+}

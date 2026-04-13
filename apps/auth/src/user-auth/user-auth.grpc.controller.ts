@@ -10,6 +10,8 @@ import type {
   GetActiveSessionsResponse,
   TerminateSessionResponse,
   TerminateAllOtherSessionsResponse,
+  GetUserPublicKeyResponse,
+  ChangePasswordResponse,
 } from '@gomin/grpc';
 import {
   RegisterDto,
@@ -18,6 +20,8 @@ import {
   GetActiveSessionsDto,
   TerminateSessionDto,
   TerminateAllOtherSessionsDto,
+  GetUserPublicKeyDto,
+  ChangePasswordDto,
 } from './dto';
 
 @Controller()
@@ -71,5 +75,21 @@ export class UserAuthGrpcController {
     data: TerminateAllOtherSessionsDto,
   ): Promise<TerminateAllOtherSessionsResponse> {
     return this.userAuthService.terminateAllOtherSessions(data);
+  }
+
+  @GrpcMethod('UserAuthService', 'GetUserPublicKey')
+  @RequirePermission(Permission.AUTH_SERVICE_USERS_READ)
+  async getUserPublicKey(
+    data: GetUserPublicKeyDto,
+  ): Promise<GetUserPublicKeyResponse> {
+    return this.userAuthService.getUserPublicKey(data);
+  }
+
+  @GrpcMethod('UserAuthService', 'ChangePassword')
+  @RequirePermission(Permission.AUTH_SERVICE_USERS_WRITE)
+  async changePassword(
+    data: ChangePasswordDto,
+  ): Promise<ChangePasswordResponse> {
+    return this.userAuthService.changePassword(data);
   }
 }

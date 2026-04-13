@@ -1,7 +1,6 @@
 import {
   IsEmail,
   IsNotEmpty,
-  IsOptional,
   IsString,
   MinLength,
   ValidateNested,
@@ -18,8 +17,7 @@ export class LoginDto {
   @MinLength(1)
   password: string;
 
-  @IsOptional()
   @ValidateNested()
   @Type(() => DeviceInfoDto)
-  deviceInfo?: DeviceInfoDto;
+  deviceInfo: DeviceInfoDto;
 }

@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { UserRepository } from './user.repository';
+import { UserRepository, type UserUpdatePatch } from './user.repository';
 import type { UserDomainModel } from './types/user.domain.model';
 
 @Injectable()
@@ -20,5 +20,12 @@ export class UserService {
 
   async createUser(user: UserDomainModel): Promise<UserDomainModel> {
     return this.userRepository.createUser(user);
+  }
+
+  async updateUser(
+    id: string,
+    patch: UserUpdatePatch,
+  ): Promise<UserDomainModel | null> {
+    return this.userRepository.updateById(id, patch);
   }
 }
