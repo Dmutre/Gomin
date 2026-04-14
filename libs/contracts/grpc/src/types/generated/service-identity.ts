@@ -16,7 +16,8 @@ export interface AuthenticateServiceIdentityResponse {
   expiresAt: number;
 }
 
-export interface GetPublicKeysRequest {}
+export interface GetPublicKeysRequest {
+}
 
 export interface GetPublicKeysResponse {
   publicKeys: JwtPublicKey[];

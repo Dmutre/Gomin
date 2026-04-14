@@ -1,0 +1,20 @@
+{
+  "name": "communication-service-e2e",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "application",
+  "implicitDependencies": ["communication-service"],
+  "targets": {
+    "e2e": {
+      "executor": "@nx/jest:jest",
+      "outputs": ["{workspaceRoot}/coverage/{e2eProjectRoot}"],
+      "options": {
+        "jestConfig": "apps/communication-service-e2e/jest.config.cts",
+        "passWithNoTests": true
+      },
+      "dependsOn": [
+        "communication-service:build",
+        "communication-service:serve"
+      ]
+    }
+  }
+}

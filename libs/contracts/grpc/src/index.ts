@@ -28,6 +28,7 @@ export type {
   GetPublicKeysResponse,
   JwtPublicKey,
 } from './types/generated/service-identity';
+export type { PingRequest, PingResponse } from './types/generated/communication';
 export { AuthClientModule } from './clients/auth/user-auth.client.module';
 export {
   ServiceIdentityClientModule,

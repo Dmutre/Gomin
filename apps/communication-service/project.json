@@ -1,0 +1,100 @@
+{
+  "name": "communication-service",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "apps/communication-service/src",
+  "projectType": "application",
+  "tags": [],
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "webpack-cli build",
+        "args": ["--node-env=production"],
+        "cwd": "apps/communication-service"
+      },
+      "configurations": {
+        "development": {
+          "args": ["--node-env=development"]
+        }
+      }
+    },
+    "serve": {
+      "continuous": true,
+      "executor": "@nx/js:node",
+      "defaultConfiguration": "development",
+      "dependsOn": ["build"],
+      "options": {
+        "buildTarget": "communication-service:build",
+        "runBuildTargetDependencies": false
+      },
+      "configurations": {
+        "development": {
+          "buildTarget": "communication-service:build:development"
+        },
+        "production": {
+          "buildTarget": "communication-service:build:production"
+        }
+      }
+    },
+    "start": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["build"],
+      "options": {
+        "command": "node -r dotenv/config dist/apps/communication-service/main.js dotenv_config_path=apps/communication-service/.env"
+      }
+    },
+    "test": {
+      "options": {
+        "passWithNoTests": true
+      }
+    },
+    "db:migrate:make": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "knex migrate:make --knexfile apps/communication-service/knexfile.ts {args.name}",
+        "cwd": ".",
+        "env": { "TS_NODE_PROJECT": "apps/communication-service/tsconfig.app.json" }
+      }
+    },
+    "db:migrate:latest": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "knex migrate:latest --knexfile apps/communication-service/knexfile.ts",
+        "cwd": ".",
+        "env": { "TS_NODE_PROJECT": "apps/communication-service/tsconfig.app.json" }
+      }
+    },
+    "db:migrate:rollback": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "knex migrate:rollback --knexfile apps/communication-service/knexfile.ts",
+        "cwd": ".",
+        "env": { "TS_NODE_PROJECT": "apps/communication-service/tsconfig.app.json" }
+      }
+    },
+    "db:migrate:status": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "knex migrate:status --knexfile apps/communication-service/knexfile.ts",
+        "cwd": ".",
+        "env": { "TS_NODE_PROJECT": "apps/communication-service/tsconfig.app.json" }
+      }
+    },
+    "db:seed:make": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "knex seed:make --knexfile apps/communication-service/knexfile.ts {args.name}",
+        "cwd": ".",
+        "env": { "TS_NODE_PROJECT": "apps/communication-service/tsconfig.app.json" }
+      }
+    },
+    "db:seed:run": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "knex seed:run --knexfile apps/communication-service/knexfile.ts",
+        "cwd": ".",
+        "env": { "TS_NODE_PROJECT": "apps/communication-service/tsconfig.app.json" }
+      }
+    }
+  }
+}

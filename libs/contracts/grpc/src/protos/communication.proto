@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+package communication.v1;
+
+// Placeholder RPCs for service bootstrap; extend as the domain grows.
+service CommunicationService {
+  rpc Ping(PingRequest) returns (PingResponse);
+}
+
+message PingRequest {}
+
+message PingResponse {
+  string message = 1;
+}
