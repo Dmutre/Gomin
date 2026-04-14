@@ -9,7 +9,7 @@
     "target": "es2021",
     "moduleResolution": "node"
   },
-  "include": ["src/**/*.ts"],
+  "include": ["src/**/*.ts", "database/**/*.ts", "knexfile.ts"],
   "exclude": [
     "jest.config.ts",
     "jest.config.cts",

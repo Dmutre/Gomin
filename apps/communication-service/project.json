@@ -53,7 +53,9 @@
       "options": {
         "command": "knex migrate:make --knexfile apps/communication-service/knexfile.ts {args.name}",
         "cwd": ".",
-        "env": { "TS_NODE_PROJECT": "apps/communication-service/tsconfig.app.json" }
+        "env": {
+          "TS_NODE_PROJECT": "apps/communication-service/tsconfig.app.json"
+        }
       }
     },
     "db:migrate:latest": {
@@ -61,7 +63,9 @@
       "options": {
         "command": "knex migrate:latest --knexfile apps/communication-service/knexfile.ts",
         "cwd": ".",
-        "env": { "TS_NODE_PROJECT": "apps/communication-service/tsconfig.app.json" }
+        "env": {
+          "TS_NODE_PROJECT": "apps/communication-service/tsconfig.app.json"
+        }
       }
     },
     "db:migrate:rollback": {
@@ -69,7 +73,9 @@
       "options": {
         "command": "knex migrate:rollback --knexfile apps/communication-service/knexfile.ts",
         "cwd": ".",
-        "env": { "TS_NODE_PROJECT": "apps/communication-service/tsconfig.app.json" }
+        "env": {
+          "TS_NODE_PROJECT": "apps/communication-service/tsconfig.app.json"
+        }
       }
     },
     "db:migrate:status": {
@@ -77,7 +83,9 @@
       "options": {
         "command": "knex migrate:status --knexfile apps/communication-service/knexfile.ts",
         "cwd": ".",
-        "env": { "TS_NODE_PROJECT": "apps/communication-service/tsconfig.app.json" }
+        "env": {
+          "TS_NODE_PROJECT": "apps/communication-service/tsconfig.app.json"
+        }
       }
     },
     "db:seed:make": {
@@ -85,7 +93,9 @@
       "options": {
         "command": "knex seed:make --knexfile apps/communication-service/knexfile.ts {args.name}",
         "cwd": ".",
-        "env": { "TS_NODE_PROJECT": "apps/communication-service/tsconfig.app.json" }
+        "env": {
+          "TS_NODE_PROJECT": "apps/communication-service/tsconfig.app.json"
+        }
       }
     },
     "db:seed:run": {
@@ -93,7 +103,9 @@
       "options": {
         "command": "knex seed:run --knexfile apps/communication-service/knexfile.ts",
         "cwd": ".",
-        "env": { "TS_NODE_PROJECT": "apps/communication-service/tsconfig.app.json" }
+        "env": {
+          "TS_NODE_PROJECT": "apps/communication-service/tsconfig.app.json"
+        }
       }
     }
   }

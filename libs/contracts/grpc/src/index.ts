@@ -28,7 +28,51 @@ export type {
   GetPublicKeysResponse,
   JwtPublicKey,
 } from './types/generated/service-identity';
-export type { PingRequest, PingResponse } from './types/generated/communication';
+export type {
+  PingRequest,
+  PingResponse,
+} from './types/generated/communication';
+export {
+  ChatType,
+  ChatMemberRole,
+  MessageType,
+  MessageStatusEnum,
+} from './types/generated/communication';
+export type {
+  StatusResponse,
+  ChatMember,
+  Chat,
+  CreateChatRequest,
+  GetChatRequest,
+  GetChatsByUserIdRequest,
+  AddChatMemberRequest,
+  RemoveChatMemberRequest,
+  UpdateMemberRoleRequest,
+  TransferOwnershipRequest,
+  ChatResponse,
+  ChatsResponse,
+  ChatMemberResponse,
+  EncryptedPayload,
+  MessageReaction,
+  MessageStatusInfo,
+  Message,
+  SendMessageRequest,
+  GetMessagesRequest,
+  UpdateMessageRequest,
+  DeleteMessageRequest,
+  MarkAsReadRequest,
+  AddReactionRequest,
+  RemoveReactionRequest,
+  MessageResponse,
+  MessagesResponse,
+  ReactionResponse,
+  SenderKeyEntry,
+  StoreSenderKeysRequest,
+  GetSenderKeyRequest,
+  SenderKeyResponse,
+  GetChatSenderKeysRequest,
+  ChatSenderKeysResponse,
+} from './types/generated/communication';
 export { AuthClientModule } from './clients/auth/user-auth.client.module';
 export {
   ServiceIdentityClientModule,

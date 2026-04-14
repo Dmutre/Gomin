@@ -2,13 +2,325 @@ syntax = "proto3";
 
 package communication.v1;
 
-// Placeholder RPCs for service bootstrap; extend as the domain grows.
+import "google/protobuf/timestamp.proto";
+
 service CommunicationService {
   rpc Ping(PingRequest) returns (PingResponse);
+
+  // Chat management
+  rpc CreateChat(CreateChatRequest) returns (ChatResponse);
+  rpc GetChat(GetChatRequest) returns (ChatResponse);
+  rpc GetChatsByUserId(GetChatsByUserIdRequest) returns (ChatsResponse);
+  rpc AddChatMember(AddChatMemberRequest) returns (ChatMemberResponse);
+  rpc RemoveChatMember(RemoveChatMemberRequest) returns (StatusResponse);
+  rpc UpdateMemberRole(UpdateMemberRoleRequest) returns (ChatMemberResponse);
+  rpc TransferOwnership(TransferOwnershipRequest) returns (StatusResponse);
+
+  // Message operations
+  rpc SendMessage(SendMessageRequest) returns (MessageResponse);
+  rpc GetMessages(GetMessagesRequest) returns (MessagesResponse);
+  rpc UpdateMessage(UpdateMessageRequest) returns (MessageResponse);
+  rpc DeleteMessage(DeleteMessageRequest) returns (StatusResponse);
+  rpc MarkAsRead(MarkAsReadRequest) returns (StatusResponse);
+
+  // Reactions
+  rpc AddReaction(AddReactionRequest) returns (ReactionResponse);
+  rpc RemoveReaction(RemoveReactionRequest) returns (StatusResponse);
+
+  // E2EE Sender Keys management
+  rpc StoreSenderKeys(StoreSenderKeysRequest) returns (StatusResponse);
+  rpc GetSenderKey(GetSenderKeyRequest) returns (SenderKeyResponse);
+  rpc GetChatSenderKeys(GetChatSenderKeysRequest) returns (ChatSenderKeysResponse);
 }
+
+// ─── Enums ────────────────────────────────────────────────────────────────────
+
+enum ChatType {
+  CHAT_TYPE_UNSPECIFIED = 0;
+  CHAT_TYPE_DIRECT = 1;
+  CHAT_TYPE_GROUP = 2;
+  CHAT_TYPE_CHANNEL = 3;
+}
+
+enum ChatMemberRole {
+  CHAT_MEMBER_ROLE_UNSPECIFIED = 0;
+  CHAT_MEMBER_ROLE_OWNER = 1;
+  CHAT_MEMBER_ROLE_ADMIN = 2;
+  CHAT_MEMBER_ROLE_MEMBER = 3;
+}
+
+enum MessageType {
+  MESSAGE_TYPE_UNSPECIFIED = 0;
+  MESSAGE_TYPE_TEXT = 1;
+  MESSAGE_TYPE_IMAGE = 2;
+  MESSAGE_TYPE_VIDEO = 3;
+  MESSAGE_TYPE_DOCUMENT = 4;
+  MESSAGE_TYPE_VOICE = 5;
+  MESSAGE_TYPE_SYSTEM = 6;
+}
+
+enum MessageStatusEnum {
+  MESSAGE_STATUS_UNSPECIFIED = 0;
+  MESSAGE_STATUS_SENT = 1;
+  MESSAGE_STATUS_DELIVERED = 2;
+  MESSAGE_STATUS_READ = 3;
+}
+
+// ─── Common ────────────────────────────────────────────────────────────────────
 
 message PingRequest {}
 
 message PingResponse {
   string message = 1;
+}
+
+message StatusResponse {
+  bool success = 1;
+}
+
+// ─── Chat messages ─────────────────────────────────────────────────────────────
+
+message ChatMember {
+  string userId = 1;
+  ChatMemberRole role = 2;
+  google.protobuf.Timestamp joinedAt = 3;
+  google.protobuf.Timestamp canReadFrom = 4;
+}
+
+message Chat {
+  string id = 1;
+  ChatType type = 2;
+  string name = 3;
+  int32 keyVersion = 4;
+  repeated ChatMember members = 5;
+  google.protobuf.Timestamp createdAt = 6;
+  google.protobuf.Timestamp updatedAt = 7;
+}
+
+message CreateChatRequest {
+  ChatType type = 1;
+  string name = 2;
+  string creatorUserId = 3;
+  // Initial members besides the creator (user ids)
+  repeated string memberUserIds = 4;
+}
+
+message GetChatRequest {
+  string chatId = 1;
+  // Requesting user id — used for membership access check
+  string userId = 2;
+}
+
+message GetChatsByUserIdRequest {
+  string userId = 1;
+  int32 limit = 2;
+  int32 offset = 3;
+}
+
+message AddChatMemberRequest {
+  string chatId = 1;
+  string requestingUserId = 2;
+  string targetUserId = 3;
+  ChatMemberRole role = 4;
+  // Optionally restrict history access — server stores this as canReadFrom
+  google.protobuf.Timestamp canReadFrom = 5;
+}
+
+message RemoveChatMemberRequest {
+  string chatId = 1;
+  string requestingUserId = 2;
+  string targetUserId = 3;
+}
+
+message UpdateMemberRoleRequest {
+  string chatId = 1;
+  string requestingUserId = 2;
+  string targetUserId = 3;
+  // Only ADMIN or MEMBER roles are valid here.
+  // To make someone OWNER use TransferOwnership.
+  ChatMemberRole newRole = 4;
+}
+
+message TransferOwnershipRequest {
+  string chatId = 1;
+  // Must be the current OWNER
+  string currentOwnerId = 2;
+  string newOwnerId = 3;
+}
+
+message ChatResponse {
+  Chat chat = 1;
+}
+
+message ChatsResponse {
+  repeated Chat chats = 1;
+}
+
+message ChatMemberResponse {
+  ChatMember member = 1;
+  // Current keyVersion of the chat at the moment the member was added.
+  // Callers use this to know which epoch the member joined in and therefore
+  // which historical messages need their AES keys redistributed via
+  // StoreMessageKeys (all messages with keyVersion <= this value that the
+  // member is allowed to read per canReadFrom).
+  int32 chatKeyVersion = 2;
+}
+
+// ─── Message messages ──────────────────────────────────────────────────────────
+
+// Encrypted payload the client pre-computes and uploads.
+// Server stores these opaque blobs; it never decrypts them.
+message EncryptedPayload {
+  // AES-256-GCM ciphertext (base64)
+  string encryptedContent = 1;
+  // AES-GCM IV (base64)
+  string iv = 2;
+  // AES-GCM auth tag (base64)
+  string authTag = 3;
+  // Epoch — matches chats.keyVersion at the time this message was sent.
+  // Tells recipients which chain key generation was used.
+  int32 keyVersion = 4;
+  // Sender's chain key ratchet step within this epoch.
+  // Recipients advance their copy of the sender's chain key to this step
+  // to derive the correct messageKey. Used for out-of-order delivery.
+  int32 iteration = 5;
+}
+
+message MessageReaction {
+  string userId = 1;
+  string emoji = 2;
+  google.protobuf.Timestamp createdAt = 3;
+}
+
+message MessageStatusInfo {
+  string userId = 1;
+  MessageStatusEnum status = 2;
+  google.protobuf.Timestamp deliveredAt = 3;
+  google.protobuf.Timestamp readAt = 4;
+}
+
+message Message {
+  string id = 1;
+  string chatId = 2;
+  string senderId = 3;
+  EncryptedPayload payload = 4;
+  MessageType type = 5;
+  bool isEdited = 6;
+  bool isDeleted = 7;
+  string replyToId = 8;
+  repeated MessageReaction reactions = 9;
+  repeated MessageStatusInfo statuses = 10;
+  google.protobuf.Timestamp createdAt = 11;
+  google.protobuf.Timestamp updatedAt = 12;
+}
+
+message SendMessageRequest {
+  string chatId = 1;
+  string senderId = 2;
+  EncryptedPayload payload = 3;
+  MessageType type = 4;
+  string replyToId = 5;
+}
+
+message GetMessagesRequest {
+  string chatId = 1;
+  // Requesting user id — used for canReadFrom enforcement
+  string userId = 2;
+  int32 limit = 3;
+  // Cursor-based pagination: id of the last seen message
+  string beforeMessageId = 4;
+}
+
+message UpdateMessageRequest {
+  string messageId = 1;
+  string senderId = 2;
+  EncryptedPayload payload = 3;
+}
+
+message DeleteMessageRequest {
+  string messageId = 1;
+  string requestingUserId = 2;
+}
+
+message MarkAsReadRequest {
+  string chatId = 1;
+  string userId = 2;
+  // Mark all messages up to and including this id as read
+  string upToMessageId = 3;
+}
+
+message AddReactionRequest {
+  string messageId = 1;
+  string userId = 2;
+  string emoji = 3;
+}
+
+message RemoveReactionRequest {
+  string messageId = 1;
+  string userId = 2;
+  string emoji = 3;
+}
+
+message MessageResponse {
+  Message message = 1;
+}
+
+message MessagesResponse {
+  repeated Message messages = 1;
+  bool hasMore = 2;
+}
+
+message ReactionResponse {
+  MessageReaction reaction = 1;
+}
+
+// ─── E2EE Sender Keys messages ─────────────────────────────────────────────────
+//
+// Sender Keys model:
+//   Each participant holds a chainKey per chat that ratchets forward per message:
+//     messageKey_n   = HMAC(chainKey_n, 0x01)  — encrypts message n, then deleted
+//     chainKey_{n+1} = HMAC(chainKey_n, 0x02)  — advances chain
+//   One encrypted blob is sent for all recipients; no per-message RSA wrapping.
+//   The chainKey itself is distributed once per (sender, recipient) pair via RSA-OAEP.
+//   On member removal all chain keys are rotated and redistributed to remaining members.
+
+// The sender's chainKey encrypted with one recipient's RSA public key.
+message SenderKeyEntry {
+  string senderId = 1;
+  string recipientId = 2;
+  // RSA-OAEP encrypted chainKey (base64) — server never decrypts this
+  string encryptedSenderKey = 3;
+  // Epoch — matches chats.keyVersion at the time of distribution
+  int32 keyVersion = 4;
+}
+
+// Store (or rotate) sender keys for a set of recipients.
+// Callers send one entry per recipient.  Server upserts on (chatId, senderId, recipientId).
+message StoreSenderKeysRequest {
+  string chatId = 1;
+  repeated SenderKeyEntry keys = 2;
+}
+
+// Retrieve the chainKey a specific sender distributed to me.
+message GetSenderKeyRequest {
+  string chatId = 1;
+  string senderId = 2;
+  // The user requesting the key — must be the intended recipient
+  string recipientId = 3;
+}
+
+message SenderKeyResponse {
+  SenderKeyEntry key = 1;
+}
+
+// Retrieve all sender keys stored for a chat, scoped to a single recipient.
+// Used when a new member joins or after a rotation to receive all senders' chain keys.
+message GetChatSenderKeysRequest {
+  string chatId = 1;
+  // The user whose received keys are being fetched
+  string userId = 2;
+}
+
+message ChatSenderKeysResponse {
+  repeated SenderKeyEntry keys = 1;
 }

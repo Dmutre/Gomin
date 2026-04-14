@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx *)",
+      "Bash(pnpm *)",
+      "Bash(git *)",
+      "Bash(node *)",
+      "Bash(ls *)",
+      "Bash(find *)",
+      "Edit",
+      "Write"
+    ]
+  }
+}

@@ -47,7 +47,6 @@ export default [
           ignoreRegExpLiterals: true,
         },
       ],
-      'max-params': ['error', { max: 4 }],
       quotes: ['error', 'single', { avoidEscape: true }],
     },
   },

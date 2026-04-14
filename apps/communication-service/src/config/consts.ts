@@ -4,4 +4,5 @@ export const CONFIG_NAMESPACES = {
   REDIS: 'redis',
   RABBITMQ: 'rabbitmq',
   GRPC: 'grpc',
+  SERVICE_IDENTITY: 'serviceIdentity',
 } as const;

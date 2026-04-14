@@ -12,4 +12,8 @@ export const validationSchema = Joi.object({
 
   GRPC_PORT: Joi.number().port().default(5001),
   HOST: Joi.string().hostname().default('localhost'),
+
+  AUTH_SERVICE_URL: Joi.string().default('localhost:5000'),
+  SERVICE_NAME: Joi.string().default('communication-service'),
+  SERVICE_SECRET: Joi.string().required(),
 }).concat(knexDatabaseValidationSchema);

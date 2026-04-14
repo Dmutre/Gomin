@@ -6,9 +6,242 @@
 
 /* eslint-disable */
 
-export interface PingRequest {
+export enum ChatType {
+  CHAT_TYPE_UNSPECIFIED = 0,
+  CHAT_TYPE_DIRECT = 1,
+  CHAT_TYPE_GROUP = 2,
+  CHAT_TYPE_CHANNEL = 3,
 }
+
+export enum ChatMemberRole {
+  CHAT_MEMBER_ROLE_UNSPECIFIED = 0,
+  CHAT_MEMBER_ROLE_OWNER = 1,
+  CHAT_MEMBER_ROLE_ADMIN = 2,
+  CHAT_MEMBER_ROLE_MEMBER = 3,
+}
+
+export enum MessageType {
+  MESSAGE_TYPE_UNSPECIFIED = 0,
+  MESSAGE_TYPE_TEXT = 1,
+  MESSAGE_TYPE_IMAGE = 2,
+  MESSAGE_TYPE_VIDEO = 3,
+  MESSAGE_TYPE_DOCUMENT = 4,
+  MESSAGE_TYPE_VOICE = 5,
+  MESSAGE_TYPE_SYSTEM = 6,
+}
+
+export enum MessageStatusEnum {
+  MESSAGE_STATUS_UNSPECIFIED = 0,
+  MESSAGE_STATUS_SENT = 1,
+  MESSAGE_STATUS_DELIVERED = 2,
+  MESSAGE_STATUS_READ = 3,
+}
+
+export interface PingRequest {}
 
 export interface PingResponse {
   message: string;
+}
+
+export interface StatusResponse {
+  success: boolean;
+}
+
+export interface ChatMember {
+  userId: string;
+  role: ChatMemberRole;
+  joinedAt: Date | undefined;
+  canReadFrom: Date | undefined;
+}
+
+export interface Chat {
+  id: string;
+  type: ChatType;
+  name: string;
+  keyVersion: number;
+  members: ChatMember[];
+  createdAt: Date | undefined;
+  updatedAt: Date | undefined;
+}
+
+export interface CreateChatRequest {
+  type: ChatType;
+  name: string;
+  creatorUserId: string;
+  memberUserIds: string[];
+}
+
+export interface GetChatRequest {
+  chatId: string;
+  userId: string;
+}
+
+export interface GetChatsByUserIdRequest {
+  userId: string;
+  limit: number;
+  offset: number;
+}
+
+export interface AddChatMemberRequest {
+  chatId: string;
+  requestingUserId: string;
+  targetUserId: string;
+  role: ChatMemberRole;
+  canReadFrom: Date | undefined;
+}
+
+export interface RemoveChatMemberRequest {
+  chatId: string;
+  requestingUserId: string;
+  targetUserId: string;
+}
+
+export interface UpdateMemberRoleRequest {
+  chatId: string;
+  requestingUserId: string;
+  targetUserId: string;
+  newRole: ChatMemberRole;
+}
+
+export interface TransferOwnershipRequest {
+  chatId: string;
+  currentOwnerId: string;
+  newOwnerId: string;
+}
+
+export interface ChatResponse {
+  chat: Chat | undefined;
+}
+
+export interface ChatsResponse {
+  chats: Chat[];
+}
+
+export interface ChatMemberResponse {
+  member: ChatMember | undefined;
+  chatKeyVersion: number;
+}
+
+export interface EncryptedPayload {
+  encryptedContent: string;
+  iv: string;
+  authTag: string;
+  keyVersion: number;
+  iteration: number;
+}
+
+export interface MessageReaction {
+  userId: string;
+  emoji: string;
+  createdAt: Date | undefined;
+}
+
+export interface MessageStatusInfo {
+  userId: string;
+  status: MessageStatusEnum;
+  deliveredAt: Date | undefined;
+  readAt: Date | undefined;
+}
+
+export interface Message {
+  id: string;
+  chatId: string;
+  senderId: string;
+  payload: EncryptedPayload | undefined;
+  type: MessageType;
+  isEdited: boolean;
+  isDeleted: boolean;
+  replyToId: string;
+  reactions: MessageReaction[];
+  statuses: MessageStatusInfo[];
+  createdAt: Date | undefined;
+  updatedAt: Date | undefined;
+}
+
+export interface SendMessageRequest {
+  chatId: string;
+  senderId: string;
+  payload: EncryptedPayload | undefined;
+  type: MessageType;
+  replyToId: string;
+}
+
+export interface GetMessagesRequest {
+  chatId: string;
+  userId: string;
+  limit: number;
+  beforeMessageId: string;
+}
+
+export interface UpdateMessageRequest {
+  messageId: string;
+  senderId: string;
+  payload: EncryptedPayload | undefined;
+}
+
+export interface DeleteMessageRequest {
+  messageId: string;
+  requestingUserId: string;
+}
+
+export interface MarkAsReadRequest {
+  chatId: string;
+  userId: string;
+  upToMessageId: string;
+}
+
+export interface AddReactionRequest {
+  messageId: string;
+  userId: string;
+  emoji: string;
+}
+
+export interface RemoveReactionRequest {
+  messageId: string;
+  userId: string;
+  emoji: string;
+}
+
+export interface MessageResponse {
+  message: Message | undefined;
+}
+
+export interface MessagesResponse {
+  messages: Message[];
+  hasMore: boolean;
+}
+
+export interface ReactionResponse {
+  reaction: MessageReaction | undefined;
+}
+
+export interface SenderKeyEntry {
+  senderId: string;
+  recipientId: string;
+  encryptedSenderKey: string;
+  keyVersion: number;
+}
+
+export interface StoreSenderKeysRequest {
+  chatId: string;
+  keys: SenderKeyEntry[];
+}
+
+export interface GetSenderKeyRequest {
+  chatId: string;
+  senderId: string;
+  recipientId: string;
+}
+
+export interface SenderKeyResponse {
+  key: SenderKeyEntry | undefined;
+}
+
+export interface GetChatSenderKeysRequest {
+  chatId: string;
+  userId: string;
+}
+
+export interface ChatSenderKeysResponse {
+  keys: SenderKeyEntry[];
 }
