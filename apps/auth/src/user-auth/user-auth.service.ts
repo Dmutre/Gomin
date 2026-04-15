@@ -16,6 +16,7 @@ import type {
   TerminateAllOtherSessionsResponse,
   GetUserPublicKeyResponse,
   ChangePasswordResponse,
+  ValidateSessionResponse,
 } from '@gomin/grpc';
 import { toUserProfile, toSessionInfo } from './user-auth.mapper';
 import type {
@@ -293,6 +294,26 @@ export class UserAuthService {
       country: null,
       city: null,
       userAgent: deviceInfo.userAgent,
+    };
+  }
+
+  async validateSession(
+    sessionToken: string,
+  ): Promise<ValidateSessionResponse> {
+    const session =
+      await this.userSessionService.getActiveSessionByToken(sessionToken);
+    if (!session) {
+      return { valid: false, userId: '', username: '', email: '' };
+    }
+    const user = await this.userService.findById(session.userId);
+    if (!user) {
+      return { valid: false, userId: '', username: '', email: '' };
+    }
+    return {
+      valid: true,
+      userId: user.id,
+      username: user.username,
+      email: user.email,
     };
   }
 

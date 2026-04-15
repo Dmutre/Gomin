@@ -28,6 +28,13 @@
 - [x] Knex seeds run with ts-node + tsconfig-paths
 - [x] Path alias for seeding-only import (avoids decorator/grpc in seed context)
 
+### API Gateway (`apps/gateway`)
+- [x] NestJS HTTP gateway app: `ConfigModule` + Joi validation, `@gomin/logger` (Pino), global `ValidationPipe`, Swagger UI in non-production (`/api/docs`)
+- [x] `GET /api/health` — liveness/readiness (`{ status: 'ok' }`)
+- [x] `.env.example`, target `gateway:start` (build + `dotenv` з `apps/gateway/.env`) — без БД
+- [x] `gateway-e2e` smoke test на `/api/health`
+- [ ] Підключити gRPC-клієнти до auth / communication, HTTP-маршрутизація, JWT/CORS/rate limit (наступні кроки)
+
 ---
 
 ## 🎯 Phase 0: Project Foundation
@@ -253,20 +260,21 @@
 ## 🌐 Phase 6: API Gateway
 
 ### Gateway Setup
-- [ ] Choose and install API Gateway (Kong/Traefik/custom NestJS)
+- [x] NestJS API Gateway app (`apps/gateway`) — базовий bootstrap, конфіг, логування, Swagger (dev)
+- [ ] Reverse proxy / edge (Kong, Traefik, Nginx) перед NestJS за потреби
 - [ ] Configure SSL/TLS (Let's Encrypt or Cloudflare Tunnel)
 
 ### Routing & Security
-- [ ] Configure service routing
+- [ ] Configure service routing (gRPC/HTTP до auth, communication, …)
 - [ ] Implement JWT validation with Identity Service
 - [ ] Add rate limiting and CORS policies
 - [ ] Add security headers
 - [ ] Implement request ID generation (traceId)
 
 ### Monitoring
-- [ ] Add request/response logging
-- [ ] Add Prometheus metrics
-- [ ] Add health check endpoint
+- [x] HTTP access logging via Pino (`nestjs-pino` / `@gomin/logger`)
+- [ ] Implement opentelemetry metric system
+- [x] Health check endpoint (`GET /api/health`)
 
 ---
 

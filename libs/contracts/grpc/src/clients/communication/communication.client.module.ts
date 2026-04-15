@@ -1,28 +1,30 @@
 import { DynamicModule, ForwardReference, Module, Type } from '@nestjs/common';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { join } from 'path';
-import { UserAuthGrpcClient } from './user-auth.grpc.client';
+import { CommunicationGrpcClient } from './communication.client';
 
-export const USER_AUTH_CLIENT = 'USER_AUTH_CLIENT';
+export const COMMUNICATION_CLIENT = 'COMMUNICATION_CLIENT';
 
-const PROTO_PATH = join(__dirname, '../../protos', 'user-auth.proto');
+const PROTO_PATH = join(__dirname, '../../protos', 'communication.proto');
 
-export interface UserAuthClientModuleOptions {
+export interface CommunicationClientModuleOptions {
   url?: string;
 }
 
 @Module({})
-export class AuthClientModule {
-  static register(options: UserAuthClientModuleOptions = {}): DynamicModule {
+export class CommunicationClientModule {
+  static register(
+    options: CommunicationClientModuleOptions = {},
+  ): DynamicModule {
     return this.build(
       ClientsModule.register([
         {
-          name: USER_AUTH_CLIENT,
+          name: COMMUNICATION_CLIENT,
           transport: Transport.GRPC,
           options: {
-            package: 'user_auth.v1',
+            package: 'communication.v1',
             protoPath: PROTO_PATH,
-            url: options.url ?? 'localhost:5000',
+            url: options.url ?? 'localhost:5001',
           },
         },
       ]),
@@ -44,7 +46,7 @@ export class AuthClientModule {
     return this.build(
       ClientsModule.registerAsync([
         {
-          name: USER_AUTH_CLIENT,
+          name: COMMUNICATION_CLIENT,
           imports: options.imports ?? [],
           inject: options.inject ?? [],
           useFactory: async (...args) => {
@@ -52,7 +54,7 @@ export class AuthClientModule {
             return {
               transport: Transport.GRPC,
               options: {
-                package: 'user_auth.v1',
+                package: 'communication.v1',
                 protoPath: PROTO_PATH,
                 url,
               },
@@ -65,10 +67,10 @@ export class AuthClientModule {
 
   private static build(clientsModule: DynamicModule): DynamicModule {
     return {
-      module: AuthClientModule,
+      module: CommunicationClientModule,
       imports: [clientsModule],
-      providers: [UserAuthGrpcClient],
-      exports: [UserAuthGrpcClient],
+      providers: [CommunicationGrpcClient],
+      exports: [CommunicationGrpcClient],
     };
   }
 }

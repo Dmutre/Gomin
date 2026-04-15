@@ -144,3 +144,14 @@ export interface ChangePasswordRequest {
 export interface ChangePasswordResponse {
   success: boolean;
 }
+
+export interface ValidateSessionRequest {
+  sessionToken: string;
+}
+
+export interface ValidateSessionResponse {
+  valid: boolean;
+  userId: string;
+  username: string;
+  email: string;
+}

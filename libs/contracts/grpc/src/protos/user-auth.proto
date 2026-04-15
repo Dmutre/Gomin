@@ -13,6 +13,7 @@ service UserAuthService {
   rpc TerminateAllOtherSessions(TerminateAllOtherSessionsRequest) returns (TerminateAllOtherSessionsResponse);
   rpc GetUserPublicKey(GetUserPublicKeyRequest) returns (GetUserPublicKeyResponse);
   rpc ChangePassword(ChangePasswordRequest) returns (ChangePasswordResponse);
+  rpc ValidateSession(ValidateSessionRequest) returns (ValidateSessionResponse);
 }
 
 enum DeviceType {
@@ -151,4 +152,15 @@ message ChangePasswordRequest {
 
 message ChangePasswordResponse {
   bool success = 1;
+}
+
+message ValidateSessionRequest {
+  string sessionToken = 1;
+}
+
+message ValidateSessionResponse {
+  bool valid = 1;
+  string userId = 2;
+  string username = 3;
+  string email = 4;
 }

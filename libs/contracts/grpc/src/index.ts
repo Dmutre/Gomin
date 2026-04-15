@@ -20,6 +20,8 @@ export type {
   GetUserPublicKeyResponse,
   ChangePasswordRequest,
   ChangePasswordResponse,
+  ValidateSessionRequest,
+  ValidateSessionResponse,
 } from './types/generated/user-auth';
 export type {
   AuthenticateServiceIdentityRequest,
@@ -73,9 +75,18 @@ export type {
   GetChatSenderKeysRequest,
   ChatSenderKeysResponse,
 } from './types/generated/communication';
-export { AuthClientModule } from './clients/auth/user-auth.client.module';
+export {
+  AuthClientModule,
+  USER_AUTH_CLIENT,
+} from './clients/auth/user-auth.client.module';
+export { UserAuthGrpcClient } from './clients/auth/user-auth.grpc.client';
 export {
   ServiceIdentityClientModule,
   SERVICE_IDENTITY_CLIENT,
 } from './clients/auth/service-identity.client.module';
 export { ServiceIdentityGrpcClient } from './clients/auth/service-identity.client';
+export {
+  CommunicationClientModule,
+  COMMUNICATION_CLIENT,
+} from './clients/communication/communication.client.module';
+export { CommunicationGrpcClient } from './clients/communication/communication.client';

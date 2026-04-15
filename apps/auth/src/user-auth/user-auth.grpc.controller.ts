@@ -12,6 +12,7 @@ import type {
   TerminateAllOtherSessionsResponse,
   GetUserPublicKeyResponse,
   ChangePasswordResponse,
+  ValidateSessionResponse,
 } from '@gomin/grpc';
 import {
   RegisterDto,
@@ -91,5 +92,13 @@ export class UserAuthGrpcController {
     data: ChangePasswordDto,
   ): Promise<ChangePasswordResponse> {
     return this.userAuthService.changePassword(data);
+  }
+
+  @GrpcMethod('UserAuthService', 'ValidateSession')
+  @RequirePermission(Permission.AUTH_SERVICE_SESSIONS_READ)
+  async validateSession(data: {
+    sessionToken: string;
+  }): Promise<ValidateSessionResponse> {
+    return this.userAuthService.validateSession(data.sessionToken);
   }
 }
