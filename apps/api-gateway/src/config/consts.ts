@@ -4,4 +4,5 @@ export const CONFIG_NAMESPACES = {
   AUTH_SERVICE: 'authService',
   COMMUNICATION_SERVICE: 'communicationService',
   SERVICE_IDENTITY: 'serviceIdentity',
+  TELEMETRY: 'telemetry',
 } as const;

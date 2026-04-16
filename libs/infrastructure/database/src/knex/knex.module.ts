@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Logger, Module } from '@nestjs/common';
 import { KnexModule } from 'nest-knexjs';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { DATABASE_CONFIG_NAMESPACE } from './knex.config';
@@ -17,7 +17,11 @@ import { DATABASE_CONFIG_NAMESPACE } from './knex.config';
           url: string;
           poolMin: number;
           poolMax: number;
+          logQueries: boolean;
         }>(DATABASE_CONFIG_NAMESPACE);
+
+        const knexLogger = new Logger('Knex');
+
         return {
           config: {
             client: 'pg',
@@ -25,6 +29,13 @@ import { DATABASE_CONFIG_NAMESPACE } from './knex.config';
             pool: {
               min: db?.poolMin ?? 2,
               max: db?.poolMax ?? 10,
+            },
+            debug: db?.logQueries ?? false,
+            log: {
+              warn: (msg: string) => knexLogger.warn(msg),
+              error: (msg: string) => knexLogger.error(msg),
+              deprecate: (msg: string) => knexLogger.warn(`[deprecated] ${msg}`),
+              debug: (msg: string) => knexLogger.debug(msg),
             },
           },
         };

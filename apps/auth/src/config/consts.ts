@@ -5,4 +5,5 @@ export const CONFIG_NAMESPACES = {
   JWT: 'jwt',
   RABBITMQ: 'rabbitmq',
   GRPC: 'grpc',
+  TELEMETRY: 'telemetry',
 } as const;

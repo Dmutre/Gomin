@@ -1,4 +1,5 @@
 import { registerAs } from '@nestjs/config';
+import { telemetryConfig } from '@gomin/telemetry';
 import { CONFIG_NAMESPACES } from './consts';
 
 export const appConfig = registerAs(CONFIG_NAMESPACES.APP, () => ({
@@ -42,6 +43,7 @@ const configs = [
   authServiceConfig,
   communicationServiceConfig,
   serviceIdentityConfig,
+  telemetryConfig,
 ];
 
 export default configs;

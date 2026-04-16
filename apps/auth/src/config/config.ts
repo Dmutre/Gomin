@@ -1,4 +1,5 @@
 import { registerAs } from '@nestjs/config';
+import { telemetryConfig } from '@gomin/telemetry';
 import { CONFIG_NAMESPACES } from './consts';
 import { knexDatabaseConfig } from '@gomin/database';
 
@@ -39,6 +40,7 @@ const configs = [
   redisConfig,
   rabbitmqConfig,
   jwtConfig,
+  telemetryConfig,
 ];
 
 export default configs;

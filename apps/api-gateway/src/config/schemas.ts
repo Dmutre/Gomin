@@ -1,6 +1,8 @@
 import * as Joi from 'joi';
+import { loggerValidationSchema } from '@gomin/logger';
+import { telemetryValidationSchema } from '@gomin/telemetry';
 
-export const validationSchema = Joi.object({
+const baseEnvSchema = Joi.object({
   NODE_ENV: Joi.string()
     .valid('development', 'production', 'test')
     .default('development'),
@@ -18,3 +20,10 @@ export const validationSchema = Joi.object({
   SERVICE_NAME: Joi.string().default('gateway-service'),
   SERVICE_SECRET: Joi.string().required(),
 });
+
+const additionalValidationSchemas = [loggerValidationSchema, telemetryValidationSchema];
+
+export const validationSchema = additionalValidationSchemas.reduce(
+  (schema, next) => schema.concat(next),
+  baseEnvSchema,
+);

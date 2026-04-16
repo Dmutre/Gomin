@@ -1,7 +1,9 @@
 import * as Joi from 'joi';
 import { knexDatabaseValidationSchema } from '@gomin/database';
+import { loggerValidationSchema } from '@gomin/logger';
+import { telemetryValidationSchema } from '@gomin/telemetry';
 
-export const validationSchema = Joi.object({
+const baseEnvSchema = Joi.object({
   NODE_ENV: Joi.string()
     .valid('development', 'production', 'test')
     .default('development'),
@@ -16,4 +18,15 @@ export const validationSchema = Joi.object({
   AUTH_SERVICE_URL: Joi.string().default('localhost:5000'),
   SERVICE_NAME: Joi.string().default('communication-service'),
   SERVICE_SECRET: Joi.string().required(),
-}).concat(knexDatabaseValidationSchema);
+});
+
+const additionalValidationSchemas = [
+  knexDatabaseValidationSchema,
+  loggerValidationSchema,
+  telemetryValidationSchema,
+];
+
+export const validationSchema = additionalValidationSchemas.reduce(
+  (schema, next) => schema.concat(next),
+  baseEnvSchema,
+);

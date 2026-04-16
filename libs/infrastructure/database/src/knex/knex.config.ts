@@ -10,4 +10,5 @@ export const knexDatabaseConfig = registerAs(DATABASE_CONFIG_NAMESPACE, () => ({
   url: process.env['DATABASE_URL'],
   poolMin: parseInt(process.env['DB_POOL_MIN'] || '2', 10),
   poolMax: parseInt(process.env['DB_POOL_MAX'] || '10', 10),
+  logQueries: process.env['DB_LOG_QUERIES'] === 'true',
 }));

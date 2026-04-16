@@ -5,4 +5,5 @@ export const CONFIG_NAMESPACES = {
   RABBITMQ: 'rabbitmq',
   GRPC: 'grpc',
   SERVICE_IDENTITY: 'serviceIdentity',
+  TELEMETRY: 'telemetry',
 } as const;

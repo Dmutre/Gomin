@@ -18,4 +18,5 @@ export const knexDatabaseValidationSchema = Joi.object({
   }),
   DB_POOL_MIN: Joi.number().integer().min(1).default(2),
   DB_POOL_MAX: Joi.number().integer().min(1).default(10),
+  DB_LOG_QUERIES: Joi.boolean().default(false),
 }).required();
