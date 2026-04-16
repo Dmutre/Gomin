@@ -8,7 +8,9 @@
       "Bash(ls *)",
       "Bash(find *)",
       "Edit",
-      "Write"
+      "Write",
+      "Bash(docker build *)",
+      "Bash(docker run *)"
     ]
   }
 }

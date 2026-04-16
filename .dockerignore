@@ -1,0 +1,9 @@
+node_modules
+dist
+.nx
+.git
+**/.env
+**/.env.*
+**/*.env.local
+apps/**-e2e
+*.log

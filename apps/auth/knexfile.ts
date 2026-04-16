@@ -3,6 +3,8 @@ import type { Knex } from 'knex';
 
 dotenv.config();
 
+const isTs = __filename.endsWith('.ts');
+
 const config: Knex.Config = {
   client: 'pg',
   connection: process.env.DATABASE_URL,
@@ -15,12 +17,13 @@ const config: Knex.Config = {
   migrations: {
     directory: './database/migrations',
     tableName: 'knex_migrations',
-    extension: 'ts',
+    extension: isTs ? 'ts' : 'js',
+    loadExtensions: isTs ? ['.ts'] : ['.js'],
   },
 
   seeds: {
     directory: './database/seeds',
-    extension: 'ts',
+    extension: isTs ? 'ts' : 'js',
   },
 };
 

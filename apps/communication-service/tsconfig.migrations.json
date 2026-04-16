@@ -1,0 +1,12 @@
+{
+  "compilerOptions": {
+    "target": "ES2021",
+    "module": "CommonJS",
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "rootDir": ".",
+    "outDir": "../../dist/apps/communication-service"
+  },
+  "include": ["knexfile.ts", "database/migrations/**/*.ts", "database/table-names.ts"]
+}

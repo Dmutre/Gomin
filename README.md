@@ -958,6 +958,52 @@ k6 run tests/load/message-send.js
 
 ---
 
+## 🐳 Docker & Kubernetes Deployment
+
+Each service has its own `Dockerfile` located at `apps/<service>/Dockerfile`. All images use a multi-stage build:
+
+| Service | Dockerfile | Default Port |
+|---|---|---|
+| `api-gateway` | `apps/api-gateway/Dockerfile` | 3000 |
+| `auth` | `apps/auth/Dockerfile` | 5000 (gRPC) |
+| `communication-service` | `apps/communication-service/Dockerfile` | 5001 (gRPC) |
+
+### Build an image
+
+```bash
+# Build from workspace root (context must be the repo root)
+docker build -f apps/auth/Dockerfile -t gomin/auth:latest .
+```
+
+### Database migrations
+
+Services that own a PostgreSQL database (`auth`, `communication-service`) ship their compiled migrations inside the image. Before each release, run a Kubernetes **Job** with the same image using the following command override:
+
+```yaml
+# Kubernetes Job snippet (run before Helm release)
+command: ["node", "node_modules/.bin/knex", "migrate:latest", "--knexfile", "knexfile.js"]
+env:
+  - name: DATABASE_URL
+    valueFrom:
+      secretKeyRef:
+        name: <service>-db-secret
+        key: url
+```
+
+### Deployment workflow (Helm)
+
+> **TODO (future CI/CD workflow):** Automate the steps below in a GitHub Actions workflow:
+>
+> 1. Build and push Docker images to the container registry.
+> 2. Run a Helm pre-upgrade **migration Job** for each service with a database:
+>    - `helm upgrade --install <service>-migrate ./charts/<service> --set mode=migrate`
+>    - Wait for the Job to complete successfully (`kubectl wait --for=condition=complete job/<service>-migrate`).
+>    - On failure: skip the release and alert — the previous version keeps running.
+> 3. Release the application with `helm upgrade --install <service> ./charts/<service>`.
+> 4. Roll back with `helm rollback <service>` if health checks fail.
+
+---
+
 ## 🤝 Contributing
 
 1. Fork the repository
