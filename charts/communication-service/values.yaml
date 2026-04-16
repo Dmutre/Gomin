@@ -1,0 +1,45 @@
+nameOverride: ""
+fullnameOverride: ""
+
+image:
+  repository: gomin/communication-service
+  # tag defaults to Chart.appVersion when left empty
+  tag: ""
+  pullPolicy: IfNotPresent
+
+replicaCount: 1
+
+service:
+  type: ClusterIP
+  port: 5001  # gRPC
+
+migrations:
+  enabled: true
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+hpa:
+  enabled: false
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70
+
+# Inject environment variables directly (non-sensitive).
+# Sensitive values (DB passwords, JWT secrets) should come via envFrom referencing a Secret.
+env: {}
+  # NODE_ENV: production
+  # GRPC_PORT: "5001"
+  # HOST: "0.0.0.0"
+
+# Reference existing ConfigMaps or Secrets for environment variables.
+envFrom: []
+  # - secretRef:
+  #     name: communication-service-secret
+  # - configMapRef:
+  #     name: communication-service-config

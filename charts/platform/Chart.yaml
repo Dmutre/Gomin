@@ -1,0 +1,5 @@
+apiVersion: v2
+name: gomin-platform
+description: Cluster-level resources — namespaces, RBAC, monitoring stack config
+type: application
+version: 0.1.0

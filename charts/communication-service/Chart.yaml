@@ -1,0 +1,6 @@
+apiVersion: v2
+name: communication-service
+description: Messaging gRPC microservice — chats, messages, E2EE sender keys
+type: application
+version: 0.1.0
+appVersion: "latest"

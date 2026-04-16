@@ -1,0 +1,57 @@
+nameOverride: ""
+fullnameOverride: ""
+
+image:
+  repository: gomin/api-gateway
+  # tag defaults to Chart.appVersion when left empty
+  tag: ""
+  pullPolicy: IfNotPresent
+
+replicaCount: 1
+
+service:
+  type: ClusterIP
+  port: 3000
+
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+    # kubernetes.io/ingress.class: nginx
+    # cert-manager.io/cluster-issuer: letsencrypt-prod
+  hosts:
+    - host: api.gomin.local
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+  #  - secretName: api-gateway-tls
+  #    hosts:
+  #      - api.gomin.local
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+hpa:
+  enabled: false
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70
+
+# Inject environment variables directly (non-sensitive).
+# Sensitive values (DB passwords, JWT secrets) should come via envFrom referencing a Secret.
+env: {}
+  # NODE_ENV: production
+  # APP_PORT: "3000"
+
+# Reference existing ConfigMaps or Secrets for environment variables.
+envFrom: []
+  # - secretRef:
+  #     name: api-gateway-secret
+  # - configMapRef:
+  #     name: api-gateway-config

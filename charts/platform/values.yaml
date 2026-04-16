@@ -1,0 +1,3 @@
+namespaces:
+  apps: gomin-apps
+  monitoring: gomin-monitoring
