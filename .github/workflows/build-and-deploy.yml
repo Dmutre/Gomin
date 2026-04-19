@@ -23,19 +23,26 @@ on:
         description: 'Deploy to Kubernetes after build'
         type: boolean
         default: false
+      run_migrations:
+        description: 'Run DB migrations before deploy (auth, communication-service)'
+        type: boolean
+        default: false
 
 env:
   REGISTRY: ghcr.io
 
 jobs:
-  # ── 1. Compute matrix of selected apps ────────────────────────────────────
+  # ── 1. Compute matrices ────────────────────────────────────────────────────
   setup:
     runs-on: ubuntu-latest
     outputs:
-      matrix: ${{ steps.matrix.outputs.matrix }}
+      matrix:         ${{ steps.matrix.outputs.matrix }}
+      migrate_matrix: ${{ steps.matrix.outputs.migrate_matrix }}
+      has_migrations: ${{ steps.matrix.outputs.has_migrations }}
     steps:
       - id: matrix
         run: |
+          # ── All selected apps (build + deploy matrix) ──
           apps='[]'
           [ "${{ inputs.build_api_gateway }}"           = "true" ] && apps=$(echo "$apps" | jq '. += [{"app":"api-gateway"}]')
           [ "${{ inputs.build_auth }}"                  = "true" ] && apps=$(echo "$apps" | jq '. += [{"app":"auth"}]')
@@ -46,9 +53,23 @@ jobs:
             exit 1
           fi
 
-          matrix="{\"include\":$apps}"
-          echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
-          echo "Selected apps: $apps"
+          echo "matrix={\"include\":$apps}" >> "$GITHUB_OUTPUT"
+
+          # ── Migration-capable services selected in this run ──
+          migrate_apps='[]'
+          [ "${{ inputs.build_auth }}"                  = "true" ] && migrate_apps=$(echo "$migrate_apps" | jq '. += [{"app":"auth"}]')
+          [ "${{ inputs.build_communication_service }}" = "true" ] && migrate_apps=$(echo "$migrate_apps" | jq '. += [{"app":"communication-service"}]')
+
+          if [ "$migrate_apps" = "[]" ]; then
+            echo "has_migrations=false" >> "$GITHUB_OUTPUT"
+            echo "migrate_matrix={\"include\":[{\"app\":\"_none\"}]}" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_migrations=true"  >> "$GITHUB_OUTPUT"
+            echo "migrate_matrix={\"include\":$migrate_apps}" >> "$GITHUB_OUTPUT"
+          fi
+
+          echo "Build matrix:   $apps"
+          echo "Migrate matrix: $migrate_apps"
 
   # ── 2. Build & push Docker images ─────────────────────────────────────────
   build:
@@ -80,14 +101,91 @@ jobs:
           tags: |
             ghcr.io/${{ github.repository_owner }}/gomin-${{ matrix.app }}:${{ inputs.version }}
             ghcr.io/${{ github.repository_owner }}/gomin-${{ matrix.app }}:latest
-          # Layer cache per app — dramatically speeds up subsequent builds
           cache-from: type=gha,scope=${{ matrix.app }}
           cache-to: type=gha,mode=max,scope=${{ matrix.app }}
 
-  # ── 3. Helm upgrade on Kubernetes ─────────────────────────────────────────
-  deploy:
+  # ── 3. Run DB migrations (optional) ───────────────────────────────────────
+  migrate:
     needs: [setup, build]
-    if: ${{ inputs.deploy == true }}
+    # Runs only when: deploy + run_migrations are both checked AND at least one
+    # migration-capable service was selected (auth / communication-service).
+    if: >-
+      ${{ inputs.deploy == true &&
+          inputs.run_migrations == true &&
+          needs.setup.outputs.has_migrations == 'true' }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix: ${{ fromJSON(needs.setup.outputs.migrate_matrix) }}
+      fail-fast: false
+    steps:
+      - name: Configure kubectl
+        run: |
+          mkdir -p ~/.kube
+          echo "${{ secrets.KUBECONFIG }}" > ~/.kube/config
+          chmod 600 ~/.kube/config
+
+      - name: Migrate — ${{ matrix.app }}
+        env:
+          APP:     ${{ matrix.app }}
+          VERSION: ${{ inputs.version }}
+          OWNER:   ${{ github.repository_owner }}
+          RUN_ID:  ${{ github.run_id }}
+        run: |
+          JOB_NAME="${APP}-migrate-${RUN_ID}"
+
+          echo "Creating migration Job: ${JOB_NAME}"
+
+          kubectl apply -f - <<EOF
+          apiVersion: batch/v1
+          kind: Job
+          metadata:
+            name: ${JOB_NAME}
+            namespace: gomin-apps
+            labels:
+              app: ${APP}
+              component: migration
+              version: "${VERSION}"
+          spec:
+            backoffLimit: 0
+            activeDeadlineSeconds: 300
+            ttlSecondsAfterFinished: 600
+            template:
+              spec:
+                restartPolicy: Never
+                containers:
+                  - name: migrate
+                    image: ghcr.io/${OWNER}/gomin-${APP}:${VERSION}
+                    command:
+                      - node
+                      - node_modules/.bin/knex
+                      - migrate:latest
+                      - --knexfile
+                      - knexfile.js
+                    envFrom:
+                      - secretRef:
+                          name: ${APP}-secret
+          EOF
+
+          echo "Waiting for migration to complete (timeout 5m)..."
+          kubectl wait job/${JOB_NAME} \
+            --namespace gomin-apps \
+            --for=condition=complete \
+            --timeout=300s
+
+          echo "✓ Migration succeeded for ${APP}"
+
+  # ── 4. Helm upgrade ────────────────────────────────────────────────────────
+  deploy:
+    needs: [setup, build, migrate]
+    # Run if:
+    #   - deploy is checked
+    #   - build succeeded
+    #   - migrate succeeded OR was skipped (not requested / no migration services)
+    if: >-
+      ${{ always() &&
+          inputs.deploy == true &&
+          needs.build.result == 'success' &&
+          (needs.migrate.result == 'success' || needs.migrate.result == 'skipped') }}
     runs-on: ubuntu-latest
     strategy:
       matrix: ${{ fromJSON(needs.setup.outputs.matrix) }}
@@ -97,8 +195,6 @@ jobs:
 
       - uses: azure/setup-helm@v4
 
-      # Secret KUBECONFIG must be added in repo Settings → Secrets → Actions.
-      # Content: base64-encoded or raw kubeconfig file from your VDS cluster.
       - name: Configure kubectl
         run: |
           mkdir -p ~/.kube
@@ -106,11 +202,18 @@ jobs:
           chmod 600 ~/.kube/config
 
       - name: Helm upgrade — ${{ matrix.app }}
+        env:
+          APP:     ${{ matrix.app }}
+          VERSION: ${{ inputs.version }}
+          OWNER:   ${{ github.repository_owner }}
         run: |
-          helm upgrade --install ${{ matrix.app }} ./charts/${{ matrix.app }} \
+          # migrations.enabled=false — CI runs migrations explicitly via the
+          # migrate job above; skip the Helm hook to avoid running them twice.
+          helm upgrade --install "${APP}" "./charts/${APP}" \
             --namespace gomin-apps \
             --create-namespace \
-            --set image.repository=ghcr.io/${{ github.repository_owner }}/gomin-${{ matrix.app }} \
-            --set image.tag=${{ inputs.version }} \
+            --set image.repository="ghcr.io/${OWNER}/gomin-${APP}" \
+            --set image.tag="${VERSION}" \
+            --set migrations.enabled=false \
             --atomic \
             --timeout 5m

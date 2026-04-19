@@ -980,10 +980,12 @@ Bootstrap assets for the cluster and **CI/CD (GitHub Actions kubeconfig)** live 
 kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
 ```
 
-**2. Create namespaces** via platform chart:
+**2. Bootstrap namespaces + CI/CD ServiceAccount** — один файл, безпечно на голому кластері:
 ```bash
-helm upgrade --install platform ./charts/platform
+kubectl apply -f k8s/ci-rbac.yaml
 ```
+
+Це створює: `gomin-apps`, `gomin-infra`, `ServiceAccount github-actions`, RBAC, довготривалий токен. Після цього можна генерувати kubeconfig для CI ([інструкція нижче](#cicd-serviceaccount)).
 
 **3. Create all secrets** interactively (passwords are never written to disk or git):
 ```bash
@@ -992,9 +994,9 @@ helm upgrade --install platform ./charts/platform
 
 The script prompts for: Redis password, MinIO credentials, PostgreSQL URLs, JWT secret, gRPC ports. Re-running updates existing secrets safely (idempotent).
 
-**4. Set up CI/CD ServiceAccount** (see [next section](#cicd-serviceaccount)):
+**4. (Optional) Create `gomin-monitoring` namespace:**
 ```bash
-kubectl apply -f k8s/bootstrap/ci-rbac.yaml
+helm upgrade --install platform ./charts/platform
 ```
 
 **5. Deploy infrastructure** (Redis + MinIO):
@@ -1083,10 +1085,11 @@ Go to **Actions → Build & Deploy → Run workflow**, then fill in:
 | Input | Description |
 |---|---|
 | `version` | Image tag to publish, e.g. `v1.2.0` |
-| `Build api-gateway` | Checkbox — include this service |
-| `Build auth` | Checkbox — include this service |
-| `Build communication-service` | Checkbox — include this service |
-| `Deploy to Kubernetes` | If checked, runs `helm upgrade` after the build |
+| `Build api-gateway` | Checkbox — build & push this service |
+| `Build auth` | Checkbox — build & push this service |
+| `Build communication-service` | Checkbox — build & push this service |
+| `Deploy to Kubernetes` | Run `helm upgrade` for every selected service after build |
+| `Run DB migrations` | Before deploying, run Knex migrations for `auth` and/or `communication-service` (whichever are selected). Ignored if Deploy is unchecked. |
 | Branch selector | Native GitHub UI — choose any branch |
 
 Any combination of services can be selected. All selected services build in parallel.
@@ -1094,28 +1097,49 @@ Any combination of services can be selected. All selected services build in para
 #### What happens
 
 ```
-setup       → computes matrix from selected checkboxes
-  │
-  └─ build  → for each selected service (parallel):
-              docker build → push to ghcr.io/<owner>/gomin-<service>:<version>
-              docker push  → also tags :latest
-  │
-  └─ deploy → (only if "Deploy" is checked)
-              helm upgrade --install --atomic --timeout 5m
-              auto-rollback if pods don't become healthy
+setup    → computes two matrices:
+           • all selected apps      (build + deploy)
+           • migration-capable apps (auth, communication-service only)
+
+build    → parallel per selected service:
+           docker build → ghcr.io/<owner>/gomin-<service>:<version> + :latest
+
+migrate  → (only if Deploy + Run migrations are both checked,
+            and at least one of auth / communication-service is selected)
+           parallel per migration service:
+           kubectl apply Job → node knex migrate:latest
+           kubectl wait  Job --for=condition=complete --timeout=5m
+           Job auto-deletes after 10 min (ttlSecondsAfterFinished)
+
+deploy   → runs only if build succeeded AND migrate succeeded-or-skipped
+           parallel per selected service:
+           helm upgrade --install --atomic --timeout 5m
+           --set migrations.enabled=false  ← skips Helm hook (CI already ran them)
+           auto-rollback on failure
 ```
 
-Images are published to **GitHub Container Registry** (`ghcr.io`) — no additional registry setup needed for a public repo.
+Images are published to **GitHub Container Registry** (`ghcr.io`) — no extra registry setup needed for a public repo.
+
+#### Migration behaviour
+
+| Deploy | Run migrations | auth selected | Result |
+|---|---|---|---|
+| ✅ | ✅ | ✅ | migrate job runs → then deploy |
+| ✅ | ✅ | ❌ | migrate skipped → deploy runs normally |
+| ✅ | ❌ | ✅ | no migrations → deploy runs (schema must already be up to date) |
+| ❌ | any | any | only images are built and pushed |
+
+If a migration Job fails, the entire pipeline stops — `deploy` is blocked and the currently running pods are untouched.
 
 #### Update strategy
 
-All deployments use `RollingUpdate` with `maxUnavailable: 0` and `maxSurge: 1`, meaning:
+All deployments use `RollingUpdate` with `maxUnavailable: 0` and `maxSurge: 1`:
 
 - A new pod is brought up first
 - Old pod is only terminated after the new one passes readiness checks
-- Minimum 2 pods (per `minReplicas`) are available throughout the update
+- Minimum 2 pods (per `minReplicas`) are always available
 
-`--atomic` in helm means a failed rollout automatically reverts to the previous release.
+`--atomic` means a failed rollout automatically reverts to the previous Helm release.
 
 ---
 

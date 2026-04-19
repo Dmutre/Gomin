@@ -1,6 +1,23 @@
 ---
-# ServiceAccount used by GitHub Actions to deploy to this cluster.
-# Has write access only to gomin-apps and gomin-infra — nothing else.
+# Bootstrap file — safe to apply on a bare cluster.
+# Creates namespaces first, then the ServiceAccount and RBAC for GitHub Actions.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: gomin-apps
+  labels:
+    gomin/namespace-type: apps
+
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: gomin-infra
+  labels:
+    gomin/namespace-type: infra
+
+---
+# ServiceAccount used exclusively by GitHub Actions CI/CD.
 apiVersion: v1
 kind: ServiceAccount
 metadata:
@@ -8,8 +25,10 @@ metadata:
   namespace: gomin-apps
 
 ---
-# Permissions needed by Helm to manage releases inside a namespace.
-# Helm stores release state as Secrets, so Secret access is required.
+# Minimum permissions Helm needs to manage releases inside a namespace:
+# - Secrets: Helm stores release state as Secrets
+# - Jobs: migration jobs (create, wait, delete)
+# - Everything else: chart resources
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
@@ -33,6 +52,7 @@ rules:
     verbs: ["get", "list", "watch", "create", "update", "patch"]
 
 ---
+# Bind to gomin-apps
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
@@ -48,6 +68,7 @@ roleRef:
   apiGroup: rbac.authorization.k8s.io
 
 ---
+# Bind to gomin-infra (for infra deployments)
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
@@ -63,8 +84,8 @@ roleRef:
   apiGroup: rbac.authorization.k8s.io
 
 ---
-# Long-lived token bound to the ServiceAccount.
-# Kubernetes 1.24+ no longer auto-creates tokens — this Secret does it explicitly.
+# Kubernetes 1.24+ no longer auto-creates ServiceAccount tokens.
+# This Secret creates a long-lived token bound to the ServiceAccount.
 apiVersion: v1
 kind: Secret
 metadata:
