@@ -1,9 +1,7 @@
 #!/usr/bin/env bash
 # Creates all Kubernetes secrets required by Gomin.
-# Safe to re-run — uses apply, so existing secrets are updated.
+# Safe to re-run — uses --dry-run + apply, so existing secrets are updated.
 set -euo pipefail
-
-# ── Helpers ───────────────────────────────────────────────────────────────────
 
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; CYAN='\033[0;36m'; NC='\033[0m'
 
@@ -12,7 +10,6 @@ success() { echo -e "${GREEN}  ✓${NC} $*"; }
 header()  { echo -e "\n${YELLOW}══ $* ══${NC}"; }
 die()     { echo -e "${RED}  ✗ $*${NC}" >&2; exit 1; }
 
-# Read a required value; re-prompts if empty
 ask() {
   local prompt="$1" default="${2:-}" value
   while true; do
@@ -28,33 +25,33 @@ ask() {
   echo "$value"
 }
 
-# Read a password (hidden input); re-prompts if empty
 ask_secret() {
   local prompt="$1" value confirm
   while true; do
     read -rsp "  $prompt: " value; echo
-    [ -z "$value" ] && echo -e "${RED}  Password cannot be empty.${NC}" && continue
+    [ -z "$value" ] && echo -e "${RED}  Cannot be empty.${NC}" && continue
     read -rsp "  Confirm $prompt: " confirm; echo
     [ "$value" = "$confirm" ] && break
-    echo -e "${RED}  Passwords do not match. Try again.${NC}"
+    echo -e "${RED}  Values do not match. Try again.${NC}"
   done
   echo "$value"
 }
 
-# kubectl create secret ... --dry-run | apply  →  idempotent upsert
+# Idempotent upsert — overwrites existing secret if it exists
 apply_secret() {
-  local namespace="$1"; shift
-  kubectl create secret generic "$@" \
+  local namespace="$1" name="$2"; shift 2
+  kubectl create secret generic "$name" \
     --namespace "$namespace" \
+    "$@" \
     --dry-run=client -o yaml \
     | kubectl apply -f - > /dev/null
-  success "Secret '${*:0:1}' applied in namespace '$namespace'"
+  success "Secret '$name' → namespace '$namespace'"
 }
 
 ensure_namespace() {
-  kubectl get namespace "$1" &>/dev/null \
-    || kubectl create namespace "$1" \
-    && info "Namespace '$1' ready"
+  kubectl get namespace "$1" &>/dev/null && return
+  kubectl create namespace "$1"
+  info "Created namespace '$1'"
 }
 
 # ── Pre-flight ─────────────────────────────────────────────────────────────────
@@ -67,7 +64,6 @@ echo "  ╔═══════════════════════
 echo "  ║      Gomin — Secrets Setup           ║"
 echo "  ╚══════════════════════════════════════╝"
 echo -e "${NC}"
-echo "  This script creates (or updates) all k8s secrets."
 echo "  Passwords are never written to disk or git."
 echo ""
 
@@ -85,6 +81,11 @@ REDIS_PASSWORD=$(ask_secret "Redis password")
 apply_secret gomin-infra redis-secret \
   --from-literal=password="$REDIS_PASSWORD"
 
+# Redis connection details reused by all app services
+REDIS_HOST="redis.gomin-infra.svc.cluster.local"
+REDIS_PORT="6379"
+info "Redis endpoint: ${REDIS_HOST}:${REDIS_PORT}"
+
 # ── MinIO ──────────────────────────────────────────────────────────────────────
 
 header "MinIO  (gomin-infra)"
@@ -98,41 +99,68 @@ apply_secret gomin-infra minio-secret \
 # ── Auth service ───────────────────────────────────────────────────────────────
 
 header "Auth service  (gomin-apps)"
-AUTH_DB_URL=$(ask     "PostgreSQL URL" "postgres://auth_user:password@postgres:5432/auth_db")
-JWT_SECRET=$(ask_secret "JWT secret (min 32 chars)")
-AUTH_GRPC_PORT=$(ask  "gRPC port" "5000")
+echo "  JWT_SIGNING_KEYS must be a JSON array:"
+echo '  [{"keyId":"key-1","privateKey":"-----BEGIN RSA PRIVATE KEY-----\n...","publicKey":"-----BEGIN PUBLIC KEY-----\n..."}]'
+echo "  Generate with: openssl genrsa 2048 | openssl pkcs8 -topk8 -nocrypt"
+echo ""
+
+AUTH_DB_URL=$(ask "DATABASE_URL" "postgres://auth_user:password@postgres:5432/auth_db")
+JWT_SIGNING_KEYS=$(ask "JWT_SIGNING_KEYS (JSON)")
+AUTH_GRPC_PORT=$(ask "GRPC_PORT" "5000")
+AUTH_HOST=$(ask "HOST" "0.0.0.0")
 
 apply_secret gomin-apps auth-secret \
+  --from-literal=NODE_ENV="production" \
   --from-literal=DATABASE_URL="$AUTH_DB_URL" \
-  --from-literal=JWT_SECRET="$JWT_SECRET" \
-  --from-literal=GRPC_PORT="$AUTH_GRPC_PORT"
+  --from-literal=JWT_SIGNING_KEYS="$JWT_SIGNING_KEYS" \
+  --from-literal=GRPC_PORT="$AUTH_GRPC_PORT" \
+  --from-literal=HOST="$AUTH_HOST" \
+  --from-literal=REDIS_HOST="$REDIS_HOST" \
+  --from-literal=REDIS_PORT="$REDIS_PORT" \
+  --from-literal=REDIS_PASSWORD="$REDIS_PASSWORD"
+
+AUTH_SERVICE_URL="auth.gomin-apps.svc.cluster.local:${AUTH_GRPC_PORT}"
+info "Auth gRPC URL: ${AUTH_SERVICE_URL}"
 
 # ── Communication service ──────────────────────────────────────────────────────
 
 header "Communication service  (gomin-apps)"
-COMM_DB_URL=$(ask     "PostgreSQL URL" "postgres://comm_user:password@postgres:5432/comm_db")
-COMM_GRPC_PORT=$(ask  "gRPC port" "5001")
-MINIO_ENDPOINT=$(ask  "MinIO endpoint" "minio.gomin-infra.svc.cluster.local:9000")
+COMM_DB_URL=$(ask  "DATABASE_URL" "postgres://comm_user:password@postgres:5432/comm_db")
+COMM_SERVICE_SECRET=$(ask_secret "SERVICE_SECRET (inter-service auth token)")
+COMM_GRPC_PORT=$(ask "GRPC_PORT" "5001")
+COMM_HOST=$(ask "HOST" "0.0.0.0")
 
 apply_secret gomin-apps communication-service-secret \
+  --from-literal=NODE_ENV="production" \
   --from-literal=DATABASE_URL="$COMM_DB_URL" \
+  --from-literal=SERVICE_SECRET="$COMM_SERVICE_SECRET" \
   --from-literal=GRPC_PORT="$COMM_GRPC_PORT" \
-  --from-literal=MINIO_ENDPOINT="$MINIO_ENDPOINT" \
-  --from-literal=MINIO_ACCESS_KEY="$MINIO_USER" \
-  --from-literal=MINIO_SECRET_KEY="$MINIO_PASSWORD"
+  --from-literal=HOST="$COMM_HOST" \
+  --from-literal=AUTH_SERVICE_URL="$AUTH_SERVICE_URL" \
+  --from-literal=REDIS_HOST="$REDIS_HOST" \
+  --from-literal=REDIS_PORT="$REDIS_PORT" \
+  --from-literal=REDIS_PASSWORD="$REDIS_PASSWORD"
+
+COMM_SERVICE_URL="communication-service.gomin-apps.svc.cluster.local:${COMM_GRPC_PORT}"
+info "Comm gRPC URL: ${COMM_SERVICE_URL}"
 
 # ── API Gateway ────────────────────────────────────────────────────────────────
 
 header "API Gateway  (gomin-apps)"
-GW_PORT=$(ask         "HTTP port" "3000")
-REDIS_URL="redis://:${REDIS_PASSWORD}@redis.gomin-infra.svc.cluster.local:6379"
-info "Redis URL set automatically: $REDIS_URL"
+GW_PORT=$(ask "PORT" "3000")
+GW_HOST=$(ask "HOST" "0.0.0.0")
+GW_SERVICE_SECRET=$(ask_secret "SERVICE_SECRET (inter-service auth token)")
 
 apply_secret gomin-apps api-gateway-secret \
-  --from-literal=APP_PORT="$GW_PORT" \
-  --from-literal=REDIS_URL="$REDIS_URL" \
-  --from-literal=AUTH_GRPC_URL="auth.gomin-apps.svc.cluster.local:${AUTH_GRPC_PORT}" \
-  --from-literal=COMM_GRPC_URL="communication-service.gomin-apps.svc.cluster.local:${COMM_GRPC_PORT}"
+  --from-literal=NODE_ENV="production" \
+  --from-literal=PORT="$GW_PORT" \
+  --from-literal=HOST="$GW_HOST" \
+  --from-literal=SERVICE_SECRET="$GW_SERVICE_SECRET" \
+  --from-literal=AUTH_SERVICE_URL="$AUTH_SERVICE_URL" \
+  --from-literal=COMMUNICATION_SERVICE_URL="$COMM_SERVICE_URL" \
+  --from-literal=REDIS_HOST="$REDIS_HOST" \
+  --from-literal=REDIS_PORT="$REDIS_PORT" \
+  --from-literal=REDIS_PASSWORD="$REDIS_PASSWORD"
 
 # ── Done ───────────────────────────────────────────────────────────────────────
 
