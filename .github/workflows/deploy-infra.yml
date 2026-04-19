@@ -43,7 +43,6 @@ jobs:
 
           helm upgrade --install gomin-infra ./charts/infra \
             --namespace gomin-infra \
-            --create-namespace \
             --set redis.enabled=${{ inputs.deploy_redis }} \
             --set minio.enabled=${{ inputs.deploy_minio }} \
             --cleanup-on-fail \
@@ -76,7 +75,6 @@ jobs:
         run: |
           helm upgrade --install monitoring prometheus-community/kube-prometheus-stack \
             --namespace gomin-monitoring \
-            --create-namespace \
             --set grafana.adminPassword="${{ secrets.GRAFANA_ADMIN_PASSWORD }}" \
             --set prometheus.prometheusSpec.retention=7d \
             --set grafana.persistence.enabled=true \
