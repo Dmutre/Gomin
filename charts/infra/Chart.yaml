@@ -1,0 +1,5 @@
+apiVersion: v2
+name: gomin-infra
+description: Infrastructure services — Redis (session cache) and MinIO (object storage)
+type: application
+version: 0.1.0

@@ -15,6 +15,7 @@ A scalable messenger application built with microservices architecture, designed
 - [Data Flow](#data-flow)
 - [Getting Started](#getting-started)
 - [Development](#development)
+- [Deployment](#-deployment)
 
 ---
 
@@ -861,22 +862,8 @@ docker-compose logs -f
 ```
 
 ### Kubernetes Deployment
-```bash
-# Create namespace
-kubectl create namespace gomin-prod
 
-# Deploy services
-kubectl apply -f k8s/
-
-# Check pods
-kubectl get pods -n gomin-prod
-
-# View logs
-kubectl logs -f deployment/identity-service -n gomin-prod
-
-# Port forward for testing
-kubectl port-forward svc/api-gateway 8080:80 -n gomin-prod
-```
+See the [Deployment](#-deployment) section for the full guide.
 
 ---
 
@@ -958,49 +945,155 @@ k6 run tests/load/message-send.js
 
 ---
 
-## 🐳 Docker & Kubernetes Deployment
+## 🚀 Deployment
 
-Each service has its own `Dockerfile` located at `apps/<service>/Dockerfile`. All images use a multi-stage build:
+### Helm chart structure
 
-| Service | Dockerfile | Default Port |
-|---|---|---|
-| `api-gateway` | `apps/api-gateway/Dockerfile` | 3000 |
-| `auth` | `apps/auth/Dockerfile` | 5000 (gRPC) |
-| `communication-service` | `apps/communication-service/Dockerfile` | 5001 (gRPC) |
+```
+charts/
+  platform/               # Cluster-level: namespaces
+  infra/                  # Redis + MinIO (StatefulSets with PVCs)
+  api-gateway/            # HTTP / WebSocket gateway
+  auth/                   # Auth gRPC microservice + migrations
+  communication-service/  # Messaging gRPC microservice + migrations
+```
 
-### Build an image
+**Namespaces:**
+
+| Namespace | Contents |
+|---|---|
+| `gomin-infra` | Redis, MinIO |
+| `gomin-apps` | api-gateway, auth, communication-service |
+| `gomin-monitoring` | Prometheus, Grafana, Loki, Tempo |
+
+---
+
+### First-time cluster setup
+
+**1. Install `metrics-server`** (required for HPA):
+```bash
+kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
+```
+
+**2. Create namespaces** via platform chart:
+```bash
+helm upgrade --install platform ./charts/platform
+```
+
+**3. Create all secrets** interactively (passwords are never written to disk or git):
+```bash
+./scripts/setup-secrets.sh
+```
+
+The script prompts for: Redis password, MinIO credentials, PostgreSQL URLs, JWT secret, gRPC ports. Re-running updates existing secrets safely (idempotent).
+
+**4. Deploy infrastructure** (Redis + MinIO):
+```bash
+helm upgrade --install infra ./charts/infra --namespace gomin-infra
+```
+
+**5. Deploy application services:**
+```bash
+helm upgrade --install auth                ./charts/auth                --namespace gomin-apps
+helm upgrade --install communication-service ./charts/communication-service --namespace gomin-apps
+helm upgrade --install api-gateway         ./charts/api-gateway         --namespace gomin-apps
+```
+
+---
+
+### CI/CD — GitHub Actions
+
+The workflow **Actions → Build & Deploy** (`.github/workflows/build-and-deploy.yml`) handles building images and deploying to the cluster.
+
+**Required GitHub secret** (`Settings → Secrets → Actions`):
+
+| Secret | Value |
+|---|---|
+| `KUBECONFIG` | Content of `~/.kube/config` from your VDS |
+
+#### Triggering a build
+
+Go to **Actions → Build & Deploy → Run workflow**, then fill in:
+
+| Input | Description |
+|---|---|
+| `version` | Image tag to publish, e.g. `v1.2.0` |
+| `Build api-gateway` | Checkbox — include this service |
+| `Build auth` | Checkbox — include this service |
+| `Build communication-service` | Checkbox — include this service |
+| `Deploy to Kubernetes` | If checked, runs `helm upgrade` after the build |
+| Branch selector | Native GitHub UI — choose any branch |
+
+Any combination of services can be selected. All selected services build in parallel.
+
+#### What happens
+
+```
+setup       → computes matrix from selected checkboxes
+  │
+  └─ build  → for each selected service (parallel):
+              docker build → push to ghcr.io/<owner>/gomin-<service>:<version>
+              docker push  → also tags :latest
+  │
+  └─ deploy → (only if "Deploy" is checked)
+              helm upgrade --install --atomic --timeout 5m
+              auto-rollback if pods don't become healthy
+```
+
+Images are published to **GitHub Container Registry** (`ghcr.io`) — no additional registry setup needed for a public repo.
+
+#### Update strategy
+
+All deployments use `RollingUpdate` with `maxUnavailable: 0` and `maxSurge: 1`, meaning:
+
+- A new pod is brought up first
+- Old pod is only terminated after the new one passes readiness checks
+- Minimum 2 pods (per `minReplicas`) are available throughout the update
+
+`--atomic` in helm means a failed rollout automatically reverts to the previous release.
+
+---
+
+### Manual image build
 
 ```bash
-# Build from workspace root (context must be the repo root)
-docker build -f apps/auth/Dockerfile -t gomin/auth:latest .
+# Build from workspace root — context must be the repo root
+docker build -f apps/auth/Dockerfile -t ghcr.io/<owner>/gomin-auth:v1.0.0 .
+docker push ghcr.io/<owner>/gomin-auth:v1.0.0
 ```
 
 ### Database migrations
 
-Services that own a PostgreSQL database (`auth`, `communication-service`) ship their compiled migrations inside the image. Before each release, run a Kubernetes **Job** with the same image using the following command override:
+`auth` and `communication-service` compile their Knex migrations into the Docker image. Migrations run automatically as a Kubernetes **Job** before each Helm release (`migrations.enabled: true` in values).
 
-```yaml
-# Kubernetes Job snippet (run before Helm release)
-command: ["node", "node_modules/.bin/knex", "migrate:latest", "--knexfile", "knexfile.js"]
-env:
-  - name: DATABASE_URL
-    valueFrom:
-      secretKeyRef:
-        name: <service>-db-secret
-        key: url
+To run manually:
+```bash
+kubectl create job --from=cronjob/auth-migrate auth-migrate-manual -n gomin-apps
+kubectl wait --for=condition=complete job/auth-migrate-manual -n gomin-apps --timeout=120s
 ```
 
-### Deployment workflow (Helm)
+### Useful kubectl commands
 
-> **TODO (future CI/CD workflow):** Automate the steps below in a GitHub Actions workflow:
->
-> 1. Build and push Docker images to the container registry.
-> 2. Run a Helm pre-upgrade **migration Job** for each service with a database:
->    - `helm upgrade --install <service>-migrate ./charts/<service> --set mode=migrate`
->    - Wait for the Job to complete successfully (`kubectl wait --for=condition=complete job/<service>-migrate`).
->    - On failure: skip the release and alert — the previous version keeps running.
-> 3. Release the application with `helm upgrade --install <service> ./charts/<service>`.
-> 4. Roll back with `helm rollback <service>` if health checks fail.
+```bash
+# Check pod status
+kubectl get pods -n gomin-apps
+kubectl get pods -n gomin-infra
+
+# Stream logs
+kubectl logs -f deployment/api-gateway -n gomin-apps
+
+# Port-forward MinIO console locally
+kubectl port-forward -n gomin-infra svc/minio 9001:9001
+
+# Check HPA scaling
+kubectl get hpa -n gomin-apps
+
+# Helm release history
+helm history auth -n gomin-apps
+
+# Manual rollback
+helm rollback auth -n gomin-apps
+```
 
 ---
 

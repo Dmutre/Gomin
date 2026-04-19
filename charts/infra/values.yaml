@@ -1,0 +1,40 @@
+redis:
+  image:
+    repository: redis
+    tag: "7-alpine"
+
+  auth:
+    existingSecret: redis-secret
+    passwordKey: password
+
+  persistence:
+    size: 2Gi
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 300m
+      memory: 256Mi
+
+minio:
+  image:
+    repository: quay.io/minio/minio
+    tag: "latest"
+
+  auth:
+    existingSecret: minio-secret
+    rootUserKey: rootUser
+    rootPasswordKey: rootPassword
+
+  persistence:
+    size: 10Gi
+
+  resources:
+    requests:
+      cpu: 200m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi

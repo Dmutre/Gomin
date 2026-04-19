@@ -1,3 +1,4 @@
 namespaces:
   apps: gomin-apps
+  infra: gomin-infra
   monitoring: gomin-monitoring
