@@ -4,7 +4,7 @@ import { CustomLoggerModule } from '@gomin/logger';
 import { MicroserviceIdentityModule } from '@gomin/service-identity';
 import configs from '../config/config';
 import { validationSchema } from '../config/schemas';
-import { RedisModule } from '../redis/redis.module';
+import { RedisModule } from '@gomin/redis';
 import { AuthGrpcModule } from '../grpc/auth-grpc.module';
 import { CommunicationGrpcModule } from '../grpc/communication-grpc.module';
 import { AuthModule } from '../auth/auth.module';
@@ -21,7 +21,7 @@ import { WebSocketModule } from '../websocket/websocket.module';
       load: configs,
     }),
     CustomLoggerModule,
-    RedisModule,
+    RedisModule.forRoot({ prefix: 'api-gateway' }),
 
     MicroserviceIdentityModule.forRootAsync({
       imports: [ConfigModule],

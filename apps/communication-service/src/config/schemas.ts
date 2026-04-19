@@ -2,15 +2,12 @@ import * as Joi from 'joi';
 import { knexDatabaseValidationSchema } from '@gomin/database';
 import { loggerValidationSchema } from '@gomin/logger';
 import { telemetryValidationSchema } from '@gomin/telemetry';
+import { redisValidationSchema } from '@gomin/redis';
 
 const baseEnvSchema = Joi.object({
   NODE_ENV: Joi.string()
     .valid('development', 'production', 'test')
     .default('development'),
-
-  REDIS_HOST: Joi.string().hostname().default('localhost'),
-  REDIS_PORT: Joi.number().port().default(6379),
-  REDIS_PASSWORD: Joi.string().optional().allow(''),
 
   GRPC_PORT: Joi.number().port().default(5001),
   HOST: Joi.string().hostname().default('localhost'),
@@ -21,6 +18,7 @@ const baseEnvSchema = Joi.object({
 });
 
 const additionalValidationSchemas = [
+  redisValidationSchema,
   knexDatabaseValidationSchema,
   loggerValidationSchema,
   telemetryValidationSchema,

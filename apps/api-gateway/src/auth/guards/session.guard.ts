@@ -4,10 +4,10 @@ import {
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
-import { Inject } from '@nestjs/common';
 import { Metadata } from '@grpc/grpc-js';
 import { MicroserviceIdentityAuthService } from '@gomin/service-identity';
 import { UserAuthGrpcClient } from '@gomin/grpc';
+import { RedisService } from '@gomin/redis';
 import type { Request } from 'express';
 
 declare module 'express' {
@@ -15,8 +15,6 @@ declare module 'express' {
     user?: unknown;
   }
 }
-import Redis from 'ioredis';
-import { REDIS_CLIENT } from '../../redis/redis.module';
 
 const SESSION_CACHE_TTL = 300;
 
@@ -25,7 +23,7 @@ export class SessionGuard implements CanActivate {
   constructor(
     private readonly userAuthClient: UserAuthGrpcClient,
     private readonly identityAuthService: MicroserviceIdentityAuthService,
-    @Inject(REDIS_CLIENT) private readonly redis: Redis,
+    private readonly redis: RedisService,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -81,12 +79,7 @@ export class SessionGuard implements CanActivate {
       email: response.email,
     };
 
-    await this.redis.set(
-      cacheKey,
-      JSON.stringify(user),
-      'EX',
-      SESSION_CACHE_TTL,
-    );
+    await this.redis.set(cacheKey, JSON.stringify(user), SESSION_CACHE_TTL);
     return user;
   }
 }

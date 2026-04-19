@@ -2,17 +2,14 @@ import { registerAs } from '@nestjs/config';
 import { telemetryConfig } from '@gomin/telemetry';
 import { CONFIG_NAMESPACES } from './consts';
 import { knexDatabaseConfig } from '@gomin/database';
+import { redisConfig } from '@gomin/redis';
+
+export { redisConfig };
 
 export const appConfig = registerAs(CONFIG_NAMESPACES.APP, () => ({
   nodeEnv: process.env.NODE_ENV || 'development',
   grpcPort: parseInt(process.env.GRPC_PORT || '5001', 10),
   host: process.env.HOST || 'localhost',
-}));
-
-export const redisConfig = registerAs(CONFIG_NAMESPACES.REDIS, () => ({
-  host: process.env.REDIS_HOST || 'localhost',
-  port: parseInt(process.env.REDIS_PORT || '6379', 10),
-  password: process.env.REDIS_PASSWORD,
 }));
 
 export const rabbitmqConfig = registerAs(CONFIG_NAMESPACES.RABBITMQ, () => ({

@@ -20,7 +20,8 @@
       "@gomin/database": ["libs/infrastructure/database/src/index.ts"],
       "@gomin/app": ["libs/infrastructure/app/src/index.ts"],
       "@gomin/service-identity": ["libs/shared/service-identity/src/index.ts"],
-      "@gomin/telemetry": ["libs/infrastructure/telemetry/src/index.ts"]
+      "@gomin/telemetry": ["libs/infrastructure/telemetry/src/index.ts"],
+      "@gomin/redis": ["libs/infrastructure/redis/src/index.ts"]
     }
   },
   "exclude": ["node_modules", "tmp"]
