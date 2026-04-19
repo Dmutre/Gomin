@@ -189,7 +189,6 @@ jobs:
                   - name: migrate
                     image: ghcr.io/${OWNER}/gomin-${APP}:${VERSION}
                     command:
-                      - node
                       - node_modules/.bin/knex
                       - migrate:latest
                       - --knexfile
