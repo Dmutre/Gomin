@@ -2,10 +2,10 @@ import { DynamicModule, ForwardReference, Module, Type } from '@nestjs/common';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { join } from 'path';
 import { CommunicationGrpcClient } from './communication.client';
+import { COMMUNICATION_CLIENT } from './communication.tokens';
+export { COMMUNICATION_CLIENT };
 
-export const COMMUNICATION_CLIENT = 'COMMUNICATION_CLIENT';
-
-const PROTO_PATH = join(__dirname, '../../protos', 'communication.proto');
+const PROTO_PATH = join(__dirname, 'protos', 'communication.proto');
 
 export interface CommunicationClientModuleOptions {
   url?: string;

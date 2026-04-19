@@ -2,10 +2,10 @@ import { DynamicModule, ForwardReference, Module, Type } from '@nestjs/common';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { join } from 'path';
 import { ServiceIdentityGrpcClient } from './service-identity.client';
+import { SERVICE_IDENTITY_CLIENT } from './service-identity.tokens';
+export { SERVICE_IDENTITY_CLIENT };
 
-export const SERVICE_IDENTITY_CLIENT = 'SERVICE_IDENTITY_CLIENT';
-
-const PROTO_PATH = join(__dirname, '../../protos', 'service-identity.proto');
+const PROTO_PATH = join(__dirname, 'protos', 'service-identity.proto');
 
 export interface ServiceIdentityClientModuleOptions {
   url?: string;

@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
+import { PinoLogger } from 'nestjs-pino';
 import { MicroserviceException } from '@gomin/app';
 import { status } from '@grpc/grpc-js';
 import type {
@@ -38,7 +38,6 @@ export interface UpdateMemberRoleOptions {
 @Injectable()
 export class ChatService {
   constructor(
-    @InjectPinoLogger(ChatService.name)
     private readonly logger: PinoLogger,
     private readonly chatRepo: ChatRepository,
     private readonly memberRepo: ChatMemberRepository,

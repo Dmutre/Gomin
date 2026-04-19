@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Global, Module } from '@nestjs/common';
 import { LoggerModule } from 'nestjs-pino';
 import type { Options } from 'pino-http';
 
@@ -28,11 +28,13 @@ const pinoHttpOptions = {
   }),
 };
 
+@Global()
 @Module({
   imports: [
     LoggerModule.forRoot({
       pinoHttp: pinoHttpOptions as Options,
     }),
   ],
+  exports: [LoggerModule],
 })
 export class CustomLoggerModule {}

@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
+import { PinoLogger } from 'nestjs-pino';
 import { MicroserviceException } from '@gomin/app';
 import { status } from '@grpc/grpc-js';
 import type {
@@ -50,7 +50,6 @@ export interface FullMessage {
 @Injectable()
 export class MessageService {
   constructor(
-    @InjectPinoLogger(MessageService.name)
     private readonly logger: PinoLogger,
     private readonly messageRepo: MessageRepository,
     private readonly senderKeyRepo: SenderKeyRepository,

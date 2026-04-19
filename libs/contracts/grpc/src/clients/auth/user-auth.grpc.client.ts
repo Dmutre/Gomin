@@ -3,7 +3,7 @@ import { ClientGrpc } from '@nestjs/microservices';
 import { Metadata } from '@grpc/grpc-js';
 import { Observable } from 'rxjs';
 import { firstValueFrom } from 'rxjs';
-import { USER_AUTH_CLIENT } from './user-auth.client.module';
+import { USER_AUTH_CLIENT } from './user-auth.tokens';
 import type {
   RegisterRequest,
   RegisterResponse,

@@ -1,0 +1,1 @@
+export const USER_AUTH_CLIENT = 'USER_AUTH_CLIENT';

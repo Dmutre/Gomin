@@ -2,10 +2,10 @@ import { DynamicModule, ForwardReference, Module, Type } from '@nestjs/common';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { join } from 'path';
 import { UserAuthGrpcClient } from './user-auth.grpc.client';
+import { USER_AUTH_CLIENT } from './user-auth.tokens';
+export { USER_AUTH_CLIENT };
 
-export const USER_AUTH_CLIENT = 'USER_AUTH_CLIENT';
-
-const PROTO_PATH = join(__dirname, '../../protos', 'user-auth.proto');
+const PROTO_PATH = join(__dirname, 'protos', 'user-auth.proto');
 
 export interface UserAuthClientModuleOptions {
   url?: string;

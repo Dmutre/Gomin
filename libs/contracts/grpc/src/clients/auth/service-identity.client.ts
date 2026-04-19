@@ -1,7 +1,7 @@
 import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
 import { ClientGrpc } from '@nestjs/microservices';
 import { Observable } from 'rxjs';
-import { SERVICE_IDENTITY_CLIENT } from './service-identity.client.module';
+import { SERVICE_IDENTITY_CLIENT } from './service-identity.tokens';
 import type {
   AuthenticateServiceIdentityRequest,
   AuthenticateServiceIdentityResponse,

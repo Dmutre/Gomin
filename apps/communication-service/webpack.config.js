@@ -19,7 +19,7 @@ module.exports = {
         './src/assets',
         {
           input: 'libs/contracts/grpc/src/protos',
-          glob: 'communication.proto',
+          glob: '*.proto',
           output: './protos',
         },
       ],

@@ -3,7 +3,7 @@ import { ClientGrpc } from '@nestjs/microservices';
 import { Metadata } from '@grpc/grpc-js';
 import { Observable } from 'rxjs';
 import { firstValueFrom } from 'rxjs';
-import { COMMUNICATION_CLIENT } from './communication.client.module';
+import { COMMUNICATION_CLIENT } from './communication.tokens';
 import type {
   PingRequest,
   PingResponse,
