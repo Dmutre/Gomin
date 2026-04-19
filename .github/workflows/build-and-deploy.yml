@@ -172,13 +172,36 @@ jobs:
                           name: ${APP}-secret
           EOF
 
-          echo "Waiting for migration to complete (timeout 5m)..."
-          kubectl wait job/${JOB_NAME} \
-            --namespace gomin-apps \
-            --for=condition=complete \
-            --timeout=300s
+          echo "Waiting for migration to finish (timeout 5m)..."
+          TIMEOUT=300
+          ELAPSED=0
+          INTERVAL=5
 
-          echo "Migration succeeded for ${APP}"
+          while [ $ELAPSED -lt $TIMEOUT ]; do
+            COMPLETE=$(kubectl get job/${JOB_NAME} -n gomin-apps \
+              -o jsonpath='{.status.conditions[?(@.type=="Complete")].status}' 2>/dev/null || true)
+            FAILED=$(kubectl get job/${JOB_NAME} -n gomin-apps \
+              -o jsonpath='{.status.conditions[?(@.type=="Failed")].status}' 2>/dev/null || true)
+
+            if [ "$COMPLETE" = "True" ]; then
+              echo "Migration succeeded for ${APP}"
+              exit 0
+            fi
+
+            if [ "$FAILED" = "True" ]; then
+              echo "::error::Migration failed for ${APP}"
+              echo "--- Migration logs ---"
+              kubectl logs job/${JOB_NAME} -n gomin-apps --tail=100 || true
+              exit 1
+            fi
+
+            sleep $INTERVAL
+            ELAPSED=$((ELAPSED + INTERVAL))
+          done
+
+          echo "::error::Migration timed out after ${TIMEOUT}s for ${APP}"
+          kubectl logs job/${JOB_NAME} -n gomin-apps --tail=100 || true
+          exit 1
 
   # ── 4. Helm upgrade ────────────────────────────────────────────────────────
   deploy:
