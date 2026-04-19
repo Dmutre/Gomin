@@ -17,17 +17,17 @@ migrations:
   enabled: true
 
 resources:
-  limits:
-    cpu: 500m
-    memory: 512Mi
   requests:
     cpu: 100m
-    memory: 128Mi
+    memory: 192Mi
+  limits:
+    cpu: 400m
+    memory: 384Mi
 
 hpa:
-  enabled: false
+  enabled: true
   minReplicas: 2
-  maxReplicas: 10
+  maxReplicas: 4
   targetCPUUtilizationPercentage: 70
 
 # Inject environment variables directly (non-sensitive).

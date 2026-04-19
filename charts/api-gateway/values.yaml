@@ -30,17 +30,17 @@ ingress:
   #      - api.gomin.local
 
 resources:
-  limits:
-    cpu: 500m
-    memory: 512Mi
   requests:
-    cpu: 100m
-    memory: 128Mi
+    cpu: 150m
+    memory: 256Mi
+  limits:
+    cpu: 600m
+    memory: 512Mi
 
 hpa:
-  enabled: false
+  enabled: true
   minReplicas: 2
-  maxReplicas: 10
+  maxReplicas: 5
   targetCPUUtilizationPercentage: 70
 
 # Inject environment variables directly (non-sensitive).
