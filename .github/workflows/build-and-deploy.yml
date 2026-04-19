@@ -9,24 +9,32 @@ on:
           (with v prefix if missing). If package.json has no version, falls back to v0.1.0.
         required: false
         default: ''
-      build_api_gateway:
-        description: 'Build api-gateway'
+
+      # ── App selection (applies to all checked operations) ──────────────────
+      api_gateway:
+        description: 'Include api-gateway'
         type: boolean
         default: true
-      build_auth:
-        description: 'Build auth'
+      auth:
+        description: 'Include auth'
         type: boolean
         default: true
-      build_communication_service:
-        description: 'Build communication-service'
+      communication_service:
+        description: 'Include communication-service'
         type: boolean
         default: true
-      deploy:
-        description: 'Deploy apps to Kubernetes after build'
+
+      # ── Operations ──────────────────────────────────────────────────────────
+      build:
+        description: 'Build & push Docker images'
+        type: boolean
+        default: true
+      run_migrations:
+        description: 'Run DB migrations (auth, communication-service)'
         type: boolean
         default: false
-      run_migrations:
-        description: 'Run DB migrations before deploy (auth, communication-service)'
+      deploy:
+        description: 'Deploy to Kubernetes'
         type: boolean
         default: false
 
@@ -41,6 +49,7 @@ jobs:
       matrix:           ${{ steps.matrix.outputs.matrix }}
       migrate_matrix:   ${{ steps.matrix.outputs.migrate_matrix }}
       has_migrations:   ${{ steps.matrix.outputs.has_migrations }}
+      has_apps:         ${{ steps.matrix.outputs.has_apps }}
       owner:            ${{ steps.matrix.outputs.owner }}
       resolved_version: ${{ steps.matrix.outputs.resolved_version }}
     steps:
@@ -52,9 +61,7 @@ jobs:
         run: |
           FALLBACK='v0.1.0'
           PKG_RAW=$(jq -r '.version // empty' package.json 2>/dev/null || true)
-          if [ -z "$PKG_RAW" ] || [ "$PKG_RAW" = "null" ]; then
-            PKG_RAW=''
-          fi
+          if [ -z "$PKG_RAW" ] || [ "$PKG_RAW" = "null" ]; then PKG_RAW=''; fi
 
           if [ -n "$INPUT_VERSION" ]; then
             RESOLVED="$INPUT_VERSION"
@@ -70,43 +77,44 @@ jobs:
           echo "resolved_version=${RESOLVED}" >> "$GITHUB_OUTPUT"
           echo "Image tag: ${RESOLVED}"
 
-          # Lowercase owner — Docker registry names must be lowercase
           OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
           echo "owner=${OWNER}" >> "$GITHUB_OUTPUT"
 
-          # ── All selected apps (build + deploy matrix) ──
+          # ── Selected apps matrix ──
           apps='[]'
-          [ "${{ inputs.build_api_gateway }}"           = "true" ] && apps=$(echo "$apps" | jq -c '. += [{"app":"api-gateway"}]')
-          [ "${{ inputs.build_auth }}"                  = "true" ] && apps=$(echo "$apps" | jq -c '. += [{"app":"auth"}]')
-          [ "${{ inputs.build_communication_service }}" = "true" ] && apps=$(echo "$apps" | jq -c '. += [{"app":"communication-service"}]')
+          [ "${{ inputs.api_gateway }}"           = "true" ] && apps=$(echo "$apps" | jq -c '. += [{"app":"api-gateway"}]')
+          [ "${{ inputs.auth }}"                  = "true" ] && apps=$(echo "$apps" | jq -c '. += [{"app":"auth"}]')
+          [ "${{ inputs.communication_service }}" = "true" ] && apps=$(echo "$apps" | jq -c '. += [{"app":"communication-service"}]')
 
           if [ "$apps" = "[]" ]; then
-            echo "::error::No apps selected — enable at least one checkbox."
+            echo "::error::No apps selected — enable at least one."
             exit 1
           fi
 
+          echo "has_apps=true" >> "$GITHUB_OUTPUT"
           echo "matrix={\"include\":$apps}" >> "$GITHUB_OUTPUT"
 
-          # ── Migration-capable services selected in this run ──
+          # ── Migration-capable apps among selected ──
           migrate_apps='[]'
-          [ "${{ inputs.build_auth }}"                  = "true" ] && migrate_apps=$(echo "$migrate_apps" | jq -c '. += [{"app":"auth"}]')
-          [ "${{ inputs.build_communication_service }}" = "true" ] && migrate_apps=$(echo "$migrate_apps" | jq -c '. += [{"app":"communication-service"}]')
+          [ "${{ inputs.auth }}"                  = "true" ] && migrate_apps=$(echo "$migrate_apps" | jq -c '. += [{"app":"auth"}]')
+          [ "${{ inputs.communication_service }}" = "true" ] && migrate_apps=$(echo "$migrate_apps" | jq -c '. += [{"app":"communication-service"}]')
 
           if [ "$migrate_apps" = "[]" ]; then
             echo "has_migrations=false" >> "$GITHUB_OUTPUT"
             echo "migrate_matrix={\"include\":[{\"app\":\"_none\"}]}" >> "$GITHUB_OUTPUT"
           else
-            echo "has_migrations=true"  >> "$GITHUB_OUTPUT"
+            echo "has_migrations=true" >> "$GITHUB_OUTPUT"
             echo "migrate_matrix={\"include\":$migrate_apps}" >> "$GITHUB_OUTPUT"
           fi
 
-          echo "Owner (lowercase): ${OWNER}"
-          echo "Build matrix:      $apps"
-          echo "Migrate matrix:    $migrate_apps"
+          echo "Owner:          ${OWNER}"
+          echo "Apps matrix:    $apps"
+          echo "Migrate matrix: $migrate_apps"
 
-  # ── 2. Build & push Docker images ─────────────────────────────────────────
+  # ── 2. Build & push Docker images (optional) ──────────────────────────────
   build:
     needs: setup
+    if: ${{ inputs.build == true }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -116,9 +124,7 @@ jobs:
       fail-fast: false
     steps:
       - uses: actions/checkout@v4
-
       - uses: docker/setup-buildx-action@v3
-
       - uses: docker/login-action@v3
         with:
           registry: ghcr.io
@@ -140,10 +146,10 @@ jobs:
   # ── 3. Run DB migrations (optional) ───────────────────────────────────────
   migrate:
     needs: [setup, build]
-    # Runs only when: deploy + run_migrations are both checked AND at least one
-    # migration-capable service was selected (auth / communication-service).
     if: >-
-      ${{ inputs.deploy == true &&
+      ${{ always() &&
+          needs.setup.result == 'success' &&
+          (needs.build.result == 'success' || needs.build.result == 'skipped') &&
           inputs.run_migrations == true &&
           needs.setup.outputs.has_migrations == 'true' }}
     runs-on: ubuntu-latest
@@ -165,7 +171,6 @@ jobs:
           RUN_ID:  ${{ github.run_id }}
         run: |
           JOB_NAME="${APP}-migrate-${RUN_ID}"
-
           echo "Creating migration Job: ${JOB_NAME}"
 
           kubectl apply -f - <<EOF
@@ -229,21 +234,21 @@ jobs:
           kubectl logs job/${JOB_NAME} -n gomin-apps --tail=100 || true
           exit 1
 
-  # ── 4. Helm upgrade ────────────────────────────────────────────────────────
+  # ── 4. Helm upgrade (optional) ────────────────────────────────────────────
   deploy:
     needs: [setup, build, migrate]
     if: >-
       ${{ always() &&
-          inputs.deploy == true &&
-          needs.build.result == 'success' &&
-          (needs.migrate.result == 'success' || needs.migrate.result == 'skipped') }}
+          needs.setup.result == 'success' &&
+          (needs.build.result == 'success' || needs.build.result == 'skipped') &&
+          (needs.migrate.result == 'success' || needs.migrate.result == 'skipped') &&
+          inputs.deploy == true }}
     runs-on: ubuntu-latest
     strategy:
       matrix: ${{ fromJSON(needs.setup.outputs.matrix) }}
       fail-fast: false
     steps:
       - uses: actions/checkout@v4
-
       - uses: azure/setup-helm@v4
 
       - name: Configure kubectl
