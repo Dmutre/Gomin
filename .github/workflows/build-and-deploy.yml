@@ -4,9 +4,11 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Image version tag (e.g. v1.2.3)'
-        required: true
-        default: 'v0.1.0'
+        description: >-
+          Image tag (e.g. v1.2.3). Leave empty to use package.json "version"
+          (with v prefix if missing). If package.json has no version, falls back to v0.1.0.
+        required: false
+        default: ''
       build_api_gateway:
         description: 'Build api-gateway'
         type: boolean
@@ -36,13 +38,38 @@ jobs:
   setup:
     runs-on: ubuntu-latest
     outputs:
-      matrix:         ${{ steps.matrix.outputs.matrix }}
-      migrate_matrix: ${{ steps.matrix.outputs.migrate_matrix }}
-      has_migrations: ${{ steps.matrix.outputs.has_migrations }}
-      owner:          ${{ steps.matrix.outputs.owner }}
+      matrix:           ${{ steps.matrix.outputs.matrix }}
+      migrate_matrix:   ${{ steps.matrix.outputs.migrate_matrix }}
+      has_migrations:   ${{ steps.matrix.outputs.has_migrations }}
+      owner:            ${{ steps.matrix.outputs.owner }}
+      resolved_version: ${{ steps.matrix.outputs.resolved_version }}
     steps:
+      - uses: actions/checkout@v4
+
       - id: matrix
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
         run: |
+          FALLBACK='v0.1.0'
+          PKG_RAW=$(jq -r '.version // empty' package.json 2>/dev/null || true)
+          if [ -z "$PKG_RAW" ] || [ "$PKG_RAW" = "null" ]; then
+            PKG_RAW=''
+          fi
+
+          if [ -n "$INPUT_VERSION" ]; then
+            RESOLVED="$INPUT_VERSION"
+          elif [ -n "$PKG_RAW" ]; then
+            case "$PKG_RAW" in
+              v*) RESOLVED="$PKG_RAW" ;;
+              *)  RESOLVED="v${PKG_RAW}" ;;
+            esac
+          else
+            RESOLVED="$FALLBACK"
+          fi
+
+          echo "resolved_version=${RESOLVED}" >> "$GITHUB_OUTPUT"
+          echo "Image tag: ${RESOLVED}"
+
           # Lowercase owner — Docker registry names must be lowercase
           OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
           echo "owner=${OWNER}" >> "$GITHUB_OUTPUT"
@@ -105,7 +132,7 @@ jobs:
           file: apps/${{ matrix.app }}/Dockerfile
           push: true
           tags: |
-            ghcr.io/${{ needs.setup.outputs.owner }}/gomin-${{ matrix.app }}:${{ inputs.version }}
+            ghcr.io/${{ needs.setup.outputs.owner }}/gomin-${{ matrix.app }}:${{ needs.setup.outputs.resolved_version }}
             ghcr.io/${{ needs.setup.outputs.owner }}/gomin-${{ matrix.app }}:latest
           cache-from: type=gha,scope=${{ matrix.app }}
           cache-to: type=gha,mode=max,scope=${{ matrix.app }}
@@ -133,7 +160,7 @@ jobs:
       - name: Migrate — ${{ matrix.app }}
         env:
           APP:     ${{ matrix.app }}
-          VERSION: ${{ inputs.version }}
+          VERSION: ${{ needs.setup.outputs.resolved_version }}
           OWNER:   ${{ needs.setup.outputs.owner }}
           RUN_ID:  ${{ github.run_id }}
         run: |
@@ -233,7 +260,7 @@ jobs:
       - name: Helm upgrade — ${{ matrix.app }}
         env:
           APP:     ${{ matrix.app }}
-          VERSION: ${{ inputs.version }}
+          VERSION: ${{ needs.setup.outputs.resolved_version }}
           OWNER:   ${{ needs.setup.outputs.owner }}
         run: |
           # migrations.enabled=false — CI runs migrations explicitly via the

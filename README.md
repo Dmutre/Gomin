@@ -1085,7 +1085,7 @@ Go to **Actions → Build & Deploy → Run workflow**, then fill in:
 
 | Input | Description |
 |---|---|
-| `version` | Image tag to publish, e.g. `v1.2.0` |
+| `version` | Image tag to publish, e.g. `v1.2.0`. Leave **empty** to use the root `package.json` `version` field (a `v` prefix is added if missing). If that field is missing, the workflow uses `v0.1.0`. |
 | `Build api-gateway` | Checkbox — build & push this service |
 | `Build auth` | Checkbox — build & push this service |
 | `Build communication-service` | Checkbox — build & push this service |
