@@ -18,6 +18,7 @@ FROM node:22-alpine AS production
 WORKDIR /app
 
 COPY --from=builder /workspace/dist/apps/api-gateway .
+COPY --from=builder /workspace/node_modules/tslib ./node_modules/tslib
 
 RUN npm install -g pnpm@10.6.2 && pnpm install --prod
 

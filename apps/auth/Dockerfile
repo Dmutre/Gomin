@@ -23,6 +23,7 @@ RUN apk add --no-cache python3 build-base
 WORKDIR /app
 
 COPY --from=builder /workspace/dist/apps/auth .
+COPY --from=builder /workspace/node_modules/tslib ./node_modules/tslib
 
 RUN npm install -g pnpm@10.6.2 && \
     pnpm install --prod && \
