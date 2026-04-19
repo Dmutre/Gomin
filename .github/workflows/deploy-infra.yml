@@ -1,0 +1,90 @@
+name: Deploy Infrastructure
+
+on:
+  workflow_dispatch:
+    inputs:
+      deploy_redis:
+        description: 'Deploy Redis'
+        type: boolean
+        default: false
+      deploy_minio:
+        description: 'Deploy MinIO'
+        type: boolean
+        default: false
+      deploy_monitoring:
+        description: 'Deploy monitoring stack (Prometheus + Grafana)'
+        type: boolean
+        default: false
+
+jobs:
+  # ── 1. Redis + MinIO (gomin-infra chart) ────────────────────────────────────
+  deploy-infra:
+    name: Deploy Redis / MinIO
+    if: ${{ inputs.deploy_redis || inputs.deploy_minio }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/setup-helm@v4
+
+      - name: Configure kubectl
+        run: |
+          mkdir -p ~/.kube
+          echo "${{ secrets.KUBECONFIG }}" > ~/.kube/config
+          chmod 600 ~/.kube/config
+
+      - name: Helm upgrade — gomin-infra
+        run: |
+          DEPLOYED=$(helm history gomin-infra --namespace gomin-infra -o json 2>/dev/null \
+            | jq '[.[] | select(.status=="deployed")] | length' 2>/dev/null || echo "0")
+          if [ "$DEPLOYED" = "0" ]; then
+            echo "No deployed revision — uninstalling before fresh deploy"
+            helm uninstall gomin-infra --namespace gomin-infra --ignore-not-found --wait
+          fi
+
+          helm upgrade --install gomin-infra ./charts/infra \
+            --namespace gomin-infra \
+            --create-namespace \
+            --set redis.enabled=${{ inputs.deploy_redis }} \
+            --set minio.enabled=${{ inputs.deploy_minio }} \
+            --cleanup-on-fail \
+            --timeout 5m
+
+      - name: Show pod status
+        if: always()
+        run: kubectl get pods -n gomin-infra
+
+  # ── 2. Monitoring stack (kube-prometheus-stack) ─────────────────────────────
+  deploy-monitoring:
+    name: Deploy Monitoring (Prometheus + Grafana)
+    if: ${{ inputs.deploy_monitoring }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: azure/setup-helm@v4
+
+      - name: Configure kubectl
+        run: |
+          mkdir -p ~/.kube
+          echo "${{ secrets.KUBECONFIG }}" > ~/.kube/config
+          chmod 600 ~/.kube/config
+
+      - name: Add prometheus-community Helm repo
+        run: |
+          helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+          helm repo update
+
+      - name: Helm upgrade — kube-prometheus-stack
+        run: |
+          helm upgrade --install monitoring prometheus-community/kube-prometheus-stack \
+            --namespace gomin-monitoring \
+            --create-namespace \
+            --set grafana.adminPassword="${{ secrets.GRAFANA_ADMIN_PASSWORD }}" \
+            --set prometheus.prometheusSpec.retention=7d \
+            --set grafana.persistence.enabled=true \
+            --set grafana.persistence.size=2Gi \
+            --set alertmanager.enabled=false \
+            --cleanup-on-fail \
+            --timeout 10m
+
+      - name: Show pod status
+        if: always()
+        run: kubectl get pods -n gomin-monitoring

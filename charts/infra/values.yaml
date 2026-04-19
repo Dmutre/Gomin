@@ -1,4 +1,5 @@
 redis:
+  enabled: true
   image:
     repository: redis
     tag: "7-alpine"
@@ -19,6 +20,7 @@ redis:
       memory: 256Mi
 
 minio:
+  enabled: true
   image:
     repository: quay.io/minio/minio
     tag: "latest"
