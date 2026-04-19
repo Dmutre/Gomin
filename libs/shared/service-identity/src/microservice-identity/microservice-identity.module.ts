@@ -4,8 +4,7 @@ import type { ModuleMetadata, Provider } from '@nestjs/common';
 import { MicroserviceIdentityAuthService } from './microservice-identity.auth.service';
 import { MicroserviceIdentityGuard } from './microservice-identity.guard';
 import { MicroserviceIdentityStore } from './microservice-identity.store';
-
-export const MICROSERVICE_IDENTITY_OPTIONS = 'MICROSERVICE_IDENTITY_OPTIONS';
+import { MICROSERVICE_IDENTITY_OPTIONS } from './microservice-identity.tokens';
 
 export interface MicroserviceIdentityOptions {
   authServiceUrl: string;

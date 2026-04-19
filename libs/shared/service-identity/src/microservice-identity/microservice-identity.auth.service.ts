@@ -1,10 +1,8 @@
 import { ServiceIdentityGrpcClient } from '@gomin/grpc';
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { firstValueFrom } from 'rxjs';
-import {
-  MICROSERVICE_IDENTITY_OPTIONS,
-  MicroserviceIdentityOptions,
-} from './microservice-identity.module';
+import { MICROSERVICE_IDENTITY_OPTIONS } from './microservice-identity.tokens';
+import type { MicroserviceIdentityOptions } from './microservice-identity.module';
 import { MicroserviceIdentityStore } from './microservice-identity.store';
 
 const TOKEN_BUFFER_MS = 60_000; // re-auth 1 min before expiry

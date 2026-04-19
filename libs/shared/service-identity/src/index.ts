@@ -9,10 +9,8 @@ export type {
   ServiceTokenHeader,
 } from './auth-token/service-identity-token.payload';
 
-export {
-  MicroserviceIdentityModule,
-  MICROSERVICE_IDENTITY_OPTIONS,
-} from './microservice-identity/microservice-identity.module';
+export { MicroserviceIdentityModule } from './microservice-identity/microservice-identity.module';
+export { MICROSERVICE_IDENTITY_OPTIONS } from './microservice-identity/microservice-identity.tokens';
 export type { MicroserviceIdentityOptions } from './microservice-identity/microservice-identity.module';
 export { MicroserviceIdentityAuthService } from './microservice-identity/microservice-identity.auth.service';
 export { MicroserviceIdentityStore } from './microservice-identity/microservice-identity.store';
