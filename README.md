@@ -989,6 +989,7 @@ kubectl apply -f k8s/ci-rbac.yaml
 
 **3. Create all secrets** interactively (passwords are never written to disk or git):
 ```bash
+chmod +x scripts/setup-secrets.sh
 ./scripts/setup-secrets.sh
 ```
 
