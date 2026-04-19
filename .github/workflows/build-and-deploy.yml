@@ -22,7 +22,7 @@ on:
         type: boolean
         default: true
       deploy:
-        description: 'Deploy to Kubernetes after build'
+        description: 'Deploy apps to Kubernetes after build'
         type: boolean
         default: false
       run_migrations:
@@ -232,10 +232,6 @@ jobs:
   # ── 4. Helm upgrade ────────────────────────────────────────────────────────
   deploy:
     needs: [setup, build, migrate]
-    # Run if:
-    #   - deploy is checked
-    #   - build succeeded
-    #   - migrate succeeded OR was skipped (not requested / no migration services)
     if: >-
       ${{ always() &&
           inputs.deploy == true &&
@@ -266,9 +262,8 @@ jobs:
           # migrate job above; skip the Helm hook to avoid running them twice.
           helm upgrade --install "${APP}" "./charts/${APP}" \
             --namespace gomin-apps \
-            --create-namespace \
             --set image.repository="ghcr.io/${OWNER}/gomin-${APP}" \
             --set image.tag="${VERSION}" \
             --set migrations.enabled=false \
-            --atomic \
+            --rollback-on-failure \
             --timeout 5m
