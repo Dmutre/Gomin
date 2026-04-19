@@ -45,10 +45,11 @@ export class MicroserviceIdentityModule {
       imports: options.imports,
       clientModule: ServiceIdentityClientModule.registerAsync({
         imports: options.imports,
-        inject: [MICROSERVICE_IDENTITY_OPTIONS],
-        useFactory: (opts: unknown) => ({
-          url: (opts as MicroserviceIdentityOptions).authServiceUrl,
-        }),
+        inject: options.inject ?? [],
+        useFactory: async (...args: unknown[]) => {
+          const opts = await options.useFactory(...args);
+          return { url: opts.authServiceUrl };
+        },
       }),
     });
   }

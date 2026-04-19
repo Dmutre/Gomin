@@ -267,11 +267,13 @@ jobs:
           VERSION: ${{ needs.setup.outputs.resolved_version }}
           OWNER:   ${{ needs.setup.outputs.owner }}
         run: |
-          STATUS=$(helm status "${APP}" --namespace gomin-apps -o json 2>/dev/null \
-            | jq -r '.info.status' 2>/dev/null || echo "not-found")
-          if [[ "$STATUS" == "failed" || "$STATUS" == "pending-install" || "$STATUS" == "pending-upgrade" ]]; then
-            echo "Release ${APP} is in '${STATUS}' state — uninstalling before fresh deploy"
-            helm uninstall "${APP}" --namespace gomin-apps --wait
+          # If no successful revision exists the release is in a broken state
+          # (e.g. first install failed). Uninstall so helm can start clean.
+          DEPLOYED=$(helm history "${APP}" --namespace gomin-apps -o json 2>/dev/null \
+            | jq '[.[] | select(.status=="deployed")] | length' 2>/dev/null || echo "0")
+          if [ "$DEPLOYED" = "0" ]; then
+            echo "No deployed revision for ${APP} — uninstalling before fresh deploy"
+            helm uninstall "${APP}" --namespace gomin-apps --ignore-not-found --wait
           fi
 
           # migrations.enabled=false — CI runs migrations explicitly via the
@@ -281,5 +283,5 @@ jobs:
             --set image.repository="ghcr.io/${OWNER}/gomin-${APP}" \
             --set image.tag="${VERSION}" \
             --set migrations.enabled=false \
-            --rollback-on-failure \
+            --cleanup-on-fail \
             --timeout 5m
