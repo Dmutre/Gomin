@@ -9,24 +9,16 @@ on:
           (with v prefix if missing). If package.json has no version, falls back to v0.1.0.
         required: false
         default: ''
-
-      # ── App selection (applies to all checked operations) ──────────────────
-      api_gateway:
-        description: 'Include api-gateway'
+      build_api_gateway:
+        description: 'Build api-gateway'
         type: boolean
         default: true
-      auth:
-        description: 'Include auth'
+      build_auth:
+        description: 'Build auth'
         type: boolean
         default: true
-      communication_service:
-        description: 'Include communication-service'
-        type: boolean
-        default: true
-
-      # ── Operations ──────────────────────────────────────────────────────────
-      build:
-        description: 'Build & push Docker images'
+      build_communication_service:
+        description: 'Build communication-service'
         type: boolean
         default: true
       run_migrations:
@@ -46,10 +38,11 @@ jobs:
   setup:
     runs-on: ubuntu-latest
     outputs:
-      matrix:           ${{ steps.matrix.outputs.matrix }}
+      build_matrix:     ${{ steps.matrix.outputs.build_matrix }}
+      has_builds:       ${{ steps.matrix.outputs.has_builds }}
+      deploy_matrix:    ${{ steps.matrix.outputs.deploy_matrix }}
       migrate_matrix:   ${{ steps.matrix.outputs.migrate_matrix }}
       has_migrations:   ${{ steps.matrix.outputs.has_migrations }}
-      has_apps:         ${{ steps.matrix.outputs.has_apps }}
       owner:            ${{ steps.matrix.outputs.owner }}
       resolved_version: ${{ steps.matrix.outputs.resolved_version }}
     steps:
@@ -80,24 +73,34 @@ jobs:
           OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
           echo "owner=${OWNER}" >> "$GITHUB_OUTPUT"
 
-          # ── Selected apps matrix ──
-          apps='[]'
-          [ "${{ inputs.api_gateway }}"           = "true" ] && apps=$(echo "$apps" | jq -c '. += [{"app":"api-gateway"}]')
-          [ "${{ inputs.auth }}"                  = "true" ] && apps=$(echo "$apps" | jq -c '. += [{"app":"auth"}]')
-          [ "${{ inputs.communication_service }}" = "true" ] && apps=$(echo "$apps" | jq -c '. += [{"app":"communication-service"}]')
+          # ── Apps to BUILD (only explicitly checked) ──
+          build_apps='[]'
+          [ "${{ inputs.build_api_gateway }}"           = "true" ] && build_apps=$(echo "$build_apps" | jq -c '. += [{"app":"api-gateway"}]')
+          [ "${{ inputs.build_auth }}"                  = "true" ] && build_apps=$(echo "$build_apps" | jq -c '. += [{"app":"auth"}]')
+          [ "${{ inputs.build_communication_service }}" = "true" ] && build_apps=$(echo "$build_apps" | jq -c '. += [{"app":"communication-service"}]')
 
-          if [ "$apps" = "[]" ]; then
-            echo "::error::No apps selected — enable at least one."
-            exit 1
+          if [ "$build_apps" = "[]" ]; then
+            echo "has_builds=false" >> "$GITHUB_OUTPUT"
+            echo "build_matrix={\"include\":[{\"app\":\"_none\"}]}" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_builds=true" >> "$GITHUB_OUTPUT"
+            echo "build_matrix={\"include\":$build_apps}" >> "$GITHUB_OUTPUT"
           fi
 
-          echo "has_apps=true" >> "$GITHUB_OUTPUT"
-          echo "matrix={\"include\":$apps}" >> "$GITHUB_OUTPUT"
+          # ── Apps to DEPLOY/MIGRATE: checked ones, or all three if none checked ──
+          if [ "$build_apps" != "[]" ]; then
+            deploy_apps="$build_apps"
+          else
+            deploy_apps='[{"app":"api-gateway"},{"app":"auth"},{"app":"communication-service"}]'
+          fi
+          echo "deploy_matrix={\"include\":$deploy_apps}" >> "$GITHUB_OUTPUT"
 
-          # ── Migration-capable apps among selected ──
+          # ── Migration-capable apps among deploy targets ──
           migrate_apps='[]'
-          [ "${{ inputs.auth }}"                  = "true" ] && migrate_apps=$(echo "$migrate_apps" | jq -c '. += [{"app":"auth"}]')
-          [ "${{ inputs.communication_service }}" = "true" ] && migrate_apps=$(echo "$migrate_apps" | jq -c '. += [{"app":"communication-service"}]')
+          echo "$deploy_apps" | jq -e '.[] | select(.app == "auth")' > /dev/null 2>&1 \
+            && migrate_apps=$(echo "$migrate_apps" | jq -c '. += [{"app":"auth"}]')
+          echo "$deploy_apps" | jq -e '.[] | select(.app == "communication-service")' > /dev/null 2>&1 \
+            && migrate_apps=$(echo "$migrate_apps" | jq -c '. += [{"app":"communication-service"}]')
 
           if [ "$migrate_apps" = "[]" ]; then
             echo "has_migrations=false" >> "$GITHUB_OUTPUT"
@@ -108,19 +111,20 @@ jobs:
           fi
 
           echo "Owner:          ${OWNER}"
-          echo "Apps matrix:    $apps"
+          echo "Build matrix:   $build_apps"
+          echo "Deploy matrix:  $deploy_apps"
           echo "Migrate matrix: $migrate_apps"
 
-  # ── 2. Build & push Docker images (optional) ──────────────────────────────
+  # ── 2. Build & push Docker images (skipped if no apps checked) ────────────
   build:
     needs: setup
-    if: ${{ inputs.build == true }}
+    if: ${{ needs.setup.outputs.has_builds == 'true' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
     strategy:
-      matrix: ${{ fromJSON(needs.setup.outputs.matrix) }}
+      matrix: ${{ fromJSON(needs.setup.outputs.build_matrix) }}
       fail-fast: false
     steps:
       - uses: actions/checkout@v4
@@ -245,7 +249,7 @@ jobs:
           inputs.deploy == true }}
     runs-on: ubuntu-latest
     strategy:
-      matrix: ${{ fromJSON(needs.setup.outputs.matrix) }}
+      matrix: ${{ fromJSON(needs.setup.outputs.deploy_matrix) }}
       fail-fast: false
     steps:
       - uses: actions/checkout@v4
@@ -263,8 +267,6 @@ jobs:
           VERSION: ${{ needs.setup.outputs.resolved_version }}
           OWNER:   ${{ needs.setup.outputs.owner }}
         run: |
-          # If the release is in a broken state (failed/pending with no successful
-          # deploy), uninstall it so helm upgrade --install starts clean.
           STATUS=$(helm status "${APP}" --namespace gomin-apps -o json 2>/dev/null \
             | jq -r '.info.status' 2>/dev/null || echo "not-found")
           if [[ "$STATUS" == "failed" || "$STATUS" == "pending-install" || "$STATUS" == "pending-upgrade" ]]; then
