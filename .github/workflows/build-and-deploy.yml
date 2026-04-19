@@ -39,9 +39,14 @@ jobs:
       matrix:         ${{ steps.matrix.outputs.matrix }}
       migrate_matrix: ${{ steps.matrix.outputs.migrate_matrix }}
       has_migrations: ${{ steps.matrix.outputs.has_migrations }}
+      owner:          ${{ steps.matrix.outputs.owner }}
     steps:
       - id: matrix
         run: |
+          # Lowercase owner — Docker registry names must be lowercase
+          OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          echo "owner=${OWNER}" >> "$GITHUB_OUTPUT"
+
           # ── All selected apps (build + deploy matrix) ──
           apps='[]'
           [ "${{ inputs.build_api_gateway }}"           = "true" ] && apps=$(echo "$apps" | jq -c '. += [{"app":"api-gateway"}]')
@@ -68,8 +73,9 @@ jobs:
             echo "migrate_matrix={\"include\":$migrate_apps}" >> "$GITHUB_OUTPUT"
           fi
 
-          echo "Build matrix:   $apps"
-          echo "Migrate matrix: $migrate_apps"
+          echo "Owner (lowercase): ${OWNER}"
+          echo "Build matrix:      $apps"
+          echo "Migrate matrix:    $migrate_apps"
 
   # ── 2. Build & push Docker images ─────────────────────────────────────────
   build:
@@ -99,8 +105,8 @@ jobs:
           file: apps/${{ matrix.app }}/Dockerfile
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/gomin-${{ matrix.app }}:${{ inputs.version }}
-            ghcr.io/${{ github.repository_owner }}/gomin-${{ matrix.app }}:latest
+            ghcr.io/${{ needs.setup.outputs.owner }}/gomin-${{ matrix.app }}:${{ inputs.version }}
+            ghcr.io/${{ needs.setup.outputs.owner }}/gomin-${{ matrix.app }}:latest
           cache-from: type=gha,scope=${{ matrix.app }}
           cache-to: type=gha,mode=max,scope=${{ matrix.app }}
 
@@ -128,7 +134,7 @@ jobs:
         env:
           APP:     ${{ matrix.app }}
           VERSION: ${{ inputs.version }}
-          OWNER:   ${{ github.repository_owner }}
+          OWNER:   ${{ needs.setup.outputs.owner }}
           RUN_ID:  ${{ github.run_id }}
         run: |
           JOB_NAME="${APP}-migrate-${RUN_ID}"
@@ -172,7 +178,7 @@ jobs:
             --for=condition=complete \
             --timeout=300s
 
-          echo "✓ Migration succeeded for ${APP}"
+          echo "Migration succeeded for ${APP}"
 
   # ── 4. Helm upgrade ────────────────────────────────────────────────────────
   deploy:
@@ -205,7 +211,7 @@ jobs:
         env:
           APP:     ${{ matrix.app }}
           VERSION: ${{ inputs.version }}
-          OWNER:   ${{ github.repository_owner }}
+          OWNER:   ${{ needs.setup.outputs.owner }}
         run: |
           # migrations.enabled=false — CI runs migrations explicitly via the
           # migrate job above; skip the Helm hook to avoid running them twice.
