@@ -44,9 +44,9 @@ jobs:
         run: |
           # ── All selected apps (build + deploy matrix) ──
           apps='[]'
-          [ "${{ inputs.build_api_gateway }}"           = "true" ] && apps=$(echo "$apps" | jq '. += [{"app":"api-gateway"}]')
-          [ "${{ inputs.build_auth }}"                  = "true" ] && apps=$(echo "$apps" | jq '. += [{"app":"auth"}]')
-          [ "${{ inputs.build_communication_service }}" = "true" ] && apps=$(echo "$apps" | jq '. += [{"app":"communication-service"}]')
+          [ "${{ inputs.build_api_gateway }}"           = "true" ] && apps=$(echo "$apps" | jq -c '. += [{"app":"api-gateway"}]')
+          [ "${{ inputs.build_auth }}"                  = "true" ] && apps=$(echo "$apps" | jq -c '. += [{"app":"auth"}]')
+          [ "${{ inputs.build_communication_service }}" = "true" ] && apps=$(echo "$apps" | jq -c '. += [{"app":"communication-service"}]')
 
           if [ "$apps" = "[]" ]; then
             echo "::error::No apps selected — enable at least one checkbox."
@@ -57,8 +57,8 @@ jobs:
 
           # ── Migration-capable services selected in this run ──
           migrate_apps='[]'
-          [ "${{ inputs.build_auth }}"                  = "true" ] && migrate_apps=$(echo "$migrate_apps" | jq '. += [{"app":"auth"}]')
-          [ "${{ inputs.build_communication_service }}" = "true" ] && migrate_apps=$(echo "$migrate_apps" | jq '. += [{"app":"communication-service"}]')
+          [ "${{ inputs.build_auth }}"                  = "true" ] && migrate_apps=$(echo "$migrate_apps" | jq -c '. += [{"app":"auth"}]')
+          [ "${{ inputs.build_communication_service }}" = "true" ] && migrate_apps=$(echo "$migrate_apps" | jq -c '. += [{"app":"communication-service"}]')
 
           if [ "$migrate_apps" = "[]" ]; then
             echo "has_migrations=false" >> "$GITHUB_OUTPUT"
