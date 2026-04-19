@@ -58,8 +58,6 @@ env: {}
   # APP_PORT: "3000"
 
 # Reference existing ConfigMaps or Secrets for environment variables.
-envFrom: []
-  # - secretRef:
-  #     name: api-gateway-secret
-  # - configMapRef:
-  #     name: api-gateway-config
+envFrom:
+  - secretRef:
+      name: api-gateway-secret

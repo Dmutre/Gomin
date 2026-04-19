@@ -46,8 +46,6 @@ env: {}
   # HOST: "0.0.0.0"
 
 # Reference existing ConfigMaps or Secrets for environment variables.
-envFrom: []
-  # - secretRef:
-  #     name: auth-secret
-  # - configMapRef:
-  #     name: auth-config
+envFrom:
+  - secretRef:
+      name: auth-secret

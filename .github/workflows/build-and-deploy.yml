@@ -258,6 +258,15 @@ jobs:
           VERSION: ${{ needs.setup.outputs.resolved_version }}
           OWNER:   ${{ needs.setup.outputs.owner }}
         run: |
+          # If the release is in a broken state (failed/pending with no successful
+          # deploy), uninstall it so helm upgrade --install starts clean.
+          STATUS=$(helm status "${APP}" --namespace gomin-apps -o json 2>/dev/null \
+            | jq -r '.info.status' 2>/dev/null || echo "not-found")
+          if [[ "$STATUS" == "failed" || "$STATUS" == "pending-install" || "$STATUS" == "pending-upgrade" ]]; then
+            echo "Release ${APP} is in '${STATUS}' state — uninstalling before fresh deploy"
+            helm uninstall "${APP}" --namespace gomin-apps --wait
+          fi
+
           # migrations.enabled=false — CI runs migrations explicitly via the
           # migrate job above; skip the Helm hook to avoid running them twice.
           helm upgrade --install "${APP}" "./charts/${APP}" \
