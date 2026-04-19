@@ -16,6 +16,9 @@ A scalable messenger application built with microservices architecture, designed
 - [Getting Started](#getting-started)
 - [Development](#development)
 - [Deployment](#-deployment)
+  - [First-time cluster setup](#first-time-cluster-setup)
+  - [CI/CD ServiceAccount](#cicd-serviceaccount)
+  - [GitHub Actions workflow](#cicd--github-actions)
 
 ---
 
@@ -970,6 +973,8 @@ charts/
 
 ### First-time cluster setup
 
+Bootstrap assets for the cluster and **CI/CD (GitHub Actions kubeconfig)** live in [`k8s/bootstrap/`](k8s/bootstrap/): RBAC for the deployer ServiceAccount and a script to generate the restricted kubeconfig.
+
 **1. Install `metrics-server`** (required for HPA):
 ```bash
 kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
@@ -987,16 +992,82 @@ helm upgrade --install platform ./charts/platform
 
 The script prompts for: Redis password, MinIO credentials, PostgreSQL URLs, JWT secret, gRPC ports. Re-running updates existing secrets safely (idempotent).
 
-**4. Deploy infrastructure** (Redis + MinIO):
+**4. Set up CI/CD ServiceAccount** (see [next section](#cicd-serviceaccount)):
+```bash
+kubectl apply -f k8s/bootstrap/ci-rbac.yaml
+```
+
+**5. Deploy infrastructure** (Redis + MinIO):
 ```bash
 helm upgrade --install infra ./charts/infra --namespace gomin-infra
 ```
 
-**5. Deploy application services:**
+**6. Deploy application services:**
 ```bash
-helm upgrade --install auth                ./charts/auth                --namespace gomin-apps
+helm upgrade --install auth                  ./charts/auth                  --namespace gomin-apps
 helm upgrade --install communication-service ./charts/communication-service --namespace gomin-apps
-helm upgrade --install api-gateway         ./charts/api-gateway         --namespace gomin-apps
+helm upgrade --install api-gateway           ./charts/api-gateway           --namespace gomin-apps
+```
+
+---
+
+### CI/CD ServiceAccount
+
+GitHub Actions deploys using a dedicated `github-actions` ServiceAccount that has write access **only** to `gomin-apps` and `gomin-infra`. Even if the token leaks, an attacker cannot touch anything outside those two namespaces.
+
+The manifest is at [`k8s/bootstrap/ci-rbac.yaml`](k8s/bootstrap/ci-rbac.yaml). It creates:
+- `ServiceAccount` `github-actions` in `gomin-apps`
+- `ClusterRole` `gomin-deployer` — minimum permissions Helm needs (CRUD on deployments, services, secrets, jobs, HPA, ingresses, StatefulSets)
+- Two `RoleBinding`s — binds the role to `gomin-apps` and `gomin-infra`
+- A long-lived `Secret` token (Kubernetes 1.24+ no longer auto-creates tokens)
+
+#### Apply the RBAC
+
+```bash
+# namespaces must already exist (step 2 above creates them)
+kubectl apply -f k8s/bootstrap/ci-rbac.yaml
+```
+
+#### Generate the restricted kubeconfig
+
+On your VDS (or any host with admin `kubectl`), from the **repository root**:
+
+```bash
+chmod +x k8s/bootstrap/generate-ci-kubeconfig.sh
+./k8s/bootstrap/generate-ci-kubeconfig.sh "<VDS_IP_OR_HOSTNAME>" ci-kubeconfig.yaml
+```
+
+Use the server’s public IP or DNS name; if you omit `https://`, the API URL is set to `https://<host>:6443`. To pass a full URL (e.g. behind a load balancer), use `https://api.example:6443` as the first argument.
+
+#### Add to GitHub Secrets
+
+```bash
+cat ci-kubeconfig.yaml   # copy the output
+rm ci-kubeconfig.yaml    # delete locally after copying
+```
+
+Go to **GitHub → Settings → Secrets and variables → Actions → New repository secret**:
+
+| Name | Value |
+|---|---|
+| `KUBECONFIG` | Paste the copied kubeconfig content |
+
+#### Verify permissions are restricted
+
+```bash
+# can deploy to our namespaces
+kubectl auth can-i create deployments \
+  --as=system:serviceaccount:gomin-apps:github-actions -n gomin-apps   # yes
+
+kubectl auth can-i create deployments \
+  --as=system:serviceaccount:gomin-apps:github-actions -n gomin-infra  # yes
+
+# cannot touch anything else
+kubectl auth can-i delete namespaces \
+  --as=system:serviceaccount:gomin-apps:github-actions                 # no
+
+kubectl auth can-i get secrets \
+  --as=system:serviceaccount:gomin-apps:github-actions -n kube-system  # no
 ```
 
 ---
@@ -1004,12 +1075,6 @@ helm upgrade --install api-gateway         ./charts/api-gateway         --namesp
 ### CI/CD — GitHub Actions
 
 The workflow **Actions → Build & Deploy** (`.github/workflows/build-and-deploy.yml`) handles building images and deploying to the cluster.
-
-**Required GitHub secret** (`Settings → Secrets → Actions`):
-
-| Secret | Value |
-|---|---|
-| `KUBECONFIG` | Content of `~/.kube/config` from your VDS |
 
 #### Triggering a build
 

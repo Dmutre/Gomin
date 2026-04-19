@@ -1,0 +1,75 @@
+---
+# ServiceAccount used by GitHub Actions to deploy to this cluster.
+# Has write access only to gomin-apps and gomin-infra — nothing else.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: github-actions
+  namespace: gomin-apps
+
+---
+# Permissions needed by Helm to manage releases inside a namespace.
+# Helm stores release state as Secrets, so Secret access is required.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: gomin-deployer
+rules:
+  - apiGroups: ["apps"]
+    resources: ["deployments", "replicasets", "statefulsets"]
+    verbs: ["get", "list", "watch", "create", "update", "patch"]
+  - apiGroups: [""]
+    resources: ["services", "configmaps", "secrets", "pods",
+                "serviceaccounts", "persistentvolumeclaims"]
+    verbs: ["get", "list", "watch", "create", "update", "patch"]
+  - apiGroups: ["batch"]
+    resources: ["jobs"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: ["networking.k8s.io"]
+    resources: ["ingresses"]
+    verbs: ["get", "list", "watch", "create", "update", "patch"]
+  - apiGroups: ["autoscaling"]
+    resources: ["horizontalpodautoscalers"]
+    verbs: ["get", "list", "watch", "create", "update", "patch"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: github-actions-deployer
+  namespace: gomin-apps
+subjects:
+  - kind: ServiceAccount
+    name: github-actions
+    namespace: gomin-apps
+roleRef:
+  kind: ClusterRole
+  name: gomin-deployer
+  apiGroup: rbac.authorization.k8s.io
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: github-actions-deployer
+  namespace: gomin-infra
+subjects:
+  - kind: ServiceAccount
+    name: github-actions
+    namespace: gomin-apps
+roleRef:
+  kind: ClusterRole
+  name: gomin-deployer
+  apiGroup: rbac.authorization.k8s.io
+
+---
+# Long-lived token bound to the ServiceAccount.
+# Kubernetes 1.24+ no longer auto-creates tokens — this Secret does it explicitly.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: github-actions-token
+  namespace: gomin-apps
+  annotations:
+    kubernetes.io/service-account.name: github-actions
+type: kubernetes.io/service-account-token
