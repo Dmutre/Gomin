@@ -280,28 +280,36 @@
 
 ## ☁️ Phase 7: Kubernetes Deployment
 
+**Стан:** Репозиторій підготовлено (Helm, CI/CD, bootstrap для GitHub Actions, README). **Кластер ще не піднятий**, міграції на стенді **не прогонені** — це наступні кроки після доступного Kubernetes.
+
 ### Docker Images
-- [ ] Create optimized Dockerfiles for all services
-- [ ] Set up Docker registry and build pipeline
+- [x] Dockerfiles для `api-gateway`, `auth`, `communication-service`
+- [x] Build/push у GHCR через GitHub Actions (`build-and-deploy.yml`)
+- [ ] Перевірити збірку/деплой на живому кластері end-to-end
 
-### Kubernetes Resources
-- [ ] Create namespace and ConfigMaps/Secrets
-- [ ] Create Deployments and Services for all microservices
-- [ ] Configure Ingress with TLS
-- [ ] Set up HorizontalPodAutoscaler (HPA)
-- [ ] Configure resource limits
+### Kubernetes Resources (Helm у репо)
+- [x] Namespaces — `charts/platform`
+- [x] Deployments, Services, Jobs (міграції), HPA, `RollingUpdate` — у чартах сервісів
+- [x] Секрети — патерн `scripts/setup-secrets.sh` + посилання з чартів
+- [ ] Застосувати все на реальному кластері + smoke-тести
+- [ ] Ingress з TLS
 
-### Helm setup
-- [ ] Setup Helm repository
-- [ ] Adjust secret management
-- [ ] Adjust CI/CD pipelines to work with Helm charts
+### Helm & CI/CD
+- [x] Локальні чарти: `platform`, `infra`, `api-gateway`, `auth`, `communication-service`
+- [x] Workflow: optional migrate Job + `helm upgrade --install --atomic`
+- [x] Тег образу: якщо інпут `version` порожній — з поля `version` у кореневому `package.json` (з префіксом `v` за потреби); якщо там немає версії — фолбек `v0.1.0`
+- [x] `k8s/bootstrap/`: `ci-rbac.yaml` (SA для GitHub Actions), `generate-ci-kubeconfig.sh`
+- [x] README: перший запуск кластера, CI/CD, bootstrap
+- [x] Executable bit у git для `scripts/setup-secrets.sh`, `k8s/bootstrap/generate-ci-kubeconfig.sh`
+- [ ] Окремий Helm chart repository / OCI registry (за потреби)
 
 ### Databases & Infrastructure
-- [ ] Deploy PostgreSQL with StatefulSet and replication
-- [ ] Deploy Redis Cluster (3 master + 3 replica)
-- [ ] Deploy RabbitMQ with StatefulSet
-- [ ] Deploy MinIO in distributed mode
-- [ ] Configure persistent volumes and backups
+- [x] У чарті `infra`: Redis + MinIO (StatefulSets; для dev/stage)
+- [ ] PostgreSQL у кластері або стабільне підключення до зовнішньої БД + успішні міграції
+- [ ] Redis Cluster (3+3) / прод-режим — за потреби
+- [ ] RabbitMQ у кластері
+- [ ] MinIO distributed / прод-режим — за потреби
+- [ ] Persistent volumes і бекапи
 
 ### Service Mesh (Optional)
 - [ ] Install Linkerd or Istio
