@@ -6,7 +6,7 @@ import {
   Inject,
 } from '@nestjs/common';
 import Redis from 'ioredis';
-import { REDIS_CLIENT, REDIS_PREFIX } from './redis.module';
+import { REDIS_CLIENT, REDIS_PREFIX } from './redis.tokens';
 
 export type PubSubEventType =
   | 'message:new'

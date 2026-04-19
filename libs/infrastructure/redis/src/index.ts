@@ -1,4 +1,5 @@
-export { RedisModule, REDIS_CLIENT, REDIS_PREFIX } from './redis.module';
+export { RedisModule } from './redis.module';
+export { REDIS_CLIENT, REDIS_PREFIX } from './redis.tokens';
 export type { RedisModuleOptions, RedisModuleAsyncOptions } from './redis.module';
 export { RedisService } from './redis.service';
 export { RedisPubSubService } from './redis-pubsub.service';
