@@ -21,9 +21,23 @@ kube-prometheus-stack:
       podMonitorSelectorNilUsesHelmValues: false
 
   grafana:
+    # Recreate required — RWO PVC can only be mounted by one pod at a time;
+    # RollingUpdate would leave the new pod stuck waiting for the old one to release it
+    deploymentStrategy:
+      type: Recreate
+
     persistence:
       enabled: true
       size: 2Gi
+
+    ingress:
+      enabled: true
+      ingressClassName: nginx
+      hosts:
+        - grafana.84.247.133.45.nip.io
+      path: /
+      pathType: Prefix
+
     additionalDataSources:
       - name: Loki
         type: loki
