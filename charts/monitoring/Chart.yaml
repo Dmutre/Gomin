@@ -1,0 +1,18 @@
+apiVersion: v2
+name: gomin-monitoring
+description: Observability stack — Prometheus, Loki, Tempo, Grafana, OTel Collector
+type: application
+version: 0.1.0
+dependencies:
+  - name: kube-prometheus-stack
+    version: ">=65.0.0"
+    repository: "https://prometheus-community.github.io/helm-charts"
+  - name: loki
+    version: ">=6.0.0"
+    repository: "https://grafana.github.io/helm-charts"
+  - name: tempo
+    version: ">=1.0.0"
+    repository: "https://grafana.github.io/helm-charts"
+  - name: opentelemetry-collector
+    version: ">=0.100.0"
+    repository: "https://open-telemetry.github.io/opentelemetry-helm-charts"

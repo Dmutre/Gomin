@@ -56,6 +56,24 @@ rules:
   - apiGroups: ["policy"]
     resources: ["poddisruptionbudgets"]
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  # Prometheus Operator CRDs (all namespace-scoped)
+  - apiGroups: ["monitoring.coreos.com"]
+    resources:
+      - prometheuses
+      - prometheusagents
+      - prometheusrules
+      - servicemonitors
+      - podmonitors
+      - probes
+      - scrapeconfigs
+      - alertmanagers
+      - alertmanagerconfigs
+      - thanosrulers
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  # Prometheus Operator leader-election leases
+  - apiGroups: ["coordination.k8s.io"]
+    resources: ["leases"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
 
 ---
 # Bind to gomin-apps

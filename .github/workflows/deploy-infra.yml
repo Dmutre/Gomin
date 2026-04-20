@@ -52,12 +52,13 @@ jobs:
         if: always()
         run: kubectl get pods -n gomin-infra
 
-  # ── 2. Monitoring stack (kube-prometheus-stack) ─────────────────────────────
+  # ── 2. Monitoring stack (Prometheus + Loki + Tempo + Grafana + OTel) ─────────
   deploy-monitoring:
-    name: Deploy Monitoring (Prometheus + Grafana)
+    name: Deploy Monitoring Stack
     if: ${{ inputs.deploy_monitoring }}
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
       - uses: azure/setup-helm@v4
 
       - name: Configure kubectl
@@ -66,27 +67,23 @@ jobs:
           echo "${{ secrets.KUBECONFIG }}" > ~/.kube/config
           chmod 600 ~/.kube/config
 
-      - name: Add prometheus-community Helm repo
+      - name: Add Helm repos
         run: |
           helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+          helm repo add grafana https://grafana.github.io/helm-charts
+          helm repo add open-telemetry https://open-telemetry.github.io/opentelemetry-helm-charts
           helm repo update
 
-      - name: Helm upgrade — kube-prometheus-stack
+      - name: Resolve chart dependencies
+        run: helm dependency update charts/monitoring
+
+      - name: Helm upgrade — monitoring stack
         run: |
-          helm upgrade --install monitoring prometheus-community/kube-prometheus-stack \
+          helm upgrade --install monitoring ./charts/monitoring \
             --namespace gomin-monitoring \
-            --set grafana.adminPassword="${{ secrets.GRAFANA_ADMIN_PASSWORD }}" \
-            --set prometheus.prometheusSpec.retention=7d \
-            --set grafana.persistence.enabled=true \
-            --set grafana.persistence.size=2Gi \
-            --set alertmanager.enabled=false \
-            --set kubeControllerManager.enabled=false \
-            --set kubeScheduler.enabled=false \
-            --set kubeEtcd.enabled=false \
-            --set kubeProxy.enabled=false \
-            --set coreDns.enabled=false \
+            --set kube-prometheus-stack.grafana.adminPassword="${{ secrets.GRAFANA_ADMIN_PASSWORD }}" \
             --cleanup-on-fail \
-            --timeout 10m
+            --timeout 5m
 
       - name: Show pod status
         if: always()
