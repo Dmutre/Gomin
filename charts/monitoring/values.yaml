@@ -42,7 +42,7 @@ kube-prometheus-stack:
       enabled: true
       ingressClassName: traefik
       hosts:
-        - grafana.84.247.133.45.nip.io
+        - grafana.84.247.133.45.nip.io # Replace with your external IP
       path: /
       pathType: Prefix
 
@@ -99,7 +99,6 @@ loki:
   lokiCanary:
     enabled: false
 
-# ── Tempo (single-binary, local storage) ─────────────────────────────────────
 tempo:
   tempo:
     storage:
@@ -113,7 +112,6 @@ tempo:
     enabled: true
     size: 10Gi
 
-# ── OTel Collector (deployment — receives OTLP pushes from apps) ──────────────
 opentelemetry-collector:
   mode: deployment
   replicaCount: 1

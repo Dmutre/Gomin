@@ -3,7 +3,6 @@ fullnameOverride: ""
 
 image:
   repository: gomin/api-gateway
-  # tag defaults to Chart.appVersion when left empty
   tag: ""
   pullPolicy: IfNotPresent
 
@@ -25,16 +24,12 @@ ingress:
   enabled: true
   className: traefik
   annotations: {}
-    # cert-manager.io/cluster-issuer: letsencrypt-prod
   hosts:
-    - host: api.84.247.133.45.nip.io
+    - host: api.84.247.133.45.nip.io # Replace with your external IP
       paths:
         - path: /
           pathType: Prefix
   tls: []
-  #  - secretName: api-gateway-tls
-  #    hosts:
-  #      - api.gomin.local
 
 resources:
   requests:
@@ -50,13 +45,8 @@ hpa:
   maxReplicas: 5
   targetCPUUtilizationPercentage: 70
 
-# Inject environment variables directly (non-sensitive).
-# Sensitive values (DB passwords, JWT secrets) should come via envFrom referencing a Secret.
 env: {}
-  # NODE_ENV: production
-  # APP_PORT: "3000"
 
-# Reference existing ConfigMaps or Secrets for environment variables.
 envFrom:
   - secretRef:
       name: api-gateway-secret

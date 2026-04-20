@@ -58,11 +58,11 @@ async function bootstrap() {
     .addBearerAuth()
     .build();
 
-  const document = SwaggerModule.createDocument(app, swaggerConfig);
-  SwaggerModule.setup('docs', app, document);
-
   const port = config.get<number>('app.port') ?? 3000;
   app.setGlobalPrefix('api');
+
+  const document = SwaggerModule.createDocument(app, swaggerConfig);
+  SwaggerModule.setup('docs', app, document);
   await app.listen(port);
 
   logger.log(`Gateway running on http://localhost:${port}/api`);

@@ -7,10 +7,8 @@ metadata:
   labels:
     {{- include "auth.labels" . | nindent 4 }}
   annotations:
-    # Run before every install and upgrade; skip on rollback.
     helm.sh/hook: pre-install,pre-upgrade
     helm.sh/hook-weight: "-5"
-    # Delete the previous job run before creating a new one, and clean up on success.
     helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
 spec:
   backoffLimit: 2

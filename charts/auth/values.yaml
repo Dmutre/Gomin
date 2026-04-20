@@ -3,7 +3,6 @@ fullnameOverride: ""
 
 image:
   repository: gomin/auth
-  # tag defaults to Chart.appVersion when left empty
   tag: ""
   pullPolicy: IfNotPresent
 
@@ -19,7 +18,7 @@ updateStrategy:
 
 service:
   type: ClusterIP
-  port: 5000  # gRPC
+  port: 5000
 
 migrations:
   enabled: true
@@ -38,14 +37,8 @@ hpa:
   maxReplicas: 4
   targetCPUUtilizationPercentage: 70
 
-# Inject environment variables directly (non-sensitive).
-# Sensitive values (DB passwords, JWT secrets) should come via envFrom referencing a Secret.
 env: {}
-  # NODE_ENV: production
-  # GRPC_PORT: "5000"
-  # HOST: "0.0.0.0"
 
-# Reference existing ConfigMaps or Secrets for environment variables.
 envFrom:
   - secretRef:
       name: auth-secret
