@@ -24,8 +24,10 @@ kube-prometheus-stack:
     # Recreate required — RWO PVC can only be mounted by one pod at a time;
     # RollingUpdate would leave the new pod stuck waiting for the old one to release it
     deploymentStrategy:
-      type: Recreate
-      rollingUpdate: null
+      type: RollingUpdate
+      rollingUpdate:
+        maxSurge: 0
+        maxUnavailable: 1
 
     persistence:
       enabled: true
