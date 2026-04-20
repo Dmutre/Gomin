@@ -120,8 +120,10 @@ opentelemetry-collector:
         endpoint: monitoring-tempo:4317
         tls:
           insecure: true
-      loki:
-        endpoint: http://monitoring-loki:3100/loki/api/v1/push
+      otlphttp/loki:
+        endpoint: http://monitoring-loki:3100/otlp
+        tls:
+          insecure: true
       prometheus:
         endpoint: "0.0.0.0:8889"
 
@@ -134,7 +136,7 @@ opentelemetry-collector:
         logs:
           receivers: [otlp]
           processors: [memory_limiter, batch]
-          exporters: [loki]
+          exporters: [otlphttp/loki]
         metrics:
           receivers: [otlp]
           processors: [memory_limiter, batch]
