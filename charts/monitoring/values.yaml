@@ -40,7 +40,7 @@ kube-prometheus-stack:
 
     ingress:
       enabled: true
-      ingressClassName: nginx
+      ingressClassName: traefik
       hosts:
         - grafana.84.247.133.45.nip.io
       path: /
