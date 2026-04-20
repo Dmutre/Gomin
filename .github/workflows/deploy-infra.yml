@@ -80,6 +80,11 @@ jobs:
             --set grafana.persistence.enabled=true \
             --set grafana.persistence.size=2Gi \
             --set alertmanager.enabled=false \
+            --set kubeControllerManager.enabled=false \
+            --set kubeScheduler.enabled=false \
+            --set kubeEtcd.enabled=false \
+            --set kubeProxy.enabled=false \
+            --set coreDns.enabled=false \
             --cleanup-on-fail \
             --timeout 10m
 
