@@ -25,6 +25,7 @@ kube-prometheus-stack:
     # RollingUpdate would leave the new pod stuck waiting for the old one to release it
     deploymentStrategy:
       type: Recreate
+      rollingUpdate: null
 
     persistence:
       enabled: true
