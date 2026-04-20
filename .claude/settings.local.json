@@ -9,8 +9,8 @@
       "Bash(find *)",
       "Edit",
       "Write",
-      "Bash(docker build *)",
-      "Bash(docker run *)"
+      "Bash(docker *)",
+      "Bash(kubectl *)"
     ]
   }
 }

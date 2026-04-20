@@ -21,13 +21,18 @@ kube-prometheus-stack:
       podMonitorSelectorNilUsesHelmValues: false
 
   grafana:
-    # Recreate required — RWO PVC can only be mounted by one pod at a time;
-    # RollingUpdate would leave the new pod stuck waiting for the old one to release it
     deploymentStrategy:
       type: RollingUpdate
       rollingUpdate:
         maxSurge: 0
         maxUnavailable: 1
+
+    initChownData:
+      enabled: false
+    securityContext:
+      runAsUser: 472
+      runAsGroup: 472
+      fsGroup: 472
 
     persistence:
       enabled: true
