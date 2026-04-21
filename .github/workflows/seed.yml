@@ -1,0 +1,68 @@
+name: Seed auth DB
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: >-
+          Image tag to run seed from (e.g. v1.2.3). Leave empty to use package.json version.
+        required: false
+        default: ''
+
+env:
+  REGISTRY: ghcr.io
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    outputs:
+      owner:            ${{ steps.meta.outputs.owner }}
+      resolved_version: ${{ steps.meta.outputs.resolved_version }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: meta
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
+        run: |
+          FALLBACK='v0.1.0'
+          PKG_RAW=$(jq -r '.version // empty' package.json 2>/dev/null || true)
+          if [ -z "$PKG_RAW" ] || [ "$PKG_RAW" = "null" ]; then PKG_RAW=''; fi
+
+          if [ -n "$INPUT_VERSION" ]; then
+            RESOLVED="$INPUT_VERSION"
+          elif [ -n "$PKG_RAW" ]; then
+            case "$PKG_RAW" in
+              v*) RESOLVED="$PKG_RAW" ;;
+              *)  RESOLVED="v${PKG_RAW}" ;;
+            esac
+          else
+            RESOLVED="$FALLBACK"
+          fi
+
+          OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          echo "owner=${OWNER}" >> "$GITHUB_OUTPUT"
+          echo "resolved_version=${RESOLVED}" >> "$GITHUB_OUTPUT"
+          echo "Image tag: ${RESOLVED}, Owner: ${OWNER}"
+
+  seed:
+    needs: setup
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure kubectl
+        run: |
+          mkdir -p ~/.kube
+          echo "${{ secrets.KUBECONFIG }}" > ~/.kube/config
+          chmod 600 ~/.kube/config
+
+      - name: Seed auth DB
+        uses: ./.github/actions/run-seed
+        with:
+          version:                      ${{ needs.setup.outputs.resolved_version }}
+          owner:                        ${{ needs.setup.outputs.owner }}
+          run_id:                       ${{ github.run_id }}
+          gateway_service_secret:       ${{ secrets.GATEWAY_SERVICE_SECRET }}
+          communication_service_secret: ${{ secrets.COMMUNICATION_SERVICE_SECRET }}
+          auth_service_secret:          ${{ secrets.AUTH_SERVICE_SECRET }}
