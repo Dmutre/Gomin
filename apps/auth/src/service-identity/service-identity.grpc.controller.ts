@@ -1,12 +1,10 @@
-import { Controller, UseGuards } from '@nestjs/common';
+import { Controller } from '@nestjs/common';
 import { GrpcMethod } from '@nestjs/microservices';
 import type {
   AuthenticateServiceIdentityResponse,
   GetPublicKeysResponse,
 } from '@gomin/grpc';
 import { ServiceIdentityService } from './service-identity.service';
-import { LocalIdentityGuard } from '../local-identity/local-identity.guard';
-import { Permission, RequirePermission } from '@gomin/service-identity';
 
 @Controller()
 export class ServiceIdentityGrpcController {
@@ -25,9 +23,7 @@ export class ServiceIdentityGrpcController {
     );
   }
 
-  @UseGuards(LocalIdentityGuard)
   @GrpcMethod('ServiceIdentityService', 'GetPublicKeys')
-  @RequirePermission(Permission.SERVICE_IDENTITY_GET_PUBLIC_KEYS)
   getPublicKeys(): GetPublicKeysResponse {
     return this.serviceIdentityService.getPublicKeys();
   }
