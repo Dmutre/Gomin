@@ -89,7 +89,10 @@ export class RedisPubSubService implements OnModuleInit, OnModuleDestroy {
   }
 
   async publish(channel: string, message: PubSubMessage): Promise<void> {
-    await this.publisher.publish(this.prefixed(channel), JSON.stringify(message));
+    await this.publisher.publish(
+      this.prefixed(channel),
+      JSON.stringify(message),
+    );
   }
 
   chatChannel(chatId: string): string {

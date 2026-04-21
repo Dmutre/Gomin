@@ -8,5 +8,9 @@
     "rootDir": ".",
     "outDir": "../../dist/apps/auth"
   },
-  "include": ["knexfile.ts", "database/migrations/**/*.ts", "database/seeds/**/*.ts"]
+  "include": [
+    "knexfile.ts",
+    "database/migrations/**/*.ts",
+    "database/seeds/**/*.ts"
+  ]
 }

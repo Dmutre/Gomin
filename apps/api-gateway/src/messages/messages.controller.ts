@@ -80,7 +80,12 @@ export class MessagesController {
     @Param('messageId') messageId: string,
     @Body() dto: UpdateMessageDto,
   ) {
-    return this.messagesService.updateMessage(user.userId, chatId, messageId, dto);
+    return this.messagesService.updateMessage(
+      user.userId,
+      chatId,
+      messageId,
+      dto,
+    );
   }
 
   @Delete('/chats/:chatId/messages/:messageId')
@@ -111,7 +116,12 @@ export class MessagesController {
     @Param('messageId') messageId: string,
     @Body() dto: AddReactionDto,
   ) {
-    return this.messagesService.addReaction(user.userId, chatId, messageId, dto);
+    return this.messagesService.addReaction(
+      user.userId,
+      chatId,
+      messageId,
+      dto,
+    );
   }
 
   @Delete('/chats/:chatId/messages/:messageId/reactions/:emoji')
@@ -122,6 +132,11 @@ export class MessagesController {
     @Param('messageId') messageId: string,
     @Param('emoji') emoji: string,
   ) {
-    return this.messagesService.removeReaction(user.userId, chatId, messageId, emoji);
+    return this.messagesService.removeReaction(
+      user.userId,
+      chatId,
+      messageId,
+      emoji,
+    );
   }
 }

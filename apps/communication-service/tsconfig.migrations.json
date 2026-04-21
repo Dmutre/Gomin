@@ -8,5 +8,9 @@
     "rootDir": ".",
     "outDir": "../../dist/apps/communication-service"
   },
-  "include": ["knexfile.ts", "database/migrations/**/*.ts", "database/table-names.ts"]
+  "include": [
+    "knexfile.ts",
+    "database/migrations/**/*.ts",
+    "database/table-names.ts"
+  ]
 }

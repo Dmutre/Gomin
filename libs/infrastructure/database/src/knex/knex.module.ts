@@ -34,7 +34,8 @@ import { DATABASE_CONFIG_NAMESPACE } from './knex.config';
             log: {
               warn: (msg: string) => knexLogger.warn(msg),
               error: (msg: string) => knexLogger.error(msg),
-              deprecate: (msg: string) => knexLogger.warn(`[deprecated] ${msg}`),
+              deprecate: (msg: string) =>
+                knexLogger.warn(`[deprecated] ${msg}`),
               debug: (msg: string) => knexLogger.debug(msg),
             },
           },

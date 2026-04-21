@@ -21,7 +21,10 @@ export class WsSessionGuard implements CanActivate {
 
     try {
       const user = await this.sessionGuard.resolveSession(token);
-      socket.data['user'] = { ...user, sessionToken: token } satisfies CurrentUser;
+      socket.data['user'] = {
+        ...user,
+        sessionToken: token,
+      } satisfies CurrentUser;
       return true;
     } catch {
       socket.disconnect(true);
