@@ -119,7 +119,7 @@ apply_secret gomin-apps auth-secret \
   --from-literal=REDIS_PORT="$REDIS_PORT" \
   --from-literal=REDIS_PASSWORD="$REDIS_PASSWORD"
 
-AUTH_SERVICE_URL="http://auth.gomin-apps.svc.cluster.local:${AUTH_GRPC_PORT}"
+AUTH_SERVICE_URL="auth.gomin-apps.svc.cluster.local:${AUTH_GRPC_PORT}"
 info "Auth gRPC URL: ${AUTH_SERVICE_URL}"
 
 # ── Communication service ──────────────────────────────────────────────────────
