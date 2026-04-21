@@ -75,11 +75,6 @@ export class DeviceInfoDto {
   @ApiProperty()
   @IsString()
   @IsNotEmpty()
-  ipAddress!: string;
-
-  @ApiProperty()
-  @IsString()
-  @IsNotEmpty()
   userAgent!: string;
 }
 

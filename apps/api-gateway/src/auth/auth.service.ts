@@ -34,7 +34,7 @@ export class AuthService {
     return metadata;
   }
 
-  async register(dto: RegisterDto): Promise<RegisterResponse> {
+  async register(dto: RegisterDto, ipAddress: string): Promise<RegisterResponse> {
     const metadata = await this.buildMetadata();
     return this.userAuthClient.register(
       {
@@ -50,7 +50,7 @@ export class AuthService {
           os: dto.deviceInfo.os,
           browser: dto.deviceInfo.browser,
           appVersion: dto.deviceInfo.appVersion,
-          ipAddress: dto.deviceInfo.ipAddress,
+          ipAddress,
           userAgent: dto.deviceInfo.userAgent,
         },
       },
@@ -58,7 +58,7 @@ export class AuthService {
     );
   }
 
-  async login(dto: LoginDto): Promise<LoginResponse> {
+  async login(dto: LoginDto, ipAddress: string): Promise<LoginResponse> {
     const metadata = await this.buildMetadata();
     return this.userAuthClient.login(
       {
@@ -71,7 +71,7 @@ export class AuthService {
           os: dto.deviceInfo.os,
           browser: dto.deviceInfo.browser,
           appVersion: dto.deviceInfo.appVersion,
-          ipAddress: dto.deviceInfo.ipAddress,
+          ipAddress,
           userAgent: dto.deviceInfo.userAgent,
         },
       },

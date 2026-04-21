@@ -5,8 +5,10 @@ import {
   Get,
   Param,
   Post,
+  Req,
   UseGuards,
 } from '@nestjs/common';
+import type { Request } from 'express';
 import {
   ApiBearerAuth,
   ApiOperation,
@@ -39,8 +41,9 @@ export class AuthController {
     status: 201,
     description: 'User registered, session token returned',
   })
-  register(@Body() dto: RegisterDto) {
-    return this.authService.register(dto);
+  register(@Body() dto: RegisterDto, @Req() req: Request) {
+    const ipAddress = (req.headers['x-real-ip'] as string) ?? req.ip ?? '0.0.0.0';
+    return this.authService.register(dto, ipAddress);
   }
 
   @Post('/login')
@@ -48,8 +51,9 @@ export class AuthController {
     summary: 'Login and receive session token + encrypted E2EE private key',
   })
   @ApiResponse({ status: 200 })
-  login(@Body() dto: LoginDto) {
-    return this.authService.login(dto);
+  login(@Body() dto: LoginDto, @Req() req: Request) {
+    const ipAddress = (req.headers['x-real-ip'] as string) ?? req.ip ?? '0.0.0.0';
+    return this.authService.login(dto, ipAddress);
   }
 
   @Post('/logout')
