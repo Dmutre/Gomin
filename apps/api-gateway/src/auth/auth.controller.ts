@@ -42,7 +42,8 @@ export class AuthController {
     description: 'User registered, session token returned',
   })
   register(@Body() dto: RegisterDto, @Req() req: Request) {
-    const ipAddress = (req.headers['x-real-ip'] as string) ?? req.ip ?? '0.0.0.0';
+    const ipAddress =
+      (req.headers['x-real-ip'] as string) ?? req.ip ?? '0.0.0.0';
     return this.authService.register(dto, ipAddress);
   }
 
@@ -52,7 +53,8 @@ export class AuthController {
   })
   @ApiResponse({ status: 200 })
   login(@Body() dto: LoginDto, @Req() req: Request) {
-    const ipAddress = (req.headers['x-real-ip'] as string) ?? req.ip ?? '0.0.0.0';
+    const ipAddress =
+      (req.headers['x-real-ip'] as string) ?? req.ip ?? '0.0.0.0';
     return this.authService.login(dto, ipAddress);
   }
 

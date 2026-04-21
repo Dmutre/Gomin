@@ -18,7 +18,11 @@ import type {
   ChangePasswordResponse,
   ValidateSessionResponse,
 } from '@gomin/grpc';
-import { toUserProfile, toSessionInfo, mapProtoDeviceTypeToDomain } from './user-auth.mapper';
+import {
+  toUserProfile,
+  toSessionInfo,
+  mapProtoDeviceTypeToDomain,
+} from './user-auth.mapper';
 import type {
   RegisterDto,
   LoginDto,
@@ -66,7 +70,7 @@ export class UserAuthService {
       id: randomUUID(),
       username: data.username,
       email: data.email,
-      phone: data.phone ?? null,
+      phone: data.phone || null,
       passwordHash,
       publicKey: data.e2eeKeys.publicKey,
       encryptedPrivateKey: data.e2eeKeys.encryptedPrivateKey,

@@ -48,7 +48,10 @@ export class AuthService {
     return metadata;
   }
 
-  async register(dto: RegisterDto, ipAddress: string): Promise<RegisterResponse> {
+  async register(
+    dto: RegisterDto,
+    ipAddress: string,
+  ): Promise<RegisterResponse> {
     const metadata = await this.buildMetadata();
     return this.userAuthClient.register(
       {
