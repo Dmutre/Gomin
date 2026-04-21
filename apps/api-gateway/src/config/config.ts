@@ -30,7 +30,7 @@ export const serviceIdentityConfig = registerAs(
   () => ({
     authServiceUrl: process.env.AUTH_SERVICE_URL || 'localhost:5000',
     serviceName: process.env.SERVICE_NAME || 'gateway-service',
-    serviceSecret: process.env.SERVICE_SECRET || '',
+    serviceSecret: (process.env.SERVICE_SECRET || '').trim(),
   }),
 );
 

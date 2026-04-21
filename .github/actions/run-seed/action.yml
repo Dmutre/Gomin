@@ -1,0 +1,111 @@
+name: Run DB seed (auth)
+description: Creates a Kubernetes Job that runs knex seed:run for the auth service.
+
+inputs:
+  version:
+    description: Docker image tag
+    required: true
+  owner:
+    description: GitHub owner (lowercase)
+    required: true
+  run_id:
+    description: GitHub run ID (used to make the Job name unique)
+    required: true
+  gateway_service_secret:
+    description: SERVICE_SECRET of the gateway service
+    required: false
+    default: ""
+  communication_service_secret:
+    description: SERVICE_SECRET of the communication service
+    required: false
+    default: ""
+  auth_service_secret:
+    description: SERVICE_SECRET of the auth service
+    required: false
+    default: ""
+
+runs:
+  using: composite
+  steps:
+    - name: Create seed Job
+      shell: bash
+      env:
+        VERSION: ${{ inputs.version }}
+        OWNER:   ${{ inputs.owner }}
+        RUN_ID:  ${{ inputs.run_id }}
+        SERVICE_IDENTITY_GATEWAY_SERVICE_SECRET:       ${{ inputs.gateway_service_secret }}
+        SERVICE_IDENTITY_COMMUNICATION_SERVICE_SECRET: ${{ inputs.communication_service_secret }}
+        SERVICE_IDENTITY_AUTH_SERVICE_SECRET:          ${{ inputs.auth_service_secret }}
+      run: |
+        JOB_NAME="auth-seed-${RUN_ID}"
+        echo "Creating seed Job: ${JOB_NAME}"
+
+        kubectl apply -f - <<EOF
+        apiVersion: batch/v1
+        kind: Job
+        metadata:
+          name: ${JOB_NAME}
+          namespace: gomin-apps
+          labels:
+            app: auth
+            component: seed
+            version: "${VERSION}"
+        spec:
+          backoffLimit: 0
+          activeDeadlineSeconds: 300
+          ttlSecondsAfterFinished: 600
+          template:
+            spec:
+              restartPolicy: Never
+              containers:
+                - name: seed
+                  image: ghcr.io/${OWNER}/gomin-auth:${VERSION}
+                  command: ["sh", "-c"]
+                  args: ["node_modules/.bin/knex seed:run --knexfile knexfile.js"]
+                  env:
+                    - name: SERVICE_IDENTITY_GATEWAY_SERVICE_SECRET
+                      value: "${SERVICE_IDENTITY_GATEWAY_SERVICE_SECRET}"
+                    - name: SERVICE_IDENTITY_COMMUNICATION_SERVICE_SECRET
+                      value: "${SERVICE_IDENTITY_COMMUNICATION_SERVICE_SECRET}"
+                    - name: SERVICE_IDENTITY_AUTH_SERVICE_SECRET
+                      value: "${SERVICE_IDENTITY_AUTH_SERVICE_SECRET}"
+                  envFrom:
+                    - secretRef:
+                        name: auth-secret
+        EOF
+
+    - name: Wait for seed Job
+      shell: bash
+      env:
+        RUN_ID: ${{ inputs.run_id }}
+      run: |
+        JOB_NAME="auth-seed-${RUN_ID}"
+        echo "Waiting for seed to finish (timeout 5m)..."
+        TIMEOUT=300
+        ELAPSED=0
+        INTERVAL=5
+
+        while [ $ELAPSED -lt $TIMEOUT ]; do
+          COMPLETE=$(kubectl get job/${JOB_NAME} -n gomin-apps \
+            -o jsonpath='{.status.conditions[?(@.type=="Complete")].status}' 2>/dev/null || true)
+          FAILED=$(kubectl get job/${JOB_NAME} -n gomin-apps \
+            -o jsonpath='{.status.conditions[?(@.type=="Failed")].status}' 2>/dev/null || true)
+
+          if [ "$COMPLETE" = "True" ]; then
+            echo "Seed succeeded for auth"
+            exit 0
+          fi
+
+          if [ "$FAILED" = "True" ]; then
+            echo "::error::Seed failed for auth"
+            kubectl logs job/${JOB_NAME} -n gomin-apps --tail=100 || true
+            exit 1
+          fi
+
+          sleep $INTERVAL
+          ELAPSED=$((ELAPSED + INTERVAL))
+        done
+
+        echo "::error::Seed timed out after ${TIMEOUT}s for auth"
+        kubectl logs job/${JOB_NAME} -n gomin-apps --tail=100 || true
+        exit 1

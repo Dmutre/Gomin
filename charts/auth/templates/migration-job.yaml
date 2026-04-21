@@ -24,12 +24,11 @@ spec:
         - name: migrate
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
-          command:
-            - node
-            - node_modules/.bin/knex
-            - migrate:latest
-            - --knexfile
-            - knexfile.js
+          command: ["sh", "-c"]
+          args:
+            - |
+              node_modules/.bin/knex migrate:latest --knexfile knexfile.js && \
+              node_modules/.bin/knex seed:run --knexfile knexfile.js
           {{- with .Values.env }}
           env:
             {{- range $key, $value := . }}
@@ -37,8 +36,12 @@ spec:
               value: {{ $value | quote }}
             {{- end }}
           {{- end }}
-          {{- with .Values.envFrom }}
           envFrom:
+            {{- with .Values.envFrom }}
             {{- toYaml . | nindent 12 }}
-          {{- end }}
+            {{- end }}
+            {{- if .Values.seedSecrets.gatewayServiceSecret }}
+            - secretRef:
+                name: {{ include "auth.fullname" . }}-seed
+            {{- end }}
 {{- end }}

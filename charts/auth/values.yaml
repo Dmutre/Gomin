@@ -23,6 +23,11 @@ service:
 migrations:
   enabled: true
 
+seedSecrets:
+  gatewayServiceSecret: ""
+  communicationServiceSecret: ""
+  authServiceSecret: ""
+
 resources:
   requests:
     cpu: 100m
