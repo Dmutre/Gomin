@@ -119,7 +119,7 @@ apply_secret gomin-apps auth-secret \
   --from-literal=REDIS_PORT="$REDIS_PORT" \
   --from-literal=REDIS_PASSWORD="$REDIS_PASSWORD"
 
-AUTH_SERVICE_URL="auth.gomin-apps.svc.cluster.local:${AUTH_GRPC_PORT}"
+AUTH_SERVICE_URL="http://auth.gomin-apps.svc.cluster.local:${AUTH_GRPC_PORT}"
 info "Auth gRPC URL: ${AUTH_SERVICE_URL}"
 
 # ── Communication service ──────────────────────────────────────────────────────
@@ -133,6 +133,7 @@ COMM_HOST=$(ask "HOST" "0.0.0.0")
 apply_secret gomin-apps communication-service-secret \
   --from-literal=NODE_ENV="production" \
   --from-literal=DATABASE_URL="$COMM_DB_URL" \
+  --from-literal=SERVICE_NAME="communication-service" \
   --from-literal=SERVICE_SECRET="$COMM_SERVICE_SECRET" \
   --from-literal=GRPC_PORT="$COMM_GRPC_PORT" \
   --from-literal=HOST="$COMM_HOST" \
@@ -155,6 +156,7 @@ apply_secret gomin-apps api-gateway-secret \
   --from-literal=NODE_ENV="production" \
   --from-literal=PORT="$GW_PORT" \
   --from-literal=HOST="$GW_HOST" \
+  --from-literal=SERVICE_NAME="gateway-service" \
   --from-literal=SERVICE_SECRET="$GW_SERVICE_SECRET" \
   --from-literal=AUTH_SERVICE_URL="$AUTH_SERVICE_URL" \
   --from-literal=COMMUNICATION_SERVICE_URL="$COMM_SERVICE_URL" \
