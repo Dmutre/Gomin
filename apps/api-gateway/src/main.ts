@@ -1,6 +1,7 @@
 import './tracing';
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
+import { GrpcExceptionFilter } from './common/filters/grpc-exception.filter';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { Logger } from 'nestjs-pino';
 import { IoAdapter } from '@nestjs/platform-socket.io';
@@ -36,6 +37,8 @@ async function bootstrap() {
   }
 
   app.useWebSocketAdapter(new RedisIoAdapter(app));
+
+  app.useGlobalFilters(new GrpcExceptionFilter());
 
   app.useGlobalPipes(
     new ValidationPipe({
