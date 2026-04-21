@@ -25,10 +25,10 @@ migrations:
 
 resources:
   requests:
-    cpu: 100m
+    cpu: 300m
     memory: 256Mi
   limits:
-    cpu: 400m
+    cpu: 600m
     memory: 512Mi
 
 hpa:

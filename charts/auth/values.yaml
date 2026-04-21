@@ -30,10 +30,10 @@ seedSecrets:
 
 resources:
   requests:
-    cpu: 100m
+    cpu: 300m
     memory: 192Mi
   limits:
-    cpu: 400m
+    cpu: 600m
     memory: 384Mi
 
 hpa:
