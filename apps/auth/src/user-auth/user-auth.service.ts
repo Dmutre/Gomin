@@ -18,7 +18,7 @@ import type {
   ChangePasswordResponse,
   ValidateSessionResponse,
 } from '@gomin/grpc';
-import { toUserProfile, toSessionInfo } from './user-auth.mapper';
+import { toUserProfile, toSessionInfo, mapProtoDeviceTypeToDomain } from './user-auth.mapper';
 import type {
   RegisterDto,
   LoginDto,
@@ -286,7 +286,7 @@ export class UserAuthService {
       userId,
       deviceId: deviceInfo.deviceId,
       deviceName: deviceInfo.deviceName,
-      deviceType: deviceInfo.deviceType,
+      deviceType: mapProtoDeviceTypeToDomain(deviceInfo.deviceType),
       os: deviceInfo.os,
       browser: deviceInfo.browser,
       appVersion: deviceInfo.appVersion,

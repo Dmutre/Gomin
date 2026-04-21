@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Metadata } from '@grpc/grpc-js';
 import { MicroserviceIdentityAuthService } from '@gomin/service-identity';
-import { UserAuthGrpcClient } from '@gomin/grpc';
+import { UserAuthGrpcClient, DeviceType } from '@gomin/grpc';
 import type {
   RegisterResponse,
   LoginResponse,
@@ -13,12 +13,26 @@ import type {
   ChangePasswordResponse,
 } from '@gomin/grpc';
 import type { RegisterDto } from './dto/register.dto';
+import { DeviceTypeDto } from './dto/register.dto';
 import type { LoginDto } from './dto/login.dto';
 import type { ChangePasswordDto } from './dto/change-password.dto';
 import type {
   TerminateSessionDto,
   TerminateAllOtherSessionsDto,
 } from './dto/terminate-session.dto';
+
+function toProtoDeviceType(deviceType: DeviceTypeDto): DeviceType {
+  switch (deviceType) {
+    case DeviceTypeDto.MOBILE:
+      return DeviceType.DEVICE_TYPE_MOBILE;
+    case DeviceTypeDto.DESKTOP:
+      return DeviceType.DEVICE_TYPE_DESKTOP;
+    case DeviceTypeDto.TABLET:
+      return DeviceType.DEVICE_TYPE_TABLET;
+    case DeviceTypeDto.WEB:
+      return DeviceType.DEVICE_TYPE_WEB;
+  }
+}
 
 @Injectable()
 export class AuthService {
@@ -46,7 +60,7 @@ export class AuthService {
         deviceInfo: {
           deviceId: dto.deviceInfo.deviceId,
           deviceName: dto.deviceInfo.deviceName,
-          deviceType: dto.deviceInfo.deviceType,
+          deviceType: toProtoDeviceType(dto.deviceInfo.deviceType),
           os: dto.deviceInfo.os,
           browser: dto.deviceInfo.browser,
           appVersion: dto.deviceInfo.appVersion,
@@ -67,7 +81,7 @@ export class AuthService {
         deviceInfo: {
           deviceId: dto.deviceInfo.deviceId,
           deviceName: dto.deviceInfo.deviceName,
-          deviceType: dto.deviceInfo.deviceType,
+          deviceType: toProtoDeviceType(dto.deviceInfo.deviceType),
           os: dto.deviceInfo.os,
           browser: dto.deviceInfo.browser,
           appVersion: dto.deviceInfo.appVersion,

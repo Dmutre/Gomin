@@ -11,7 +11,7 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { DomainDeviceType } from '../../user-sessions/types/user-session.domain.model';
+import { DeviceType } from '@gomin/grpc';
 
 export class E2EEKeysDto {
   @IsString()
@@ -42,8 +42,8 @@ export class DeviceInfoDto {
   @IsString()
   deviceName: string;
 
-  @IsEnum(DomainDeviceType)
-  deviceType: DomainDeviceType;
+  @IsEnum(DeviceType)
+  deviceType: DeviceType;
 
   @IsString()
   os: string;

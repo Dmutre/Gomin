@@ -20,6 +20,23 @@ export function toUserProfile(user: UserDomainModel): UserProfile {
   };
 }
 
+export function mapProtoDeviceTypeToDomain(
+  deviceType: DeviceType,
+): DomainDeviceType | null {
+  switch (deviceType) {
+    case DeviceType.DEVICE_TYPE_MOBILE:
+      return DomainDeviceType.MOBILE;
+    case DeviceType.DEVICE_TYPE_DESKTOP:
+      return DomainDeviceType.DESKTOP;
+    case DeviceType.DEVICE_TYPE_TABLET:
+      return DomainDeviceType.TABLET;
+    case DeviceType.DEVICE_TYPE_WEB:
+      return DomainDeviceType.WEB;
+    default:
+      return null;
+  }
+}
+
 function mapDeviceDomainToProtoDeviceType(
   deviceType: DomainDeviceType | null,
 ): DeviceType {

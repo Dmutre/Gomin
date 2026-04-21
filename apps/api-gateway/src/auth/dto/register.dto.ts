@@ -9,11 +9,17 @@ import {
   Matches,
   ValidateNested,
 } from 'class-validator';
-import { DeviceType } from '@gomin/grpc';
 import {
   STRONG_PASSWORD_MESSAGE,
   STRONG_PASSWORD_REGEX,
 } from '../validation/strong-password.const';
+
+export enum DeviceTypeDto {
+  MOBILE = 'MOBILE',
+  DESKTOP = 'DESKTOP',
+  TABLET = 'TABLET',
+  WEB = 'WEB',
+}
 
 export class E2eeKeysDto {
   @ApiProperty({ description: 'RSA public key (PEM or base64)' })
@@ -53,9 +59,9 @@ export class DeviceInfoDto {
   @IsNotEmpty()
   deviceName!: string;
 
-  @ApiProperty({ enum: DeviceType })
-  @IsEnum(DeviceType)
-  deviceType!: DeviceType;
+  @ApiProperty({ enum: DeviceTypeDto, enumName: 'DeviceType' })
+  @IsEnum(DeviceTypeDto)
+  deviceType!: DeviceTypeDto;
 
   @ApiProperty()
   @IsString()
