@@ -19,6 +19,7 @@ kube-prometheus-stack:
       retention: 7d
       serviceMonitorSelectorNilUsesHelmValues: false
       podMonitorSelectorNilUsesHelmValues: false
+      enableRemoteWriteReceiver: true
 
   grafana:
     deploymentStrategy:
@@ -108,6 +109,15 @@ tempo:
           path: /var/tempo/traces
         wal:
           path: /var/tempo/wal
+    metricsGenerator:
+      enabled: true
+      remoteWriteUrl: "http://monitoring-kube-prometheus-prometheus:9090/api/v1/write"
+    overrides:
+      defaults:
+        metrics_generator:
+          processors:
+            - service-graphs
+            - span-metrics
   persistence:
     enabled: true
     size: 10Gi
