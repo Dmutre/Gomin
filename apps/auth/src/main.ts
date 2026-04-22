@@ -4,7 +4,7 @@ import { AppModule } from './app/app.module';
 import { MicroserviceOptions, Transport } from '@nestjs/microservices';
 import { Logger } from 'nestjs-pino';
 import { join } from 'path';
-import { GrpcExceptionFilter } from '@gomin/app';
+import { GrpcExceptionFilter, GrpcLoggingInterceptor } from '@gomin/app';
 
 async function bootstrap() {
   const microserviceUrl = `${process.env.HOST || 'localhost'}:${process.env.GRPC_PORT || '5000'}`;
@@ -28,6 +28,7 @@ async function bootstrap() {
 
   app.useLogger(logger);
   app.useGlobalFilters(new GrpcExceptionFilter());
+  app.useGlobalInterceptors(new GrpcLoggingInterceptor());
 
   await app.listen().then(() => {
     logger.log(
