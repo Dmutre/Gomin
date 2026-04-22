@@ -48,4 +48,3 @@ Thumbs.db
 # Helm downloaded dependencies (fetched via helm dependency build)
 charts/*/charts/
 charts/*/Chart.lock
-test-e2ee.js
