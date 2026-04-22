@@ -49,7 +49,15 @@ export class UserRepository {
 
   async findById(id: string): Promise<UserDomainModel | null> {
     const cached = await this.redis.get(this.userCacheKey(id));
-    if (cached) return JSON.parse(cached) as UserDomainModel;
+    if (cached) {
+      const raw = JSON.parse(cached) as UserDomainModel;
+      return {
+        ...raw,
+        createdAt: new Date(raw.createdAt),
+        updatedAt: new Date(raw.updatedAt),
+        bannedAt:  raw.bannedAt ? new Date(raw.bannedAt) : null,
+      };
+    }
 
     const userDb = await this.knex<UserDb>(this.tableName)
       .where({ id })

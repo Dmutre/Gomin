@@ -47,9 +47,22 @@ export class ChatMemberRepository {
     return row ? ChatMemberMapper.toDomain(row) : null;
   }
 
+  private reviveMember(raw: ChatMemberDomainModel): ChatMemberDomainModel {
+    return {
+      ...raw,
+      joinedAt:    new Date(raw.joinedAt),
+      canReadFrom: raw.canReadFrom ? new Date(raw.canReadFrom) : null,
+      leftAt:      raw.leftAt      ? new Date(raw.leftAt)      : null,
+    };
+  }
+
   async findAllActive(chatId: string): Promise<ChatMemberDomainModel[]> {
     const cached = await this.redis.get(this.membersCacheKey(chatId));
-    if (cached) return JSON.parse(cached) as ChatMemberDomainModel[];
+    if (cached) {
+      return (JSON.parse(cached) as ChatMemberDomainModel[]).map((m) =>
+        this.reviveMember(m),
+      );
+    }
 
     const rows = await this.knex<ChatMemberDb>(this.table)
       .where({ chatId })

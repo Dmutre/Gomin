@@ -49,7 +49,16 @@ export class UserSessionRepository {
     sessionToken: string,
   ): Promise<UserSessionDomainModel | null> {
     const cached = await this.redis.get(this.sessionCacheKey(sessionToken));
-    if (cached) return JSON.parse(cached) as UserSessionDomainModel;
+    if (cached) {
+      const raw = JSON.parse(cached) as UserSessionDomainModel;
+      return {
+        ...raw,
+        createdAt:      new Date(raw.createdAt),
+        lastActivityAt: new Date(raw.lastActivityAt),
+        expiresAt:      new Date(raw.expiresAt),
+        revokedAt:      raw.revokedAt ? new Date(raw.revokedAt) : null,
+      };
+    }
 
     const session = await this.knex<UserSessionDb>(this.tableName)
       .where({ sessionToken, isActive: true })
