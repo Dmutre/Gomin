@@ -51,25 +51,19 @@ export class ChatService {
       name: options.name,
     });
 
-    const creator = await this.memberRepo.add({
-      chatId: chat.id,
-      userId: options.creatorUserId,
-      role: 'OWNER',
-      canReadFrom: null,
-    });
-
-    const otherMembers = await Promise.all(
-      options.memberUserIds
-        .filter((id) => id !== options.creatorUserId)
-        .map((userId) =>
-          this.memberRepo.add({
-            chatId: chat.id,
-            userId,
-            role: 'MEMBER',
-            canReadFrom: null,
-          }),
-        ),
+    const otherUserIds = options.memberUserIds.filter(
+      (id) => id !== options.creatorUserId,
     );
+    const allMembers = await this.memberRepo.addMany([
+      { chatId: chat.id, userId: options.creatorUserId, role: 'OWNER', canReadFrom: null },
+      ...otherUserIds.map((userId) => ({
+        chatId: chat.id,
+        userId,
+        role: 'MEMBER' as const,
+        canReadFrom: null,
+      })),
+    ]);
+    const [creator, ...otherMembers] = allMembers;
 
     this.logger.info(
       {

@@ -35,6 +35,22 @@ export class MessageStatusRepository {
       .ignore();
   }
 
+  async upsertManySent(messageId: string, userIds: string[]): Promise<void> {
+    if (userIds.length === 0) return;
+    await this.knex<MessageStatusDb>(this.table)
+      .insert(
+        userIds.map((userId) => ({
+          messageId,
+          userId,
+          status: 'SENT',
+          deliveredAt: null,
+          readAt: null,
+        })),
+      )
+      .onConflict(['messageId', 'userId'])
+      .ignore();
+  }
+
   async markDelivered(messageId: string, userId: string): Promise<void> {
     await this.knex<MessageStatusDb>(this.table)
       .where({ messageId, userId })

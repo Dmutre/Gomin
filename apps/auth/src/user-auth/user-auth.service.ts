@@ -321,24 +321,6 @@ export class UserAuthService {
     };
   }
 
-  private toCreateSessionParamsWithoutDevice(
-    userId: string,
-  ): CreateSessionParams {
-    return {
-      userId,
-      deviceId: null,
-      deviceName: null,
-      deviceType: null,
-      os: null,
-      browser: null,
-      appVersion: null,
-      ipAddress: '0.0.0.0',
-      country: null,
-      city: null,
-      userAgent: null,
-    };
-  }
-
   private async hashPassword(password: string): Promise<string> {
     return argon2.hash(password);
   }

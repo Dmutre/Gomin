@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Knex } from 'knex';
 import { InjectConnection } from 'nest-knexjs';
+import { RedisService } from '@gomin/redis';
 import type {
   UserSessionDomainModel,
   SessionDeviceInfoUpdate,
@@ -9,11 +10,20 @@ import { RevokeReason } from './types/user-session.domain.model';
 import type { UserSessionDb } from './types/user-session.db';
 import { UserSessionMapper } from './user-session.mapper';
 
+const SESSION_TTL_SECONDS = 60;
+
 @Injectable()
 export class UserSessionRepository {
   private readonly tableName = 'UserSessions';
 
-  constructor(@InjectConnection() private readonly knex: Knex) {}
+  constructor(
+    @InjectConnection() private readonly knex: Knex,
+    private readonly redis: RedisService,
+  ) {}
+
+  private sessionCacheKey(token: string): string {
+    return `session:${token}`;
+  }
 
   async insertSession(
     session: UserSessionDomainModel,
@@ -38,11 +48,23 @@ export class UserSessionRepository {
   async getActiveSessionByToken(
     sessionToken: string,
   ): Promise<UserSessionDomainModel | null> {
+    const cached = await this.redis.get(this.sessionCacheKey(sessionToken));
+    if (cached) return JSON.parse(cached) as UserSessionDomainModel;
+
     const session = await this.knex<UserSessionDb>(this.tableName)
       .where({ sessionToken, isActive: true })
       .where('expiresAt', '>', this.knex.fn.now())
       .first();
-    return session ? UserSessionMapper.toDomainModel(session) : null;
+
+    if (!session) return null;
+
+    const model = UserSessionMapper.toDomainModel(session);
+    await this.redis.set(
+      this.sessionCacheKey(sessionToken),
+      JSON.stringify(model),
+      SESSION_TTL_SECONDS,
+    );
+    return model;
   }
 
   async getActiveSessionByUserIdAndDeviceId(
@@ -89,6 +111,7 @@ export class UserSessionRepository {
         revokedAt: this.knex.fn.now(),
         revokeReason: reason,
       });
+    await this.redis.del(this.sessionCacheKey(sessionToken));
   }
 
   async revokeOtherSessionsByToken(
@@ -96,6 +119,14 @@ export class UserSessionRepository {
     excludeSessionToken: string,
     reason: RevokeReason,
   ): Promise<number> {
+    // Fetch tokens before revoking so we can purge them from cache immediately.
+    // This prevents a window where revoked sessions (e.g. after password change)
+    // still appear valid from cache.
+    const toRevoke = await this.knex<UserSessionDb>(this.tableName)
+      .where({ userId, isActive: true })
+      .whereNot({ sessionToken: excludeSessionToken })
+      .select('sessionToken');
+
     const result = await this.knex<UserSessionDb>(this.tableName)
       .where({ userId, isActive: true })
       .whereNot({ sessionToken: excludeSessionToken })
@@ -104,6 +135,11 @@ export class UserSessionRepository {
         revokedAt: this.knex.fn.now(),
         revokeReason: reason,
       });
+
+    await Promise.all(
+      toRevoke.map((s) => this.redis.del(this.sessionCacheKey(s.sessionToken))),
+    );
+
     return typeof result === 'number' ? result : 0;
   }
 }

@@ -4,6 +4,7 @@ import { validationSchema } from '../config/schemas';
 import configs from '../config/config';
 import { CustomLoggerModule } from '@gomin/logger';
 import { KnexDatabaseModule } from '@gomin/database';
+import { RedisModule } from '@gomin/redis';
 import { MicroserviceIdentityModule } from '@gomin/service-identity';
 import { CommunicationModule } from '../communication/communication.module';
 
@@ -16,6 +17,11 @@ import { CommunicationModule } from '../communication/communication.module';
     }),
     CustomLoggerModule,
     KnexDatabaseModule,
+    RedisModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: () => ({ prefix: 'communication' }),
+    }),
     MicroserviceIdentityModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],

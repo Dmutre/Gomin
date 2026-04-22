@@ -192,6 +192,29 @@ export class MessagingGateway
   }
 
   @UseGuards(WsSessionGuard)
+  @SubscribeMessage('chat:subscribe_many')
+  async handleChatSubscribeMany(
+    @ConnectedSocket() socket: Socket,
+    @MessageBody() payload: { chatIds: string[] },
+  ) {
+    const user = this.getUser(socket);
+    if (!Array.isArray(payload?.chatIds) || payload.chatIds.length === 0) {
+      throw new WsException('chatIds must be a non-empty array');
+    }
+
+    await Promise.all(
+      payload.chatIds.map((chatId) =>
+        this.subscribeSocketToChannel(socket, this.pubSub.chatChannel(chatId)),
+      ),
+    );
+
+    this.logger.debug(
+      `User ${user.userId} subscribed to ${payload.chatIds.length} chats`,
+    );
+    return { subscribed: true, chatIds: payload.chatIds };
+  }
+
+  @UseGuards(WsSessionGuard)
   @SubscribeMessage('chat:unsubscribe')
   async handleChatUnsubscribe(
     @ConnectedSocket() socket: Socket,
@@ -203,6 +226,27 @@ export class MessagingGateway
       this.pubSub.chatChannel(payload.chatId),
     );
     return { unsubscribed: true, chatId: payload.chatId };
+  }
+
+  @UseGuards(WsSessionGuard)
+  @SubscribeMessage('chat:unsubscribe_many')
+  async handleChatUnsubscribeMany(
+    @ConnectedSocket() socket: Socket,
+    @MessageBody() payload: { chatIds: string[] },
+  ) {
+    if (!Array.isArray(payload?.chatIds) || payload.chatIds.length === 0) {
+      throw new WsException('chatIds must be a non-empty array');
+    }
+
+    await Promise.all(
+      payload.chatIds.map((chatId) =>
+        this.unsubscribeSocketFromChannel(
+          socket,
+          this.pubSub.chatChannel(chatId),
+        ),
+      ),
+    );
+    return { unsubscribed: true, chatIds: payload.chatIds };
   }
 
   @UseGuards(WsSessionGuard)
@@ -282,18 +326,4 @@ export class MessagingGateway
     return { delivered: true };
   }
 
-  @UseGuards(WsSessionGuard)
-  @SubscribeMessage('sender_key:fetch_pending')
-  async handleFetchPendingKeys(
-    @ConnectedSocket() socket: Socket,
-    @MessageBody() payload: { chatId: string },
-  ) {
-    const user = this.getUser(socket);
-    if (!payload?.chatId) throw new WsException('chatId required');
-    return {
-      chatId: payload.chatId,
-      userId: user.userId,
-      hint: 'Fetch persisted keys via GET /chats/:chatId/sender-keys',
-    };
-  }
 }

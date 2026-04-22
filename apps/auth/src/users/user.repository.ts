@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Knex } from 'knex';
 import { InjectConnection } from 'nest-knexjs';
+import { RedisService } from '@gomin/redis';
 import { UserDomainModel } from './types/user.domain.model';
 import { UserDb } from './types/user.db';
 import { UserMapper } from './user.mapper';
@@ -17,10 +18,20 @@ export type UserUpdatePatch = Partial<
   >
 >;
 
+const USER_TTL_SECONDS = 300;
+
 @Injectable()
 export class UserRepository {
   private readonly tableName = 'Users';
-  constructor(@InjectConnection() private readonly knex: Knex) {}
+
+  constructor(
+    @InjectConnection() private readonly knex: Knex,
+    private readonly redis: RedisService,
+  ) {}
+
+  private userCacheKey(id: string): string {
+    return `user:${id}`;
+  }
 
   async findByUsername(username: string): Promise<UserDomainModel | null> {
     const userDb = await this.knex<UserDb>(this.tableName)
@@ -37,10 +48,17 @@ export class UserRepository {
   }
 
   async findById(id: string): Promise<UserDomainModel | null> {
+    const cached = await this.redis.get(this.userCacheKey(id));
+    if (cached) return JSON.parse(cached) as UserDomainModel;
+
     const userDb = await this.knex<UserDb>(this.tableName)
       .where({ id })
       .first();
-    return userDb ? UserMapper.toDomainModel(userDb) : null;
+    if (!userDb) return null;
+
+    const model = UserMapper.toDomainModel(userDb);
+    await this.redis.set(this.userCacheKey(id), JSON.stringify(model), USER_TTL_SECONDS);
+    return model;
   }
 
   async createUser(user: UserDomainModel): Promise<UserDomainModel> {
@@ -59,6 +77,10 @@ export class UserRepository {
       .where({ id })
       .update({ ...patch, updatedAt: new Date() })
       .returning('*');
-    return userDb ? UserMapper.toDomainModel(userDb) : null;
+    if (!userDb) return null;
+
+    const model = UserMapper.toDomainModel(userDb);
+    await this.redis.set(this.userCacheKey(id), JSON.stringify(model), USER_TTL_SECONDS);
+    return model;
   }
 }

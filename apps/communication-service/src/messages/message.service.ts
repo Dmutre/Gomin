@@ -83,14 +83,12 @@ export class MessageService {
       replyToId: options.replyToId,
     });
 
-    await this.statusRepo.upsertSent(message.id, options.senderId);
     await this.chatRepo.touchUpdatedAt(options.chatId);
 
     const members = await this.memberRepo.findAllActive(options.chatId);
-    await Promise.all(
-      members
-        .filter((m) => m.userId !== options.senderId)
-        .map((m) => this.statusRepo.upsertSent(message.id, m.userId)),
+    await this.statusRepo.upsertManySent(
+      message.id,
+      members.map((m) => m.userId),
     );
 
     this.logger.info(
