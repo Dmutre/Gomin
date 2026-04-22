@@ -54,7 +54,7 @@ kube-prometheus-stack:
         isDefault: false
       - name: Tempo
         type: tempo
-        url: http://monitoring-tempo:3100
+        url: http://monitoring-tempo:3200
         access: proxy
         isDefault: false
         jsonData:

@@ -86,6 +86,9 @@ REDIS_HOST="redis.gomin-infra.svc.cluster.local"
 REDIS_PORT="6379"
 info "Redis endpoint: ${REDIS_HOST}:${REDIS_PORT}"
 
+# OTel collector endpoint — fixed, same for all services
+OTEL_ENDPOINT="http://monitoring-opentelemetry-collector.gomin-monitoring.svc.cluster.local:4317"
+
 # ── MinIO ──────────────────────────────────────────────────────────────────────
 
 header "MinIO  (gomin-infra)"
@@ -117,7 +120,8 @@ apply_secret gomin-apps auth-secret \
   --from-literal=HOST="$AUTH_HOST" \
   --from-literal=REDIS_HOST="$REDIS_HOST" \
   --from-literal=REDIS_PORT="$REDIS_PORT" \
-  --from-literal=REDIS_PASSWORD="$REDIS_PASSWORD"
+  --from-literal=REDIS_PASSWORD="$REDIS_PASSWORD" \
+  --from-literal=OTEL_EXPORTER_OTLP_ENDPOINT="$OTEL_ENDPOINT"
 
 AUTH_SERVICE_URL="auth.gomin-apps.svc.cluster.local:${AUTH_GRPC_PORT}"
 info "Auth gRPC URL: ${AUTH_SERVICE_URL}"
@@ -140,7 +144,8 @@ apply_secret gomin-apps communication-service-secret \
   --from-literal=AUTH_SERVICE_URL="$AUTH_SERVICE_URL" \
   --from-literal=REDIS_HOST="$REDIS_HOST" \
   --from-literal=REDIS_PORT="$REDIS_PORT" \
-  --from-literal=REDIS_PASSWORD="$REDIS_PASSWORD"
+  --from-literal=REDIS_PASSWORD="$REDIS_PASSWORD" \
+  --from-literal=OTEL_EXPORTER_OTLP_ENDPOINT="$OTEL_ENDPOINT"
 
 COMM_SERVICE_URL="communication-service.gomin-apps.svc.cluster.local:${COMM_GRPC_PORT}"
 info "Comm gRPC URL: ${COMM_SERVICE_URL}"
@@ -162,7 +167,8 @@ apply_secret gomin-apps api-gateway-secret \
   --from-literal=COMMUNICATION_SERVICE_URL="$COMM_SERVICE_URL" \
   --from-literal=REDIS_HOST="$REDIS_HOST" \
   --from-literal=REDIS_PORT="$REDIS_PORT" \
-  --from-literal=REDIS_PASSWORD="$REDIS_PASSWORD"
+  --from-literal=REDIS_PASSWORD="$REDIS_PASSWORD" \
+  --from-literal=OTEL_EXPORTER_OTLP_ENDPOINT="$OTEL_ENDPOINT"
 
 # ── Done ───────────────────────────────────────────────────────────────────────
 

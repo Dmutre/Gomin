@@ -44,3 +44,8 @@ Thumbs.db
 
 .nx/cache
 .nx/workspace-data
+
+# Helm downloaded dependencies (fetched via helm dependency build)
+charts/*/charts/
+charts/*/Chart.lock
+test-e2ee.js
