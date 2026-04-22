@@ -48,3 +48,6 @@ Thumbs.db
 # Helm downloaded dependencies (fetched via helm dependency build)
 charts/*/charts/
 charts/*/Chart.lock
+
+# Local test scripts (not committed)
+load-test.js
