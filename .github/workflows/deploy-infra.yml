@@ -51,7 +51,7 @@ jobs:
           fi
 
       - name: Wait for control plane
-        run: linkerd check
+        run: kubectl rollout status deployment -n linkerd --timeout=3m
 
       - name: Install or upgrade Linkerd viz
         run: |
