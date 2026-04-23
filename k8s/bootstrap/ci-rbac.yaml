@@ -132,6 +132,28 @@ roleRef:
   apiGroup: rbac.authorization.k8s.io
 
 ---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: linkerd
+
+---
+# Bind to linkerd (for Linkerd control plane installation)
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: github-actions-deployer
+  namespace: linkerd
+subjects:
+  - kind: ServiceAccount
+    name: github-actions
+    namespace: gomin-apps
+roleRef:
+  kind: ClusterRole
+  name: gomin-deployer
+  apiGroup: rbac.authorization.k8s.io
+
+---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
@@ -142,7 +164,7 @@ rules:
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
   - apiGroups: ["rbac.authorization.k8s.io"]
     resources: ["clusterroles", "clusterrolebindings"]
-    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete", "escalate", "bind"]
   - apiGroups: ["admissionregistration.k8s.io"]
     resources: ["mutatingwebhookconfigurations", "validatingwebhookconfigurations"]
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
@@ -205,6 +227,25 @@ rules:
     verbs: ["*"]
   - nonResourceURLs: ["/metrics", "/metrics/cadvisor"]
     verbs: ["get"]
+  # Linkerd installation — SA must hold these to create Linkerd's ClusterRoles
+  - apiGroups: ["authentication.k8s.io"]
+    resources: ["tokenreviews"]
+    verbs: ["create"]
+  - apiGroups: ["linkerd.io"]
+    resources: ["*", "*/status", "*/finalizers"]
+    verbs: ["*"]
+  - apiGroups: ["workload.linkerd.io"]
+    resources: ["*", "*/status", "*/finalizers"]
+    verbs: ["*"]
+  - apiGroups: ["policy.linkerd.io"]
+    resources: ["*", "*/status", "*/finalizers"]
+    verbs: ["*"]
+  - apiGroups: ["gateway.networking.k8s.io"]
+    resources: ["*", "*/status", "*/finalizers"]
+    verbs: ["*"]
+  - apiGroups: ["extensions"]
+    resources: ["deployments", "daemonsets", "replicasets", "statefulsets", "jobs", "cronjobs"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
 
 ---
 apiVersion: rbac.authorization.k8s.io/v1

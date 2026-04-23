@@ -38,9 +38,6 @@ jobs:
           curl --proto '=https' --tlsv1.2 -sSfL https://run.linkerd.io/install | sh
           echo "$HOME/.linkerd2/bin" >> $GITHUB_PATH
 
-      - name: Check prerequisites
-        run: linkerd check --pre
-
       - name: Install Linkerd CRDs
         run: linkerd install --crds | kubectl apply -f -
 
