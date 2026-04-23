@@ -4,7 +4,7 @@ fullnameOverride: ""
 image:
   repository: gomin/api-gateway
   tag: ""
-  pullPolicy: IfNotPresent
+  pullPolicy: Always
 
 replicaCount: 1
 

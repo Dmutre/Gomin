@@ -4,7 +4,7 @@ fullnameOverride: ""
 image:
   repository: gomin/web
   tag: ""
-  pullPolicy: IfNotPresent
+  pullPolicy: Always
 
 replicaCount: 1
 
