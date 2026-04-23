@@ -47,9 +47,43 @@ jobs:
       - name: Wait for control plane
         run: linkerd check
 
+      - name: Install Linkerd viz extension
+        run: |
+          linkerd viz install \
+            --set dashboard.enforcedHostRegexp=".*" \
+            | kubectl apply -f -
+
+      - name: Wait for viz
+        run: linkerd viz check
+
+      - name: Expose Linkerd viz dashboard via Ingress
+        run: |
+          kubectl apply -f - <<'EOF'
+          apiVersion: networking.k8s.io/v1
+          kind: Ingress
+          metadata:
+            name: linkerd-viz
+            namespace: linkerd-viz
+            annotations:
+              nginx.ingress.kubernetes.io/upstream-vhost: $host
+          spec:
+            ingressClassName: traefik
+            rules:
+              - host: linkerd.84.247.133.45.nip.io
+                http:
+                  paths:
+                    - path: /
+                      pathType: Prefix
+                      backend:
+                        service:
+                          name: web
+                          port:
+                            number: 8084
+          EOF
+
       - name: Show Linkerd pods
         if: always()
-        run: kubectl get pods -n linkerd
+        run: kubectl get pods -n linkerd && kubectl get pods -n linkerd-viz
 
   # ── 1. Redis + MinIO (gomin-infra chart) ────────────────────────────────────
   deploy-infra:

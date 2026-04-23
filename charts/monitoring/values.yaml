@@ -15,6 +15,15 @@ kube-prometheus-stack:
     enabled: false
 
   prometheus:
+    ingress:
+      enabled: true
+      ingressClassName: traefik
+      hosts:
+        - prometheus.84.247.133.45.nip.io
+      paths:
+        - /
+      pathType: Prefix
+
     prometheusSpec:
       retention: 7d
       serviceMonitorSelectorNilUsesHelmValues: false
