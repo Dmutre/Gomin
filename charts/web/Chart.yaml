@@ -1,0 +1,6 @@
+apiVersion: v2
+name: web
+description: Gomin React frontend — static SPA served by nginx
+type: application
+version: 0.1.0
+appVersion: "latest"
