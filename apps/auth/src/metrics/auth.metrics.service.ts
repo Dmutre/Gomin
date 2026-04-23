@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { MetricsService } from '@gomin/metrics';
-import type { Counter } from '@gomin/metrics';
+import type { Counter } from '@opentelemetry/api';
 
 @Injectable()
 export class AuthMetricsService {

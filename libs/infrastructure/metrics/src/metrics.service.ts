@@ -2,8 +2,6 @@ import { Injectable } from '@nestjs/common';
 import { metrics } from '@opentelemetry/api';
 import type { Counter, Histogram, UpDownCounter } from '@opentelemetry/api';
 
-export type { Counter, Histogram, UpDownCounter };
-
 export interface InstrumentOptions {
   description?: string;
   unit?: string;
