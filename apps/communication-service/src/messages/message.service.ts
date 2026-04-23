@@ -18,6 +18,7 @@ import { MessageStatusRepository } from './message-status.repository';
 import { MessageReactionRepository } from './message-reaction.repository';
 import { ChatMemberRepository } from '../chats/chat-member.repository';
 import { ChatRepository } from '../chats/chat.repository';
+import { CommunicationMetricsService } from '../metrics/communication.metrics.service';
 
 export interface SendMessageOptions {
   chatId: string;
@@ -57,6 +58,7 @@ export class MessageService {
     private readonly reactionRepo: MessageReactionRepository,
     private readonly memberRepo: ChatMemberRepository,
     private readonly chatRepo: ChatRepository,
+    private readonly commMetrics: CommunicationMetricsService,
   ) {}
 
   async sendMessage(options: SendMessageOptions): Promise<FullMessage> {
@@ -103,6 +105,8 @@ export class MessageService {
       },
       'Message sent',
     );
+
+    this.commMetrics.recordMessageSent();
 
     return {
       message,
@@ -174,6 +178,8 @@ export class MessageService {
       'Message edited',
     );
 
+    this.commMetrics.recordMessageEdited();
+
     return this.hydrate(updated!);
   }
 
@@ -211,6 +217,8 @@ export class MessageService {
       },
       'Message deleted',
     );
+
+    this.commMetrics.recordMessageDeleted();
   }
 
   async markAsRead(
@@ -244,7 +252,9 @@ export class MessageService {
         status.PERMISSION_DENIED,
       );
     }
-    return this.reactionRepo.add(messageId, userId, emoji);
+    const reaction = await this.reactionRepo.add(messageId, userId, emoji);
+    this.commMetrics.recordReactionAdded();
+    return reaction;
   }
 
   async removeReaction(

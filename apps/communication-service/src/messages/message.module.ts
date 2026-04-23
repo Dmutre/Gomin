@@ -6,9 +6,10 @@ import { MessageReactionRepository } from './message-reaction.repository';
 import { MessageService } from './message.service';
 import { MessageGrpcController } from './message.grpc.controller';
 import { ChatModule } from '../chats/chat.module';
+import { CommunicationMetricsModule } from '../metrics/communication.metrics.module';
 
 @Module({
-  imports: [ChatModule],
+  imports: [ChatModule, CommunicationMetricsModule],
   controllers: [MessageGrpcController],
   providers: [
     MessageRepository,

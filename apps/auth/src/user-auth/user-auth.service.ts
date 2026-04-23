@@ -35,6 +35,7 @@ import type {
   ChangePasswordDto,
 } from './dto';
 import type { UserDomainModel } from '../users/types/user.domain.model';
+import { AuthMetricsService } from '../metrics/auth.metrics.service';
 
 // TODO: Add caching so service would works more efficiently
 @Injectable()
@@ -42,6 +43,7 @@ export class UserAuthService {
   constructor(
     private readonly userService: UserService,
     private readonly userSessionService: UserSessionService,
+    private readonly authMetrics: AuthMetricsService,
   ) {}
 
   async register(data: RegisterDto): Promise<RegisterResponse> {
@@ -49,6 +51,8 @@ export class UserAuthService {
     const session = await this.userSessionService.createNewSession(
       this.toCreateSessionParams(user.id, data.deviceInfo),
     );
+    this.authMetrics.recordRegistration();
+    this.authMetrics.recordSessionCreated();
     return {
       user: toUserProfile(user),
       sessionToken: session.sessionToken,
@@ -108,6 +112,7 @@ export class UserAuthService {
     const sessionParams = this.toCreateSessionParams(user.id, data.deviceInfo);
     const session =
       await this.userSessionService.getOrCreateSessionForDevice(sessionParams);
+    this.authMetrics.recordLogin();
     return {
       user: toUserProfile(user),
       sessionToken: session.sessionToken,
@@ -218,6 +223,7 @@ export class UserAuthService {
       session.sessionToken,
       RevokeReason.USER_TERMINATED_ALL,
     );
+    this.authMetrics.recordSessionsTerminated(count);
     return { terminatedCount: count };
   }
 
@@ -279,6 +285,7 @@ export class UserAuthService {
       encryptionIv: data.e2eeKeys.encryptionIv,
       encryptionAuthTag: data.e2eeKeys.encryptionAuthTag,
     });
+    this.authMetrics.recordPasswordChanged();
     return { success: true };
   }
 

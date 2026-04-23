@@ -5,6 +5,7 @@ import configs from '../config/config';
 import { CustomLoggerModule } from '@gomin/logger';
 import { KnexDatabaseModule } from '@gomin/database';
 import { RedisModule } from '@gomin/redis';
+import { MetricsModule } from '@gomin/metrics';
 import { MicroserviceIdentityModule } from '@gomin/service-identity';
 import { CommunicationModule } from '../communication/communication.module';
 
@@ -16,6 +17,7 @@ import { CommunicationModule } from '../communication/communication.module';
       load: configs,
     }),
     CustomLoggerModule,
+    MetricsModule,
     KnexDatabaseModule,
     RedisModule.forRootAsync({
       imports: [ConfigModule],

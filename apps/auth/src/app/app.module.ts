@@ -5,6 +5,7 @@ import configs from '../config/config';
 import { CustomLoggerModule } from '@gomin/logger';
 import { KnexDatabaseModule } from '@gomin/database';
 import { RedisModule } from '@gomin/redis';
+import { MetricsModule } from '@gomin/metrics';
 import { UserModule } from '../users/user.module';
 import { UserSessionModule } from '../user-sessions/user-session.module';
 import { UserAuthModule } from '../user-auth/user-auth.module';
@@ -18,6 +19,7 @@ import { ServiceIdentityModule } from '../service-identity/service-identity.modu
       load: configs,
     }),
     CustomLoggerModule,
+    MetricsModule,
     KnexDatabaseModule,
     RedisModule.forRootAsync({
       imports: [ConfigModule],

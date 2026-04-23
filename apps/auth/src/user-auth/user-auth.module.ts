@@ -4,9 +4,10 @@ import { UserAuthGrpcController } from './user-auth.grpc.controller';
 import { UserAuthService } from './user-auth.service';
 import { UserModule } from '../users/user.module';
 import { UserSessionModule } from '../user-sessions/user-session.module';
+import { AuthMetricsModule } from '../metrics/auth.metrics.module';
 
 @Module({
-  imports: [LocalIdentityModule, UserModule, UserSessionModule],
+  imports: [LocalIdentityModule, UserModule, UserSessionModule, AuthMetricsModule],
   controllers: [UserAuthGrpcController],
   providers: [UserAuthService],
 })

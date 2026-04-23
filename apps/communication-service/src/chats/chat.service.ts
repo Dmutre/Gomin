@@ -12,6 +12,7 @@ import type {
 } from './types/chat-member.domain.model';
 import { ChatRepository } from './chat.repository';
 import { ChatMemberRepository } from './chat-member.repository';
+import { CommunicationMetricsService } from '../metrics/communication.metrics.service';
 
 export interface CreateChatOptions {
   type: DomainChatType;
@@ -41,6 +42,7 @@ export class ChatService {
     private readonly logger: PinoLogger,
     private readonly chatRepo: ChatRepository,
     private readonly memberRepo: ChatMemberRepository,
+    private readonly commMetrics: CommunicationMetricsService,
   ) {}
 
   async createChat(
@@ -74,6 +76,9 @@ export class ChatService {
       },
       'Chat created',
     );
+
+    this.commMetrics.recordChatCreated(chat.type);
+    this.commMetrics.recordMembersAdded(allMembers.length);
 
     return { chat, members: [creator, ...otherMembers] };
   }
@@ -171,6 +176,8 @@ export class ChatService {
       'Chat member added',
     );
 
+    this.commMetrics.recordMembersAdded(1);
+
     // chatKeyVersion lets the caller know which epoch the member joined in so
     // they can drive StoreMessageKeys redistribution for the right range.
     return { member, chatKeyVersion: chat.keyVersion };
@@ -214,6 +221,8 @@ export class ChatService {
       },
       'Chat member removed',
     );
+
+    this.commMetrics.recordMemberRemoved();
   }
 
   async updateMemberRole(
