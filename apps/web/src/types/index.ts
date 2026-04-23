@@ -87,9 +87,16 @@ export interface E2eeKeys {
   encryptionAuthTag: string;
 }
 
+export type DeviceType = 'MOBILE' | 'DESKTOP' | 'TABLET' | 'WEB';
+
 export interface DeviceInfo {
+  deviceId: string;
   deviceName: string;
-  platform: string;
+  deviceType: DeviceType;
+  os: string;
+  browser: string;
+  appVersion: string;
+  ipAddress: string;
   userAgent: string;
 }
 

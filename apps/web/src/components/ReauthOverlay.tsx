@@ -44,7 +44,8 @@ export function ReauthOverlay() {
           <div className="text-center">
             <h2 className="text-xl font-semibold">Re-authenticate</h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              Your session is still active. Enter your password to restore your encryption keys.
+              Your session is still active. Enter your password to restore your
+              encryption keys.
             </p>
           </div>
         </div>

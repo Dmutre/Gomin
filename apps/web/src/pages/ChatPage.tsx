@@ -2,7 +2,17 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  Send, Pencil, Trash2, SmilePlus, UserPlus, Check, X, Hash, Users, MessageSquare, Reply,
+  Send,
+  Pencil,
+  Trash2,
+  SmilePlus,
+  UserPlus,
+  Check,
+  X,
+  Hash,
+  Users,
+  MessageSquare,
+  Reply,
 } from 'lucide-react';
 import * as ScrollArea from '@radix-ui/react-scroll-area';
 import * as Tooltip from '@radix-ui/react-tooltip';
@@ -29,7 +39,13 @@ import type { Chat, MemberRole, Message, SenderKey } from '../types';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Badge } from '../components/ui/badge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../components/ui/dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '../components/ui/dialog';
 
 const QUICK_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🔥'];
 
@@ -61,30 +77,48 @@ function MessageBubble({
   const isEncrypted = !content;
 
   return (
-    <div className={cn('flex group gap-2', isOwn ? 'flex-row-reverse' : 'flex-row')}>
+    <div
+      className={cn(
+        'flex group gap-2',
+        isOwn ? 'flex-row-reverse' : 'flex-row',
+      )}
+    >
       {/* Avatar */}
       <div className="shrink-0 h-7 w-7 rounded-full bg-accent flex items-center justify-center text-xs font-bold mt-1">
         {(message.senderUsername ?? message.senderId)[0]?.toUpperCase()}
       </div>
 
-      <div className={cn('flex flex-col gap-1 max-w-[65%]', isOwn && 'items-end')}>
+      <div
+        className={cn('flex flex-col gap-1 max-w-[65%]', isOwn && 'items-end')}
+      >
         {/* Sender + time */}
-        <div className={cn('flex items-center gap-2 px-1', isOwn && 'flex-row-reverse')}>
+        <div
+          className={cn(
+            'flex items-center gap-2 px-1',
+            isOwn && 'flex-row-reverse',
+          )}
+        >
           <span className="text-xs font-medium text-foreground">
             {message.senderUsername ?? message.senderId.slice(0, 8)}
           </span>
-          <span className="text-[10px] text-muted-foreground">{formatTime(message.createdAt)}</span>
+          <span className="text-[10px] text-muted-foreground">
+            {formatTime(message.createdAt)}
+          </span>
           {message.updatedAt && message.updatedAt !== message.createdAt && (
-            <span className="text-[10px] text-muted-foreground italic">(edited)</span>
+            <span className="text-[10px] text-muted-foreground italic">
+              (edited)
+            </span>
           )}
         </div>
 
         {/* Reply preview */}
         {message.replyTo && (
-          <div className={cn(
-            'flex items-start gap-1 rounded-md border-l-2 border-primary/50 bg-muted/30 px-2 py-1 text-xs text-muted-foreground',
-            isOwn && 'border-r-2 border-l-0',
-          )}>
+          <div
+            className={cn(
+              'flex items-start gap-1 rounded-md border-l-2 border-primary/50 bg-muted/30 px-2 py-1 text-xs text-muted-foreground',
+              isOwn && 'border-r-2 border-l-0',
+            )}
+          >
             <Reply className="h-3 w-3 shrink-0 mt-0.5" />
             <span className="truncate">
               {message.replyTo.decryptedContent ?? '🔒 Encrypted'}
@@ -130,7 +164,10 @@ function MessageBubble({
                   </button>
                 </Tooltip.Trigger>
                 <Tooltip.Portal>
-                  <Tooltip.Content className="rounded-md bg-card border border-border px-2 py-1 text-xs shadow-md" sideOffset={4}>
+                  <Tooltip.Content
+                    className="rounded-md bg-card border border-border px-2 py-1 text-xs shadow-md"
+                    sideOffset={4}
+                  >
                     React
                   </Tooltip.Content>
                 </Tooltip.Portal>
@@ -165,7 +202,8 @@ function MessageBubble({
             >
               {QUICK_EMOJIS.map((emoji) => {
                 const hasReacted = message.reactions?.some(
-                  (r) => r.emoji === emoji && r.userIds?.includes(user?.id ?? ''),
+                  (r) =>
+                    r.emoji === emoji && r.userIds?.includes(user?.id ?? ''),
                 );
                 return (
                   <button
@@ -234,8 +272,12 @@ export function ChatPage() {
   const [sending, setSending] = useState(false);
 
   // Typing indicators
-  const [typingUsers, setTypingUsers] = useState<Map<string, string>>(new Map());
-  const typingTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+  const [typingUsers, setTypingUsers] = useState<Map<string, string>>(
+    new Map(),
+  );
+  const typingTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(
+    new Map(),
+  );
   const ownTypingTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Add member dialog
@@ -267,7 +309,10 @@ export function ChatPage() {
         const existing = cryptoStore.getChainKey(chatId, key.senderId);
         if (existing) continue;
         try {
-          const chainKey = await decryptChainKey(key.encryptedSenderKey, privateKey);
+          const chainKey = await decryptChainKey(
+            key.encryptedSenderKey,
+            privateKey,
+          );
           cryptoStore.setChainKey(chatId, key.senderId, chainKey);
         } catch {
           // Skip keys we can't decrypt
@@ -287,7 +332,10 @@ export function ChatPage() {
           const chainKey = cryptoStore.getChainKey(chatId, msg.senderId);
           if (!chainKey) return msg;
           try {
-            const decryptedContent = await decryptWithChainKey(msg.payload, chainKey);
+            const decryptedContent = await decryptWithChainKey(
+              msg.payload,
+              chainKey,
+            );
             return { ...msg, decryptedContent };
           } catch {
             return msg;
@@ -301,7 +349,9 @@ export function ChatPage() {
   const fetchMessages = useCallback(async () => {
     if (!chatId) return;
     try {
-      const { messages: raw } = await messagesApi.getMessages(chatId, { limit: 50 });
+      const { messages: raw } = await messagesApi.getMessages(chatId, {
+        limit: 50,
+      });
 
       // Ensure sender keys are loaded
       try {
@@ -336,7 +386,15 @@ export function ChatPage() {
     const socket = getSocket();
     if (!socket) return;
 
-    const onTypingStart = ({ chatId: cid, userId, username }: { chatId: string; userId: string; username: string }) => {
+    const onTypingStart = ({
+      chatId: cid,
+      userId,
+      username,
+    }: {
+      chatId: string;
+      userId: string;
+      username: string;
+    }) => {
       if (cid !== chatId || userId === user?.id) return;
       setTypingUsers((prev) => {
         const next = new Map(prev);
@@ -358,7 +416,13 @@ export function ChatPage() {
       );
     };
 
-    const onTypingStop = ({ chatId: cid, userId }: { chatId: string; userId: string }) => {
+    const onTypingStop = ({
+      chatId: cid,
+      userId,
+    }: {
+      chatId: string;
+      userId: string;
+    }) => {
       if (cid !== chatId) return;
       const timer = typingTimers.current.get(userId);
       if (timer) clearTimeout(timer);
@@ -442,7 +506,10 @@ export function ChatPage() {
         for (const member of members) {
           try {
             const { publicKey } = await authApi.getUserPublicKey(member.userId);
-            const encryptedSenderKey = await encryptChainKeyForRecipient(chainKey, publicKey);
+            const encryptedSenderKey = await encryptChainKeyForRecipient(
+              chainKey,
+              publicKey,
+            );
             keysToDistribute.push({
               senderId: user.id,
               recipientId: member.userId,
@@ -463,20 +530,28 @@ export function ChatPage() {
       cryptoStore.incrementIteration(chatId);
 
       if (editingMessage) {
-        const payload = await encryptWithChainKey(plaintext, chainKey, iteration);
+        const payload = await encryptWithChainKey(
+          plaintext,
+          chainKey,
+          iteration,
+        );
         await messagesApi.editMessage(chatId, editingMessage.id, payload);
         setEditingMessage(null);
         toast.success('Message edited');
       } else {
-        const payload = await encryptWithChainKey(plaintext, chainKey, iteration);
+        const payload = await encryptWithChainKey(
+          plaintext,
+          chainKey,
+          iteration,
+        );
         await messagesApi.sendMessage(chatId, payload, 'TEXT');
       }
 
       await fetchMessages();
     } catch (err: unknown) {
       const msg =
-        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-        'Failed to send message';
+        (err as { response?: { data?: { message?: string } } })?.response?.data
+          ?.message ?? 'Failed to send message';
       toast.error(typeof msg === 'string' ? msg : 'Failed to send message');
     } finally {
       setSending(false);
@@ -543,8 +618,13 @@ export function ChatPage() {
       const chainKey = cryptoStore.getChainKey(chatId, user.id);
       if (chainKey) {
         try {
-          const { publicKey } = await authApi.getUserPublicKey(newMemberUserId.trim());
-          const encryptedSenderKey = await encryptChainKeyForRecipient(chainKey, publicKey);
+          const { publicKey } = await authApi.getUserPublicKey(
+            newMemberUserId.trim(),
+          );
+          const encryptedSenderKey = await encryptChainKeyForRecipient(
+            chainKey,
+            publicKey,
+          );
           await senderKeysApi.distributeSenderKeys(chatId, [
             {
               senderId: user.id,
@@ -565,8 +645,8 @@ export function ChatPage() {
       toast.success('Member added');
     } catch (err: unknown) {
       const msg =
-        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-        'Failed to add member';
+        (err as { response?: { data?: { message?: string } } })?.response?.data
+          ?.message ?? 'Failed to add member';
       toast.error(typeof msg === 'string' ? msg : 'Failed to add member');
     } finally {
       setAddingMember(false);
@@ -591,7 +671,9 @@ export function ChatPage() {
   }
 
   const chatDisplayName =
-    chat?.name ?? chat?.members.map((m) => m.username ?? m.userId).join(', ') ?? '...';
+    chat?.name ??
+    chat?.members.map((m) => m.username ?? m.userId).join(', ') ??
+    '...';
 
   // ── Group messages by date ────────────────────────────────────────────────────
 
@@ -614,7 +696,9 @@ export function ChatPage() {
           <ChatTypeIconLarge />
         </div>
         <div className="flex-1 min-w-0">
-          <h2 className="font-semibold text-foreground truncate">{chatDisplayName}</h2>
+          <h2 className="font-semibold text-foreground truncate">
+            {chatDisplayName}
+          </h2>
           <div className="flex items-center gap-2">
             {chat && (
               <Badge variant="outline" className="text-[10px] px-1.5 py-0">
@@ -623,7 +707,8 @@ export function ChatPage() {
             )}
             {chat && (
               <span className="text-xs text-muted-foreground">
-                {chat.members.length} member{chat.members.length !== 1 ? 's' : ''}
+                {chat.members.length} member
+                {chat.members.length !== 1 ? 's' : ''}
               </span>
             )}
           </div>
@@ -647,7 +732,9 @@ export function ChatPage() {
                 {/* Date separator */}
                 <div className="flex items-center gap-3 my-4">
                   <div className="flex-1 h-px bg-border" />
-                  <span className="text-xs text-muted-foreground px-2">{group.date}</span>
+                  <span className="text-xs text-muted-foreground px-2">
+                    {group.date}
+                  </span>
                   <div className="flex-1 h-px bg-border" />
                 </div>
                 <div className="flex flex-col gap-3">
@@ -669,14 +756,19 @@ export function ChatPage() {
 
             {messages.length === 0 && (
               <div className="flex flex-col items-center justify-center py-16 text-center">
-                <p className="text-muted-foreground text-sm">No messages yet. Say hello!</p>
+                <p className="text-muted-foreground text-sm">
+                  No messages yet. Say hello!
+                </p>
               </div>
             )}
 
             <div ref={messagesEndRef} />
           </div>
         </ScrollArea.Viewport>
-        <ScrollArea.Scrollbar orientation="vertical" className="flex w-1.5 touch-none select-none p-0.5">
+        <ScrollArea.Scrollbar
+          orientation="vertical"
+          className="flex w-1.5 touch-none select-none p-0.5"
+        >
           <ScrollArea.Thumb className="relative flex-1 rounded-full bg-border" />
         </ScrollArea.Scrollbar>
       </ScrollArea.Root>
@@ -699,7 +791,10 @@ export function ChatPage() {
             Editing: {editingMessage.decryptedContent ?? '🔒'}
           </p>
           <button
-            onClick={() => { setEditingMessage(null); setInput(''); }}
+            onClick={() => {
+              setEditingMessage(null);
+              setInput('');
+            }}
             className="text-muted-foreground hover:text-foreground"
           >
             <X className="h-4 w-4" />
@@ -734,7 +829,11 @@ export function ChatPage() {
             disabled={!input.trim() || !privateKey}
             loading={sending}
           >
-            {editingMessage ? <Check className="h-4 w-4" /> : <Send className="h-4 w-4" />}
+            {editingMessage ? (
+              <Check className="h-4 w-4" />
+            ) : (
+              <Send className="h-4 w-4" />
+            )}
           </Button>
         </div>
         {!privateKey && (
@@ -778,8 +877,12 @@ export function ChatPage() {
             </div>
           </div>
           <DialogFooter className="gap-2 mt-2">
-            <Button variant="outline" onClick={() => setAddMemberOpen(false)}>Cancel</Button>
-            <Button onClick={handleAddMember} loading={addingMember}>Add</Button>
+            <Button variant="outline" onClick={() => setAddMemberOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleAddMember} loading={addingMember}>
+              Add
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

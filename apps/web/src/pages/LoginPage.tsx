@@ -9,7 +9,14 @@ import { toast } from '../store/toast.store';
 import { getDeviceInfo } from '../lib/utils';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '../components/ui/card';
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+  CardFooter,
+} from '../components/ui/card';
 
 export function LoginPage() {
   const navigate = useNavigate();
@@ -34,7 +41,9 @@ export function LoginPage() {
       try {
         privateKey = await unwrapPrivateKey(response.e2eeKeys, password);
       } catch {
-        setError('Failed to decrypt your encryption keys. Check your password.');
+        setError(
+          'Failed to decrypt your encryption keys. Check your password.',
+        );
         setLoading(false);
         return;
       }
@@ -54,8 +63,8 @@ export function LoginPage() {
       navigate('/');
     } catch (err: unknown) {
       const msg =
-        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-        'Login failed. Check your credentials.';
+        (err as { response?: { data?: { message?: string } } })?.response?.data
+          ?.message ?? 'Login failed. Check your credentials.';
       setError(typeof msg === 'string' ? msg : 'Login failed.');
     } finally {
       setLoading(false);
@@ -111,7 +120,10 @@ export function LoginPage() {
         <CardFooter className="justify-center">
           <p className="text-sm text-muted-foreground">
             No account?{' '}
-            <Link to="/register" className="font-medium text-primary hover:underline">
+            <Link
+              to="/register"
+              className="font-medium text-primary hover:underline"
+            >
               Create one
             </Link>
           </p>

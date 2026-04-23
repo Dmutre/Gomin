@@ -61,18 +61,24 @@ export const authApi = {
   login: (dto: LoginDto): Promise<LoginResponse> =>
     apiClient.post('/auth/login', dto).then((r) => r.data),
 
-  logout: (): Promise<void> => apiClient.post('/auth/logout').then(() => undefined),
+  logout: (): Promise<void> =>
+    apiClient.post('/auth/logout').then(() => undefined),
 
   getSessions: (): Promise<{ sessions: Session[] }> =>
     apiClient.get('/auth/sessions').then((r) => r.data),
 
-  terminateSession: (targetSessionToken: string, password: string): Promise<void> =>
+  terminateSession: (
+    targetSessionToken: string,
+    password: string,
+  ): Promise<void> =>
     apiClient
       .delete(`/auth/sessions/${targetSessionToken}`, { data: { password } })
       .then(() => undefined),
 
   terminateAllOtherSessions: (password: string): Promise<void> =>
-    apiClient.delete('/auth/sessions', { data: { password } }).then(() => undefined),
+    apiClient
+      .delete('/auth/sessions', { data: { password } })
+      .then(() => undefined),
 
   getUserPublicKey: (userId: string): Promise<{ publicKey: string }> =>
     apiClient.get(`/auth/users/${userId}/public-key`).then((r) => r.data),
@@ -87,7 +93,8 @@ export const authApi = {
       encryptionIv: string;
       encryptionAuthTag: string;
     };
-  }): Promise<void> => apiClient.post('/auth/change-password', dto).then(() => undefined),
+  }): Promise<void> =>
+    apiClient.post('/auth/change-password', dto).then(() => undefined),
 };
 
 // ── Chats ─────────────────────────────────────────────────────────────────────
@@ -100,7 +107,8 @@ export const chatsApi = {
     type: ChatType;
     name?: string;
     memberUserIds: string[];
-  }): Promise<{ chat: Chat }> => apiClient.post('/chats', dto).then((r) => r.data),
+  }): Promise<{ chat: Chat }> =>
+    apiClient.post('/chats', dto).then((r) => r.data),
 
   getChat: (chatId: string): Promise<{ chat: Chat }> =>
     apiClient.get(`/chats/${chatId}`).then((r) => r.data),
@@ -110,13 +118,23 @@ export const chatsApi = {
     userId: string,
     role: MemberRole,
   ): Promise<{ member: ChatMember }> =>
-    apiClient.post(`/chats/${chatId}/members`, { userId, role }).then((r) => r.data),
+    apiClient
+      .post(`/chats/${chatId}/members`, { userId, role })
+      .then((r) => r.data),
 
   removeMember: (chatId: string, userId: string): Promise<void> =>
-    apiClient.delete(`/chats/${chatId}/members/${userId}`).then(() => undefined),
+    apiClient
+      .delete(`/chats/${chatId}/members/${userId}`)
+      .then(() => undefined),
 
-  updateMemberRole: (chatId: string, userId: string, role: MemberRole): Promise<void> =>
-    apiClient.patch(`/chats/${chatId}/members/${userId}/role`, { role }).then(() => undefined),
+  updateMemberRole: (
+    chatId: string,
+    userId: string,
+    role: MemberRole,
+  ): Promise<void> =>
+    apiClient
+      .patch(`/chats/${chatId}/members/${userId}/role`, { role })
+      .then(() => undefined),
 };
 
 // ── Messages ─────────────────────────────────────────────────────────────────
@@ -133,26 +151,46 @@ export const messagesApi = {
     payload: MessagePayload,
     type: MessageType = 'TEXT',
   ): Promise<{ message: Message }> =>
-    apiClient.post(`/chats/${chatId}/messages`, { payload, type }).then((r) => r.data),
+    apiClient
+      .post(`/chats/${chatId}/messages`, { payload, type })
+      .then((r) => r.data),
 
   editMessage: (
     chatId: string,
     messageId: string,
     payload: MessagePayload,
   ): Promise<{ message: Message }> =>
-    apiClient.patch(`/chats/${chatId}/messages/${messageId}`, { payload }).then((r) => r.data),
+    apiClient
+      .patch(`/chats/${chatId}/messages/${messageId}`, { payload })
+      .then((r) => r.data),
 
   deleteMessage: (chatId: string, messageId: string): Promise<void> =>
-    apiClient.delete(`/chats/${chatId}/messages/${messageId}`).then(() => undefined),
+    apiClient
+      .delete(`/chats/${chatId}/messages/${messageId}`)
+      .then(() => undefined),
 
-  addReaction: (chatId: string, messageId: string, emoji: string): Promise<void> =>
-    apiClient.post(`/chats/${chatId}/messages/${messageId}/reactions`, { emoji }).then(() => undefined),
+  addReaction: (
+    chatId: string,
+    messageId: string,
+    emoji: string,
+  ): Promise<void> =>
+    apiClient
+      .post(`/chats/${chatId}/messages/${messageId}/reactions`, { emoji })
+      .then(() => undefined),
 
-  removeReaction: (chatId: string, messageId: string, emoji: string): Promise<void> =>
-    apiClient.delete(`/chats/${chatId}/messages/${messageId}/reactions/${emoji}`).then(() => undefined),
+  removeReaction: (
+    chatId: string,
+    messageId: string,
+    emoji: string,
+  ): Promise<void> =>
+    apiClient
+      .delete(`/chats/${chatId}/messages/${messageId}/reactions/${emoji}`)
+      .then(() => undefined),
 
   markRead: (chatId: string, lastReadMessageId: string): Promise<void> =>
-    apiClient.post(`/chats/${chatId}/read`, { lastReadMessageId }).then(() => undefined),
+    apiClient
+      .post(`/chats/${chatId}/read`, { lastReadMessageId })
+      .then(() => undefined),
 };
 
 // ── Sender Keys ───────────────────────────────────────────────────────────────
@@ -167,11 +205,18 @@ export const senderKeysApi = {
       keyVersion: number;
     }>,
   ): Promise<void> =>
-    apiClient.post(`/chats/${chatId}/sender-keys`, { keys }).then(() => undefined),
+    apiClient
+      .post(`/chats/${chatId}/sender-keys`, { keys })
+      .then(() => undefined),
 
   getSenderKeys: (chatId: string): Promise<{ keys: SenderKey[] }> =>
     apiClient.get(`/chats/${chatId}/sender-keys`).then((r) => r.data),
 
-  getSenderKeyBySender: (chatId: string, senderId: string): Promise<{ key: SenderKey }> =>
-    apiClient.get(`/chats/${chatId}/sender-keys/${senderId}`).then((r) => r.data),
+  getSenderKeyBySender: (
+    chatId: string,
+    senderId: string,
+  ): Promise<{ key: SenderKey }> =>
+    apiClient
+      .get(`/chats/${chatId}/sender-keys/${senderId}`)
+      .then((r) => r.data),
 };

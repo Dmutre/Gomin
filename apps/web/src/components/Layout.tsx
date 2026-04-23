@@ -1,12 +1,26 @@
 import { useEffect, useState } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
-import { MessageSquare, Settings, Monitor, LogOut, Plus, Shield, Hash, Users } from 'lucide-react';
+import {
+  MessageSquare,
+  Settings,
+  Monitor,
+  LogOut,
+  Plus,
+  Shield,
+  Hash,
+  Users,
+} from 'lucide-react';
 import * as ScrollArea from '@radix-ui/react-scroll-area';
 import { useQuery } from '@tanstack/react-query';
 import { useAuthStore } from '../store/auth.store';
 import { useCryptoStore } from '../store/crypto.store';
 import { authApi, chatsApi } from '../lib/api';
-import { disconnectSocket, getSocket, initSocket, subscribeManyChats } from '../lib/socket';
+import {
+  disconnectSocket,
+  getSocket,
+  initSocket,
+  subscribeManyChats,
+} from '../lib/socket';
 import { cn, formatDate, truncate } from '../lib/utils';
 import type { Chat } from '../types';
 import { Badge } from './ui/badge';
@@ -14,13 +28,16 @@ import { Button } from './ui/button';
 import { ReauthOverlay } from './ReauthOverlay';
 
 function ChatTypeIcon({ type }: { type: Chat['type'] }) {
-  if (type === 'DIRECT') return <MessageSquare className="h-4 w-4 shrink-0 text-muted-foreground" />;
-  if (type === 'CHANNEL') return <Hash className="h-4 w-4 shrink-0 text-muted-foreground" />;
+  if (type === 'DIRECT')
+    return <MessageSquare className="h-4 w-4 shrink-0 text-muted-foreground" />;
+  if (type === 'CHANNEL')
+    return <Hash className="h-4 w-4 shrink-0 text-muted-foreground" />;
   return <Users className="h-4 w-4 shrink-0 text-muted-foreground" />;
 }
 
 function ChatListItem({ chat }: { chat: Chat }) {
-  const displayName = chat.name ?? chat.members.map((m) => m.username ?? m.userId).join(', ');
+  const displayName =
+    chat.name ?? chat.members.map((m) => m.username ?? m.userId).join(', ');
 
   return (
     <NavLink
@@ -53,7 +70,10 @@ function ChatListItem({ chat }: { chat: Chat }) {
         )}
       </div>
       {(chat.unreadCount ?? 0) > 0 && (
-        <Badge variant="default" className="shrink-0 min-w-[18px] h-[18px] text-[10px] px-1 justify-center">
+        <Badge
+          variant="default"
+          className="shrink-0 min-w-[18px] h-[18px] text-[10px] px-1 justify-center"
+        >
           {chat.unreadCount}
         </Badge>
       )}
@@ -162,7 +182,10 @@ export function Layout() {
               )}
             </div>
           </ScrollArea.Viewport>
-          <ScrollArea.Scrollbar orientation="vertical" className="flex w-1.5 touch-none select-none p-0.5">
+          <ScrollArea.Scrollbar
+            orientation="vertical"
+            className="flex w-1.5 touch-none select-none p-0.5"
+          >
             <ScrollArea.Thumb className="relative flex-1 rounded-full bg-border" />
           </ScrollArea.Scrollbar>
         </ScrollArea.Root>
@@ -206,8 +229,12 @@ export function Layout() {
               {user?.username?.[0]?.toUpperCase() ?? '?'}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-medium text-foreground truncate">{user?.username}</p>
-              <p className="text-[10px] text-muted-foreground truncate">{user?.email}</p>
+              <p className="text-xs font-medium text-foreground truncate">
+                {user?.username}
+              </p>
+              <p className="text-[10px] text-muted-foreground truncate">
+                {user?.email}
+              </p>
             </div>
             <button
               onClick={handleLogout}

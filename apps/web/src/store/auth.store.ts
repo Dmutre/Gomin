@@ -32,10 +32,16 @@ export const useAuthStore = create<AuthState>()(
       isAuthenticated: false,
 
       login: (user, sessionToken, privateKey, publicKeyB64, e2eeKeys) =>
-        set({ user, sessionToken, privateKey, publicKeyB64, e2eeKeys, isAuthenticated: true }),
+        set({
+          user,
+          sessionToken,
+          privateKey,
+          publicKeyB64,
+          e2eeKeys,
+          isAuthenticated: true,
+        }),
 
-      setPrivateKey: (privateKey) =>
-        set({ privateKey }),
+      setPrivateKey: (privateKey) => set({ privateKey }),
 
       logout: () =>
         set({

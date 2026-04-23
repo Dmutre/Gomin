@@ -20,8 +20,14 @@ export async function wrapPrivateKey(
   keyPair: CryptoKeyPair,
   password: string,
 ): Promise<E2eeKeys & { publicKey: string }> {
-  const publicKeySpki = await crypto.subtle.exportKey('spki', keyPair.publicKey);
-  const privateKeyPkcs8 = await crypto.subtle.exportKey('pkcs8', keyPair.privateKey);
+  const publicKeySpki = await crypto.subtle.exportKey(
+    'spki',
+    keyPair.publicKey,
+  );
+  const privateKeyPkcs8 = await crypto.subtle.exportKey(
+    'pkcs8',
+    keyPair.privateKey,
+  );
 
   const salt = crypto.getRandomValues(new Uint8Array(32));
   const iv = crypto.getRandomValues(new Uint8Array(12));
@@ -91,7 +97,11 @@ export async function unwrapPrivateKey(
     ['decrypt'],
   );
 
-  const privateKeyBuf = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, wrapKey, combined);
+  const privateKeyBuf = await crypto.subtle.decrypt(
+    { name: 'AES-GCM', iv },
+    wrapKey,
+    combined,
+  );
 
   return crypto.subtle.importKey(
     'pkcs8',
@@ -109,9 +119,13 @@ export async function encryptMessage(plaintext: string): Promise<{
   rawKey: Uint8Array;
 }> {
   const rawKey = crypto.getRandomValues(new Uint8Array(32));
-  const msgKey = await crypto.subtle.importKey('raw', rawKey, { name: 'AES-GCM' }, true, [
-    'encrypt',
-  ]);
+  const msgKey = await crypto.subtle.importKey(
+    'raw',
+    rawKey,
+    { name: 'AES-GCM' },
+    true,
+    ['encrypt'],
+  );
   const msgIv = crypto.getRandomValues(new Uint8Array(12));
   const encBuf = await crypto.subtle.encrypt(
     { name: 'AES-GCM', iv: msgIv },
@@ -139,11 +153,19 @@ export async function decryptMessage(
   const combined = new Uint8Array([...encryptedBytes, ...authTagBytes]);
   const iv = b64ToBytes(payload.iv);
 
-  const msgKey = await crypto.subtle.importKey('raw', rawKey, { name: 'AES-GCM' }, false, [
-    'decrypt',
-  ]);
+  const msgKey = await crypto.subtle.importKey(
+    'raw',
+    rawKey,
+    { name: 'AES-GCM' },
+    false,
+    ['decrypt'],
+  );
 
-  const decrypted = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, msgKey, combined);
+  const decrypted = await crypto.subtle.decrypt(
+    { name: 'AES-GCM', iv },
+    msgKey,
+    combined,
+  );
   return new TextDecoder().decode(decrypted);
 }
 
@@ -166,12 +188,19 @@ export async function deriveMessageKeyFromChain(
   );
   const iterBytes = new Uint8Array(4);
   new DataView(iterBytes.buffer).setUint32(0, iteration, false);
-  const data = new Uint8Array([...new TextEncoder().encode('msg'), ...iterBytes]);
-  const msgKeyBytes = new Uint8Array(await crypto.subtle.sign('HMAC', hmacKey, data));
+  const data = new Uint8Array([
+    ...new TextEncoder().encode('msg'),
+    ...iterBytes,
+  ]);
+  const msgKeyBytes = new Uint8Array(
+    await crypto.subtle.sign('HMAC', hmacKey, data),
+  );
   return msgKeyBytes;
 }
 
-export async function advanceChainKey(chainKey: Uint8Array): Promise<Uint8Array> {
+export async function advanceChainKey(
+  chainKey: Uint8Array,
+): Promise<Uint8Array> {
   const hmacKey = await crypto.subtle.importKey(
     'raw',
     chainKey,
@@ -179,7 +208,9 @@ export async function advanceChainKey(chainKey: Uint8Array): Promise<Uint8Array>
     false,
     ['sign'],
   );
-  return new Uint8Array(await crypto.subtle.sign('HMAC', hmacKey, new Uint8Array([0x02])));
+  return new Uint8Array(
+    await crypto.subtle.sign('HMAC', hmacKey, new Uint8Array([0x02])),
+  );
 }
 
 export async function encryptChainKeyForRecipient(
@@ -194,7 +225,11 @@ export async function encryptChainKeyForRecipient(
     false,
     ['encrypt'],
   );
-  const encrypted = await crypto.subtle.encrypt({ name: 'RSA-OAEP' }, pubKey, chainKey);
+  const encrypted = await crypto.subtle.encrypt(
+    { name: 'RSA-OAEP' },
+    pubKey,
+    chainKey,
+  );
   return bytesToB64(new Uint8Array(encrypted));
 }
 
@@ -203,7 +238,11 @@ export async function decryptChainKey(
   privateKey: CryptoKey,
 ): Promise<Uint8Array> {
   const encrypted = b64ToBytes(encryptedB64);
-  const decrypted = await crypto.subtle.decrypt({ name: 'RSA-OAEP' }, privateKey, encrypted);
+  const decrypted = await crypto.subtle.decrypt(
+    { name: 'RSA-OAEP' },
+    privateKey,
+    encrypted,
+  );
   return new Uint8Array(decrypted);
 }
 
@@ -213,9 +252,13 @@ export async function encryptWithChainKey(
   iteration: number,
 ): Promise<MessagePayload> {
   const msgKeyBytes = await deriveMessageKeyFromChain(chainKey, iteration);
-  const msgKey = await crypto.subtle.importKey('raw', msgKeyBytes, { name: 'AES-GCM' }, false, [
-    'encrypt',
-  ]);
+  const msgKey = await crypto.subtle.importKey(
+    'raw',
+    msgKeyBytes,
+    { name: 'AES-GCM' },
+    false,
+    ['encrypt'],
+  );
   const iv = crypto.getRandomValues(new Uint8Array(12));
   const encBuf = await crypto.subtle.encrypt(
     { name: 'AES-GCM', iv },
@@ -236,14 +279,25 @@ export async function decryptWithChainKey(
   payload: MessagePayload,
   chainKey: Uint8Array,
 ): Promise<string> {
-  const msgKeyBytes = await deriveMessageKeyFromChain(chainKey, payload.iteration);
-  const msgKey = await crypto.subtle.importKey('raw', msgKeyBytes, { name: 'AES-GCM' }, false, [
-    'decrypt',
-  ]);
+  const msgKeyBytes = await deriveMessageKeyFromChain(
+    chainKey,
+    payload.iteration,
+  );
+  const msgKey = await crypto.subtle.importKey(
+    'raw',
+    msgKeyBytes,
+    { name: 'AES-GCM' },
+    false,
+    ['decrypt'],
+  );
   const encryptedBytes = b64ToBytes(payload.encryptedContent);
   const authTagBytes = b64ToBytes(payload.authTag);
   const combined = new Uint8Array([...encryptedBytes, ...authTagBytes]);
   const iv = b64ToBytes(payload.iv);
-  const decrypted = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, msgKey, combined);
+  const decrypted = await crypto.subtle.decrypt(
+    { name: 'AES-GCM', iv },
+    msgKey,
+    combined,
+  );
   return new TextDecoder().decode(decrypted);
 }

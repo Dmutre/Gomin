@@ -33,10 +33,44 @@ export function formatDate(dateStr: string): string {
   return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
 }
 
+function detectOS(): string {
+  const ua = navigator.userAgent;
+  if (/Windows/.test(ua)) return 'Windows';
+  if (/Mac OS X/.test(ua)) return 'macOS';
+  if (/Linux/.test(ua)) return 'Linux';
+  if (/Android/.test(ua)) return 'Android';
+  if (/iPhone|iPad/.test(ua)) return 'iOS';
+  return 'Unknown';
+}
+
+function detectBrowser(): string {
+  const ua = navigator.userAgent;
+  if (/Edg\//.test(ua)) return 'Edge';
+  if (/Chrome\//.test(ua)) return 'Chrome';
+  if (/Firefox\//.test(ua)) return 'Firefox';
+  if (/Safari\//.test(ua)) return 'Safari';
+  return 'Unknown';
+}
+
+function getDeviceId(): string {
+  const key = 'gomin-device-id';
+  let id = localStorage.getItem(key);
+  if (!id) {
+    id = crypto.randomUUID();
+    localStorage.setItem(key, id);
+  }
+  return id;
+}
+
 export function getDeviceInfo() {
   return {
-    deviceName: navigator.platform || 'Unknown Device',
-    platform: navigator.platform || 'Web',
+    deviceId: getDeviceId(),
+    deviceName: `${detectBrowser()} on ${detectOS()}`,
+    deviceType: 'WEB' as const,
+    os: detectOS(),
+    browser: detectBrowser(),
+    appVersion: '1.0.0',
+    ipAddress: '',
     userAgent: navigator.userAgent,
   };
 }

@@ -2,14 +2,24 @@ import { useState } from 'react';
 import { Copy, Check, KeyRound, User } from 'lucide-react';
 import { useAuthStore } from '../store/auth.store';
 import { authApi } from '../lib/api';
-import { unwrapPrivateKey, wrapPrivateKey, generateKeyPair } from '../lib/crypto';
+import {
+  unwrapPrivateKey,
+  wrapPrivateKey,
+  generateKeyPair,
+} from '../lib/crypto';
 import { toast } from '../store/toast.store';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
-import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card';
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+} from '../components/ui/card';
 
 export function SettingsPage() {
-  const { user, publicKeyB64, e2eeKeys, privateKey, login, sessionToken } = useAuthStore();
+  const { user, publicKeyB64, e2eeKeys, privateKey, login, sessionToken } =
+    useAuthStore();
 
   const [copied, setCopied] = useState(false);
   const [currentPassword, setCurrentPassword] = useState('');
@@ -54,7 +64,9 @@ export function SettingsPage() {
       // Export the current private key via a fresh key pair would be wrong;
       // instead, re-wrap using the current e2eeKeys bundle:
       // derive old private key bytes → re-wrap with new password
-      const oldKeyBuf = await crypto.subtle.exportKey('pkcs8', privateKey).catch(() => null);
+      const oldKeyBuf = await crypto.subtle
+        .exportKey('pkcs8', privateKey)
+        .catch(() => null);
       if (!oldKeyBuf) {
         toast.error('Cannot export private key — please re-login');
         return;
@@ -86,7 +98,11 @@ export function SettingsPage() {
         ['encrypt'],
       );
 
-      const encBuf = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, wrapKey, oldKeyBuf);
+      const encBuf = await crypto.subtle.encrypt(
+        { name: 'AES-GCM', iv },
+        wrapKey,
+        oldKeyBuf,
+      );
       const encArr = new Uint8Array(encBuf);
       const b64 = (arr: Uint8Array) => btoa(String.fromCharCode(...arr));
 
@@ -113,8 +129,8 @@ export function SettingsPage() {
       toast.success('Password changed — re-login required on other devices');
     } catch (err: unknown) {
       const msg =
-        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-        'Failed to change password';
+        (err as { response?: { data?: { message?: string } } })?.response?.data
+          ?.message ?? 'Failed to change password';
       toast.error(typeof msg === 'string' ? msg : 'Failed to change password');
     } finally {
       setChangingPassword(false);
@@ -125,7 +141,9 @@ export function SettingsPage() {
     <div className="flex flex-col gap-6 overflow-y-auto p-6 max-w-2xl">
       <div>
         <h2 className="text-xl font-semibold text-foreground">Settings</h2>
-        <p className="mt-1 text-sm text-muted-foreground">Manage your account and encryption keys</p>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Manage your account and encryption keys
+        </p>
       </div>
 
       {/* Profile */}
@@ -139,14 +157,20 @@ export function SettingsPage() {
         <CardContent className="flex flex-col gap-3">
           <div className="grid grid-cols-[120px_1fr] gap-y-2 text-sm">
             <span className="text-muted-foreground">Username</span>
-            <span className="font-medium text-foreground">{user?.username}</span>
+            <span className="font-medium text-foreground">
+              {user?.username}
+            </span>
             <span className="text-muted-foreground">Email</span>
             <span className="font-medium text-foreground">{user?.email}</span>
             <span className="text-muted-foreground">User ID</span>
-            <span className="font-mono text-xs text-foreground break-all">{user?.id}</span>
+            <span className="font-mono text-xs text-foreground break-all">
+              {user?.id}
+            </span>
             <span className="text-muted-foreground">Member since</span>
             <span className="font-medium text-foreground">
-              {user?.createdAt ? new Date(user.createdAt).toLocaleDateString() : '—'}
+              {user?.createdAt
+                ? new Date(user.createdAt).toLocaleDateString()
+                : '—'}
             </span>
           </div>
         </CardContent>
@@ -168,8 +192,17 @@ export function SettingsPage() {
             <pre className="flex-1 rounded-md bg-muted px-3 py-2 text-[10px] font-mono break-all whitespace-pre-wrap text-muted-foreground max-h-24 overflow-y-auto">
               {publicKeyB64 ?? '—'}
             </pre>
-            <Button variant="outline" size="sm" onClick={copyPublicKey} className="shrink-0">
-              {copied ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={copyPublicKey}
+              className="shrink-0"
+            >
+              {copied ? (
+                <Check className="h-4 w-4 text-emerald-400" />
+              ) : (
+                <Copy className="h-4 w-4" />
+              )}
             </Button>
           </div>
         </CardContent>
@@ -210,7 +243,8 @@ export function SettingsPage() {
               required
             />
             <p className="text-xs text-muted-foreground">
-              Changing your password re-encrypts your private key. Other devices will need to re-login.
+              Changing your password re-encrypts your private key. Other devices
+              will need to re-login.
             </p>
             <Button type="submit" loading={changingPassword} className="w-fit">
               {changingPassword ? 'Changing…' : 'Change password'}

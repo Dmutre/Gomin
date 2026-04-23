@@ -3,13 +3,24 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Shield } from 'lucide-react';
 import { useAuthStore } from '../store/auth.store';
 import { authApi } from '../lib/api';
-import { generateKeyPair, unwrapPrivateKey, wrapPrivateKey } from '../lib/crypto';
+import {
+  generateKeyPair,
+  unwrapPrivateKey,
+  wrapPrivateKey,
+} from '../lib/crypto';
 import { initSocket } from '../lib/socket';
 import { toast } from '../store/toast.store';
 import { getDeviceInfo } from '../lib/utils';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '../components/ui/card';
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+  CardFooter,
+} from '../components/ui/card';
 
 type Step = 'form' | 'generating' | 'registering';
 
@@ -27,11 +38,21 @@ export function RegisterPage() {
   function validate(): boolean {
     const errs: Record<string, string> = {};
     if (!username.trim()) errs.username = 'Username is required';
-    if (username.length < 3) errs.username = 'Username must be at least 3 characters';
+    if (username.length < 3)
+      errs.username = 'Username must be at least 3 characters';
     if (!email.trim()) errs.email = 'Email is required';
     if (!password) errs.password = 'Password is required';
-    if (password.length < 8) errs.password = 'Password must be at least 8 characters';
-    if (password !== confirmPassword) errs.confirmPassword = 'Passwords do not match';
+    else if (password.length < 8)
+      errs.password = 'Password must be at least 8 characters';
+    else if (!/(?=.*[A-Z])/.test(password))
+      errs.password = 'Password must contain at least one uppercase letter';
+    else if (!/(?=.*[a-z])/.test(password))
+      errs.password = 'Password must contain at least one lowercase letter';
+    else if (!/(?=.*[\d\W])/.test(password))
+      errs.password =
+        'Password must contain at least one digit or special character';
+    if (password !== confirmPassword)
+      errs.confirmPassword = 'Passwords do not match';
     setErrors(errs);
     return Object.keys(errs).length === 0;
   }
@@ -58,8 +79,15 @@ export function RegisterPage() {
       });
 
       // Auto-login
-      const loginResponse = await authApi.login({ email, password, deviceInfo });
-      const privateKey = await unwrapPrivateKey(loginResponse.e2eeKeys, password);
+      const loginResponse = await authApi.login({
+        email,
+        password,
+        deviceInfo,
+      });
+      const privateKey = await unwrapPrivateKey(
+        loginResponse.e2eeKeys,
+        password,
+      );
 
       login(
         loginResponse.user,
@@ -75,8 +103,8 @@ export function RegisterPage() {
     } catch (err: unknown) {
       setStep('form');
       const msg =
-        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-        'Registration failed.';
+        (err as { response?: { data?: { message?: string } } })?.response?.data
+          ?.message ?? 'Registration failed.';
       toast.error(typeof msg === 'string' ? msg : 'Registration failed.');
     }
   }
@@ -89,7 +117,9 @@ export function RegisterPage() {
             <div className="h-10 w-10 animate-spin rounded-full border-[3px] border-primary border-t-transparent" />
             <div className="text-center">
               <p className="font-medium text-foreground">
-                {step === 'generating' ? 'Generating encryption keys…' : 'Creating your account…'}
+                {step === 'generating'
+                  ? 'Generating encryption keys…'
+                  : 'Creating your account…'}
               </p>
               <p className="mt-1 text-sm text-muted-foreground">
                 {step === 'generating'
@@ -113,7 +143,9 @@ export function RegisterPage() {
             </div>
           </div>
           <CardTitle className="text-2xl">Create account</CardTitle>
-          <CardDescription>Join Gomin — end-to-end encrypted messaging</CardDescription>
+          <CardDescription>
+            Join Gomin — end-to-end encrypted messaging
+          </CardDescription>
         </CardHeader>
 
         <CardContent>
@@ -143,7 +175,7 @@ export function RegisterPage() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="At least 8 characters"
+              placeholder="Min 8 chars, uppercase, lowercase, digit"
               autoComplete="new-password"
               error={errors.password}
               required
@@ -160,7 +192,9 @@ export function RegisterPage() {
             />
 
             <p className="text-xs text-muted-foreground bg-muted/50 rounded-md px-3 py-2">
-              A unique RSA-2048 key pair will be generated in your browser. Your private key is encrypted with your password and never leaves your device in plaintext.
+              A unique RSA-2048 key pair will be generated in your browser. Your
+              private key is encrypted with your password and never leaves your
+              device in plaintext.
             </p>
 
             <Button type="submit" className="w-full mt-1">
@@ -172,7 +206,10 @@ export function RegisterPage() {
         <CardFooter className="justify-center">
           <p className="text-sm text-muted-foreground">
             Already have an account?{' '}
-            <Link to="/login" className="font-medium text-primary hover:underline">
+            <Link
+              to="/login"
+              className="font-medium text-primary hover:underline"
+            >
               Sign in
             </Link>
           </p>

@@ -9,12 +9,26 @@ import type { Session } from '../types';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Badge } from '../components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/card';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '../components/ui/dialog';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from '../components/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription,
+} from '../components/ui/dialog';
 
 function getPlatformIcon(session: Session) {
   const ua = session.deviceInfo?.userAgent ?? '';
-  if (/mobile|android|iphone/i.test(ua)) return <Smartphone className="h-5 w-5" />;
+  if (/mobile|android|iphone/i.test(ua))
+    return <Smartphone className="h-5 w-5" />;
   return <Monitor className="h-5 w-5" />;
 }
 
@@ -53,7 +67,7 @@ function SessionCard({
             <Globe className="h-3 w-3" />
             {session.ipAddress ?? 'Unknown IP'}
           </span>
-          <span>Platform: {session.deviceInfo?.platform ?? 'Unknown'}</span>
+          <span>Platform: {session.deviceInfo?.os ?? 'Unknown'}</span>
           <span>Created: {formatDate(session.createdAt)}</span>
           {session.lastActivityAt && (
             <span>Last active: {formatDate(session.lastActivityAt)}</span>
@@ -195,7 +209,8 @@ export function SessionsPage() {
           <DialogHeader>
             <DialogTitle>Terminate All Other Sessions</DialogTitle>
             <DialogDescription>
-              This will sign out all other devices. Your current session will remain active.
+              This will sign out all other devices. Your current session will
+              remain active.
             </DialogDescription>
           </DialogHeader>
           <div className="py-2">
@@ -209,7 +224,10 @@ export function SessionsPage() {
             />
           </div>
           <DialogFooter className="gap-2 mt-2">
-            <Button variant="outline" onClick={() => setTerminateAllOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setTerminateAllOpen(false)}
+            >
               Cancel
             </Button>
             <Button

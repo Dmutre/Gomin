@@ -10,12 +10,30 @@ import { toast } from '../store/toast.store';
 import type { ChatType, MemberRole } from '../types';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../components/ui/dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '../components/ui/dialog';
 import { Badge } from '../components/ui/badge';
 
-const CHAT_TYPE_OPTIONS: { value: ChatType; label: string; description: string }[] = [
-  { value: 'DIRECT', label: 'Direct Message', description: '1-on-1 private conversation' },
-  { value: 'GROUP', label: 'Group Chat', description: 'Private group with multiple members' },
+const CHAT_TYPE_OPTIONS: {
+  value: ChatType;
+  label: string;
+  description: string;
+}[] = [
+  {
+    value: 'DIRECT',
+    label: 'Direct Message',
+    description: '1-on-1 private conversation',
+  },
+  {
+    value: 'GROUP',
+    label: 'Group Chat',
+    description: 'Private group with multiple members',
+  },
   { value: 'CHANNEL', label: 'Channel', description: 'Broadcast channel' },
 ];
 
@@ -75,7 +93,10 @@ export function ChatsPage() {
       for (const recipientId of recipientIds) {
         try {
           const { publicKey } = await authApi.getUserPublicKey(recipientId);
-          const encryptedSenderKey = await encryptChainKeyForRecipient(chainKey, publicKey);
+          const encryptedSenderKey = await encryptChainKeyForRecipient(
+            chainKey,
+            publicKey,
+          );
           keysToDistribute.push({
             senderId: user.id,
             recipientId,
@@ -98,8 +119,8 @@ export function ChatsPage() {
       navigate(`/chats/${chat.id}`);
     } catch (err: unknown) {
       const msg =
-        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-        'Failed to create chat';
+        (err as { response?: { data?: { message?: string } } })?.response?.data
+          ?.message ?? 'Failed to create chat';
       toast.error(typeof msg === 'string' ? msg : 'Failed to create chat');
     } finally {
       setCreating(false);
@@ -130,7 +151,13 @@ export function ChatsPage() {
         New Chat
       </Button>
 
-      <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) resetForm(); }}>
+      <Dialog
+        open={open}
+        onOpenChange={(v) => {
+          setOpen(v);
+          if (!v) resetForm();
+        }}
+      >
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>New Chat</DialogTitle>
@@ -153,7 +180,9 @@ export function ChatsPage() {
                   >
                     <div className="flex-1">
                       <p className="text-sm font-medium">{opt.label}</p>
-                      <p className="text-xs text-muted-foreground">{opt.description}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {opt.description}
+                      </p>
                     </div>
                   </button>
                 ))}
@@ -174,17 +203,28 @@ export function ChatsPage() {
             <div className="flex flex-col gap-2">
               <label className="text-sm font-medium">
                 Member User IDs
-                {chatType === 'DIRECT' && <span className="text-muted-foreground ml-1">(one required)</span>}
+                {chatType === 'DIRECT' && (
+                  <span className="text-muted-foreground ml-1">
+                    (one required)
+                  </span>
+                )}
               </label>
               <div className="flex gap-2">
                 <Input
                   value={memberInput}
                   onChange={(e) => setMemberInput(e.target.value)}
                   placeholder="Paste user ID"
-                  onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addMember())}
+                  onKeyDown={(e) =>
+                    e.key === 'Enter' && (e.preventDefault(), addMember())
+                  }
                   className="flex-1"
                 />
-                <Button variant="outline" size="sm" onClick={addMember} type="button">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={addMember}
+                  type="button"
+                >
                   Add
                 </Button>
               </div>
@@ -196,7 +236,10 @@ export function ChatsPage() {
                       className="flex items-center gap-1 rounded-full bg-accent px-2 py-0.5 text-xs"
                     >
                       <span className="font-mono">{id.slice(0, 8)}…</span>
-                      <button onClick={() => removeMember(id)} className="text-muted-foreground hover:text-foreground">
+                      <button
+                        onClick={() => removeMember(id)}
+                        className="text-muted-foreground hover:text-foreground"
+                      >
                         <X className="h-3 w-3" />
                       </button>
                     </span>
@@ -207,7 +250,11 @@ export function ChatsPage() {
           </div>
 
           <DialogFooter className="gap-2 mt-2">
-            <Button variant="outline" onClick={() => setOpen(false)} type="button">
+            <Button
+              variant="outline"
+              onClick={() => setOpen(false)}
+              type="button"
+            >
               Cancel
             </Button>
             <Button onClick={handleCreate} loading={creating} type="button">
