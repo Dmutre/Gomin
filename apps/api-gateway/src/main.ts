@@ -38,6 +38,13 @@ async function bootstrap() {
 
   app.useWebSocketAdapter(new RedisIoAdapter(app));
 
+  const rawOrigin = config.get<string>('app.corsOrigin') ?? '*';
+  app.enableCors({
+    origin: rawOrigin === '*' ? '*' : rawOrigin.split(',').map((o) => o.trim()),
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+  });
+
   app.useGlobalFilters(new GrpcExceptionFilter());
 
   app.useGlobalPipes(

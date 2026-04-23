@@ -9,6 +9,7 @@ export const appConfig = registerAs(CONFIG_NAMESPACES.APP, () => ({
   nodeEnv: process.env.NODE_ENV || 'development',
   port: parseInt(process.env.PORT || '3000', 10),
   host: process.env.HOST || 'localhost',
+  corsOrigin: process.env.CORS_ORIGIN || '*',
 }));
 
 export const authServiceConfig = registerAs(

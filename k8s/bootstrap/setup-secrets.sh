@@ -156,6 +156,7 @@ header "API Gateway  (gomin-apps)"
 GW_PORT=$(ask "PORT" "3000")
 GW_HOST=$(ask "HOST" "0.0.0.0")
 GW_SERVICE_SECRET=$(ask_secret "SERVICE_SECRET (inter-service auth token)")
+GW_CORS_ORIGIN=$(ask "CORS_ORIGIN (frontend URL, e.g. https://app.84.247.133.45.nip.io)" "https://app.84.247.133.45.nip.io")
 
 apply_secret gomin-apps api-gateway-secret \
   --from-literal=NODE_ENV="production" \
@@ -163,6 +164,7 @@ apply_secret gomin-apps api-gateway-secret \
   --from-literal=HOST="$GW_HOST" \
   --from-literal=SERVICE_NAME="gateway-service" \
   --from-literal=SERVICE_SECRET="$GW_SERVICE_SECRET" \
+  --from-literal=CORS_ORIGIN="$GW_CORS_ORIGIN" \
   --from-literal=AUTH_SERVICE_URL="$AUTH_SERVICE_URL" \
   --from-literal=COMMUNICATION_SERVICE_URL="$COMM_SERVICE_URL" \
   --from-literal=REDIS_HOST="$REDIS_HOST" \
