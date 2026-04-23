@@ -107,10 +107,20 @@ export function RegisterPage() {
       navigate('/');
     } catch (err: unknown) {
       setStep('form');
-      const msg =
-        (err as { response?: { data?: { message?: string } } })?.response?.data
-          ?.message ?? 'Registration failed.';
-      toast.error(typeof msg === 'string' ? msg : 'Registration failed.');
+      console.error('[Register]', err);
+      const axiosMsg = (err as { response?: { data?: { message?: unknown } } })
+        ?.response?.data?.message;
+      let msg: string;
+      if (typeof axiosMsg === 'string') {
+        msg = axiosMsg;
+      } else if (Array.isArray(axiosMsg)) {
+        msg = axiosMsg.join('; ');
+      } else if (err instanceof Error) {
+        msg = err.message;
+      } else {
+        msg = 'Registration failed.';
+      }
+      toast.error(msg);
     }
   }
 
