@@ -40,7 +40,10 @@ export class GrpcExceptionFilter extends BaseRpcExceptionFilter {
       if (CLIENT_ERROR_CODES.has(code)) {
         this.logger.warn(exception.message, meta);
       } else {
-        this.logger.error(exception.message, { ...meta, stack: exception.stack });
+        this.logger.error(exception.message, {
+          ...meta,
+          stack: exception.stack,
+        });
       }
 
       return throwError(

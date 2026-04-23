@@ -20,9 +20,12 @@ export class AuthMetricsService {
     this.sessionsCreated = metrics.counter('gomin.auth.sessions.created', {
       description: 'Total number of sessions created',
     });
-    this.sessionsTerminated = metrics.counter('gomin.auth.sessions.terminated', {
-      description: 'Total number of sessions terminated',
-    });
+    this.sessionsTerminated = metrics.counter(
+      'gomin.auth.sessions.terminated',
+      {
+        description: 'Total number of sessions terminated',
+      },
+    );
     this.passwordChanged = metrics.counter('gomin.auth.password.changed', {
       description: 'Total number of password change operations',
     });

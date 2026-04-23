@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PinoLogger } from 'nestjs-pino';
-import { MicroserviceException } from '@gomin/app';
+import { LogAllMethods, MicroserviceException } from '@gomin/app';
 import { status } from '@grpc/grpc-js';
 import type {
   ChatDomainModel,
@@ -36,6 +36,7 @@ export interface UpdateMemberRoleOptions {
   newRole: Exclude<DomainChatMemberRole, 'OWNER'>;
 }
 
+@LogAllMethods()
 @Injectable()
 export class ChatService {
   constructor(
@@ -57,7 +58,12 @@ export class ChatService {
       (id) => id !== options.creatorUserId,
     );
     const allMembers = await this.memberRepo.addMany([
-      { chatId: chat.id, userId: options.creatorUserId, role: 'OWNER', canReadFrom: null },
+      {
+        chatId: chat.id,
+        userId: options.creatorUserId,
+        role: 'OWNER',
+        canReadFrom: null,
+      },
       ...otherUserIds.map((userId) => ({
         chatId: chat.id,
         userId,

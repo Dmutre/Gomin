@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { MicroserviceException } from '@gomin/app';
+import { LogAllMethods, MicroserviceException } from '@gomin/app';
 import { status } from '@grpc/grpc-js';
 import * as argon2 from 'argon2';
 import { randomUUID } from 'crypto';
@@ -37,7 +37,7 @@ import type {
 import type { UserDomainModel } from '../users/types/user.domain.model';
 import { AuthMetricsService } from '../metrics/auth.metrics.service';
 
-// TODO: Add caching so service would works more efficiently
+@LogAllMethods()
 @Injectable()
 export class UserAuthService {
   constructor(
@@ -47,20 +47,6 @@ export class UserAuthService {
   ) {}
 
   async register(data: RegisterDto): Promise<RegisterResponse> {
-    const user = await this.registerUser(data);
-    const session = await this.userSessionService.createNewSession(
-      this.toCreateSessionParams(user.id, data.deviceInfo),
-    );
-    this.authMetrics.recordRegistration();
-    this.authMetrics.recordSessionCreated();
-    return {
-      user: toUserProfile(user),
-      sessionToken: session.sessionToken,
-      expiresAt: session.expiresAt,
-    };
-  }
-
-  private async registerUser(data: RegisterDto): Promise<UserDomainModel> {
     const existingUser = await this.userService.findByEmail(data.email);
     if (existingUser) {
       throw new MicroserviceException(
@@ -68,9 +54,10 @@ export class UserAuthService {
         status.ALREADY_EXISTS,
       );
     }
+
     const passwordHash = await this.hashPassword(data.password);
 
-    return await this.userService.createUser({
+    const user = await this.userService.createUser({
       id: randomUUID(),
       username: data.username,
       email: data.email,
@@ -92,6 +79,18 @@ export class UserAuthService {
       createdAt: new Date(),
       updatedAt: new Date(),
     });
+
+    const session = await this.userSessionService.createNewSession(
+      this.toCreateSessionParams(user.id, data.deviceInfo),
+    );
+
+    this.authMetrics.recordRegistration();
+    this.authMetrics.recordSessionCreated();
+    return {
+      user: toUserProfile(user),
+      sessionToken: session.sessionToken,
+      expiresAt: session.expiresAt,
+    };
   }
 
   async login(data: LoginDto): Promise<LoginResponse> {
@@ -102,6 +101,7 @@ export class UserAuthService {
         status.UNAUTHENTICATED,
       );
     }
+
     const isValid = await this.verifyPassword(data.password, user.passwordHash);
     if (!isValid) {
       throw new MicroserviceException(
@@ -109,9 +109,11 @@ export class UserAuthService {
         status.UNAUTHENTICATED,
       );
     }
+
     const sessionParams = this.toCreateSessionParams(user.id, data.deviceInfo);
     const session =
       await this.userSessionService.getOrCreateSessionForDevice(sessionParams);
+
     this.authMetrics.recordLogin();
     return {
       user: toUserProfile(user),

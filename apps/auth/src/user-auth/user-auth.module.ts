@@ -7,7 +7,12 @@ import { UserSessionModule } from '../user-sessions/user-session.module';
 import { AuthMetricsModule } from '../metrics/auth.metrics.module';
 
 @Module({
-  imports: [LocalIdentityModule, UserModule, UserSessionModule, AuthMetricsModule],
+  imports: [
+    LocalIdentityModule,
+    UserModule,
+    UserSessionModule,
+    AuthMetricsModule,
+  ],
   controllers: [UserAuthGrpcController],
   providers: [UserAuthService],
 })

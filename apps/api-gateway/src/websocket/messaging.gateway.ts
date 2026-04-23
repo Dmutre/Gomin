@@ -325,5 +325,4 @@ export class MessagingGateway
 
     return { delivered: true };
   }
-
 }

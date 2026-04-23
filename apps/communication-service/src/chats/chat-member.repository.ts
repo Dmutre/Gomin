@@ -50,9 +50,9 @@ export class ChatMemberRepository {
   private reviveMember(raw: ChatMemberDomainModel): ChatMemberDomainModel {
     return {
       ...raw,
-      joinedAt:    new Date(raw.joinedAt),
+      joinedAt: new Date(raw.joinedAt),
       canReadFrom: raw.canReadFrom ? new Date(raw.canReadFrom) : null,
-      leftAt:      raw.leftAt      ? new Date(raw.leftAt)      : null,
+      leftAt: raw.leftAt ? new Date(raw.leftAt) : null,
     };
   }
 

@@ -55,7 +55,7 @@ export class UserRepository {
         ...raw,
         createdAt: new Date(raw.createdAt),
         updatedAt: new Date(raw.updatedAt),
-        bannedAt:  raw.bannedAt ? new Date(raw.bannedAt) : null,
+        bannedAt: raw.bannedAt ? new Date(raw.bannedAt) : null,
       };
     }
 
@@ -65,7 +65,11 @@ export class UserRepository {
     if (!userDb) return null;
 
     const model = UserMapper.toDomainModel(userDb);
-    await this.redis.set(this.userCacheKey(id), JSON.stringify(model), USER_TTL_SECONDS);
+    await this.redis.set(
+      this.userCacheKey(id),
+      JSON.stringify(model),
+      USER_TTL_SECONDS,
+    );
     return model;
   }
 
@@ -88,7 +92,11 @@ export class UserRepository {
     if (!userDb) return null;
 
     const model = UserMapper.toDomainModel(userDb);
-    await this.redis.set(this.userCacheKey(id), JSON.stringify(model), USER_TTL_SECONDS);
+    await this.redis.set(
+      this.userCacheKey(id),
+      JSON.stringify(model),
+      USER_TTL_SECONDS,
+    );
     return model;
   }
 }

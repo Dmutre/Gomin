@@ -53,10 +53,10 @@ export class UserSessionRepository {
       const raw = JSON.parse(cached) as UserSessionDomainModel;
       return {
         ...raw,
-        createdAt:      new Date(raw.createdAt),
+        createdAt: new Date(raw.createdAt),
         lastActivityAt: new Date(raw.lastActivityAt),
-        expiresAt:      new Date(raw.expiresAt),
-        revokedAt:      raw.revokedAt ? new Date(raw.revokedAt) : null,
+        expiresAt: new Date(raw.expiresAt),
+        revokedAt: raw.revokedAt ? new Date(raw.revokedAt) : null,
       };
     }
 

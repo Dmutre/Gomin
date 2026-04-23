@@ -13,7 +13,8 @@ export class GrpcLoggingInterceptor implements NestInterceptor {
 
   intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
     const rpc = context.getArgByIndex(2);
-    const method: string = rpc?.call?.handler?.path ?? context.getHandler().name;
+    const method: string =
+      rpc?.call?.handler?.path ?? context.getHandler().name;
     const start = Date.now();
 
     return next.handle().pipe(

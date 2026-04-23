@@ -19,21 +19,33 @@ export class CommunicationMetricsService {
     this.membersAdded = metrics.counter('gomin.communication.members.added', {
       description: 'Total number of chat members added',
     });
-    this.membersRemoved = metrics.counter('gomin.communication.members.removed', {
-      description: 'Total number of chat members removed',
-    });
+    this.membersRemoved = metrics.counter(
+      'gomin.communication.members.removed',
+      {
+        description: 'Total number of chat members removed',
+      },
+    );
     this.messagesSent = metrics.counter('gomin.communication.messages.sent', {
       description: 'Total number of messages sent',
     });
-    this.messagesEdited = metrics.counter('gomin.communication.messages.edited', {
-      description: 'Total number of messages edited',
-    });
-    this.messagesDeleted = metrics.counter('gomin.communication.messages.deleted', {
-      description: 'Total number of messages deleted',
-    });
-    this.reactionsAdded = metrics.counter('gomin.communication.reactions.added', {
-      description: 'Total number of reactions added to messages',
-    });
+    this.messagesEdited = metrics.counter(
+      'gomin.communication.messages.edited',
+      {
+        description: 'Total number of messages edited',
+      },
+    );
+    this.messagesDeleted = metrics.counter(
+      'gomin.communication.messages.deleted',
+      {
+        description: 'Total number of messages deleted',
+      },
+    );
+    this.reactionsAdded = metrics.counter(
+      'gomin.communication.reactions.added',
+      {
+        description: 'Total number of reactions added to messages',
+      },
+    );
   }
 
   recordChatCreated(type: string): void {

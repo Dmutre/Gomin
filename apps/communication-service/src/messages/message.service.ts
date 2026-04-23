@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PinoLogger } from 'nestjs-pino';
-import { MicroserviceException } from '@gomin/app';
+import { LogAllMethods, MicroserviceException } from '@gomin/app';
 import { status } from '@grpc/grpc-js';
 import type {
   MessageDomainModel,
@@ -48,6 +48,7 @@ export interface FullMessage {
   statuses: MessageStatusDomainModel[];
 }
 
+@LogAllMethods()
 @Injectable()
 export class MessageService {
   constructor(
