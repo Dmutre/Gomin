@@ -38,16 +38,22 @@ jobs:
           curl --proto '=https' --tlsv1.2 -sSfL https://run.linkerd.io/install | sh
           echo "$HOME/.linkerd2/bin" >> $GITHUB_PATH
 
-      - name: Install Linkerd CRDs
-        run: linkerd install --crds | kubectl apply -f -
-
-      - name: Install Linkerd control plane
-        run: linkerd install | kubectl apply -f -
+      - name: Install or upgrade Linkerd
+        run: |
+          if kubectl get configmap linkerd-config -n linkerd > /dev/null 2>&1; then
+            echo "Linkerd already installed — upgrading"
+            linkerd upgrade --crds | kubectl apply -f -
+            linkerd upgrade | kubectl apply -f -
+          else
+            echo "Fresh Linkerd install"
+            linkerd install --crds | kubectl apply -f -
+            linkerd install | kubectl apply -f -
+          fi
 
       - name: Wait for control plane
         run: linkerd check
 
-      - name: Install Linkerd viz extension
+      - name: Install or upgrade Linkerd viz
         run: |
           linkerd viz install \
             --set dashboard.enforcedHostRegexp=".*" \
