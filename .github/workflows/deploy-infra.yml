@@ -60,7 +60,7 @@ jobs:
             | kubectl apply -f -
 
       - name: Wait for viz
-        run: linkerd viz check
+        run: kubectl rollout status deployment -n linkerd-viz --timeout=3m
 
       - name: Expose Linkerd viz dashboard via Ingress
         run: |
