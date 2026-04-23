@@ -83,7 +83,7 @@
       "id": 10,
       "options": { "colorMode": "background", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"] } },
       "targets": [
-        { "expr": "sum(gomin_auth_users_registered_total)", "legendFormat": "", "refId": "A" }
+        { "expr": "sum(increase(gomin_auth_users_registered_total[$__range]))", "legendFormat": "", "refId": "A" }
       ],
       "title": "Total Registrations",
       "type": "stat"
@@ -98,7 +98,7 @@
       "id": 11,
       "options": { "colorMode": "background", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"] } },
       "targets": [
-        { "expr": "sum(gomin_auth_users_logged_in_total)", "legendFormat": "", "refId": "A" }
+        { "expr": "sum(increase(gomin_auth_users_logged_in_total[$__range]))", "legendFormat": "", "refId": "A" }
       ],
       "title": "Total Logins",
       "type": "stat"
@@ -113,7 +113,7 @@
       "id": 12,
       "options": { "colorMode": "background", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"] } },
       "targets": [
-        { "expr": "sum(gomin_auth_sessions_created_total)", "legendFormat": "", "refId": "A" }
+        { "expr": "sum(increase(gomin_auth_sessions_created_total[$__range]))", "legendFormat": "", "refId": "A" }
       ],
       "title": "Total Sessions Created",
       "type": "stat"
@@ -128,7 +128,7 @@
       "id": 13,
       "options": { "colorMode": "background", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"] } },
       "targets": [
-        { "expr": "sum(gomin_auth_password_changed_total)", "legendFormat": "", "refId": "A" }
+        { "expr": "sum(increase(gomin_auth_password_changed_total[$__range]))", "legendFormat": "", "refId": "A" }
       ],
       "title": "Total Password Changes",
       "type": "stat"
@@ -198,7 +198,7 @@
       "id": 20,
       "options": { "colorMode": "background", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"] } },
       "targets": [
-        { "expr": "sum(gomin_communication_messages_sent_total)", "legendFormat": "", "refId": "A" }
+        { "expr": "sum(increase(gomin_communication_messages_sent_total[$__range]))", "legendFormat": "", "refId": "A" }
       ],
       "title": "Total Messages Sent",
       "type": "stat"
@@ -213,7 +213,7 @@
       "id": 21,
       "options": { "colorMode": "background", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"] } },
       "targets": [
-        { "expr": "sum(gomin_communication_chats_created_total)", "legendFormat": "", "refId": "A" }
+        { "expr": "sum(increase(gomin_communication_chats_created_total[$__range]))", "legendFormat": "", "refId": "A" }
       ],
       "title": "Total Chats Created",
       "type": "stat"
@@ -228,7 +228,7 @@
       "id": 22,
       "options": { "colorMode": "background", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"] } },
       "targets": [
-        { "expr": "sum(gomin_communication_members_added_total)", "legendFormat": "", "refId": "A" }
+        { "expr": "sum(increase(gomin_communication_members_added_total[$__range]))", "legendFormat": "", "refId": "A" }
       ],
       "title": "Total Members Added",
       "type": "stat"
@@ -243,7 +243,7 @@
       "id": 23,
       "options": { "colorMode": "background", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"] } },
       "targets": [
-        { "expr": "sum(gomin_communication_reactions_added_total)", "legendFormat": "", "refId": "A" }
+        { "expr": "sum(increase(gomin_communication_reactions_added_total[$__range]))", "legendFormat": "", "refId": "A" }
       ],
       "title": "Total Reactions Added",
       "type": "stat"
@@ -266,17 +266,17 @@
       "options": { "legend": { "calcs": ["lastNotNull"], "displayMode": "table", "placement": "bottom" }, "tooltip": { "mode": "multi" } },
       "targets": [
         {
-          "expr": "sum(gomin_auth_users_registered_total)",
-          "legendFormat": "total users",
+          "expr": "sum(increase(gomin_auth_users_registered_total[$__rate_interval]))",
+          "legendFormat": "new users",
           "refId": "A"
         },
         {
-          "expr": "sum(gomin_communication_chats_created_total)",
-          "legendFormat": "total chats",
+          "expr": "sum(increase(gomin_communication_chats_created_total[$__rate_interval]))",
+          "legendFormat": "new chats",
           "refId": "B"
         }
       ],
-      "title": "Cumulative Users & Chats",
+      "title": "New Users & Chats (per interval)",
       "type": "timeseries"
     },
     {
@@ -290,17 +290,17 @@
       "options": { "legend": { "calcs": ["lastNotNull"], "displayMode": "table", "placement": "bottom" }, "tooltip": { "mode": "multi" } },
       "targets": [
         {
-          "expr": "sum(gomin_communication_messages_sent_total)",
-          "legendFormat": "total messages",
+          "expr": "sum(increase(gomin_communication_messages_sent_total[$__rate_interval]))",
+          "legendFormat": "new messages",
           "refId": "A"
         },
         {
-          "expr": "sum(gomin_communication_members_added_total)",
-          "legendFormat": "total member joins",
+          "expr": "sum(increase(gomin_communication_members_added_total[$__rate_interval]))",
+          "legendFormat": "new member joins",
           "refId": "B"
         }
       ],
-      "title": "Cumulative Messages & Member Joins",
+      "title": "New Messages & Member Joins (per interval)",
       "type": "timeseries"
     }
   ],
