@@ -96,7 +96,7 @@ export interface DeviceInfo {
   os: string;
   browser: string;
   appVersion: string;
-  ipAddress: string;
+  ipAddress?: string;
   userAgent: string;
 }
 
