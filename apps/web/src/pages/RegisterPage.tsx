@@ -62,6 +62,11 @@ export function RegisterPage() {
     if (!validate()) return;
 
     try {
+      if (!crypto.subtle) {
+        toast.error('Web Crypto API requires HTTPS or localhost. Open the app over https:// or via localhost.');
+        return;
+      }
+
       // Step 1: Generate RSA key pair
       setStep('generating');
       const keyPair = await generateKeyPair();
