@@ -2,6 +2,8 @@ import { create } from 'zustand';
 
 export type ToastType = 'success' | 'error' | 'info' | 'warning';
 
+let nextId = 0;
+
 export interface Toast {
   id: string;
   message: string;
@@ -18,7 +20,7 @@ export const useToastStore = create<ToastState>((set) => ({
   toasts: [],
 
   addToast: (message, type = 'info') => {
-    const id = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    const id = String(++nextId);
     set((state) => ({ toasts: [...state.toasts, { id, message, type }] }));
     setTimeout(() => {
       set((state) => ({ toasts: state.toasts.filter((t) => t.id !== id) }));

@@ -12,11 +12,11 @@ on:
       vite_api_url:
         description: 'VITE_API_URL baked into the bundle'
         required: false
-        default: 'http://api.84.247.133.45.nip.io/api'
+        default: 'https://api.84.247.133.45.nip.io/api'
       vite_ws_url:
         description: 'VITE_WS_URL baked into the bundle'
         required: false
-        default: 'http://api.84.247.133.45.nip.io'
+        default: 'https://api.84.247.133.45.nip.io'
       deploy:
         description: 'Deploy to Kubernetes'
         type: boolean

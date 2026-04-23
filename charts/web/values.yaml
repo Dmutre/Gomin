@@ -23,13 +23,17 @@ service:
 ingress:
   enabled: true
   className: traefik
-  annotations: {}
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
   hosts:
     - host: app.84.247.133.45.nip.io
       paths:
         - path: /
           pathType: Prefix
-  tls: []
+  tls:
+    - hosts:
+        - app.84.247.133.45.nip.io
+      secretName: web-tls
 
 resources:
   requests:

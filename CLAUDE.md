@@ -23,16 +23,31 @@ Bachelor diploma project. NX monorepo (pnpm), NestJS microservices, E2EE messagi
 | `gomin-apps` | api-gateway, auth, communication-service |
 | `gomin-infra` | Redis, MinIO |
 | `gomin-monitoring` | Prometheus, Loki, Tempo, Grafana, OTel Collector |
+| `cert-manager` | cert-manager (TLS certificates via Let's Encrypt) |
 
 ### Bootstrap
 
-`k8s/bootstrap/ci-rbac.yaml` — apply once on a bare cluster before any CI/CD runs:
+**Step 1** — RBAC + namespaces (apply once on bare cluster before any CI/CD):
 ```bash
 kubectl apply -f k8s/bootstrap/ci-rbac.yaml
 ```
-Creates namespaces, `github-actions` ServiceAccount, and two ClusterRoles:
+Creates namespaces (including `cert-manager`), `github-actions` ServiceAccount, and two ClusterRoles:
 - `gomin-deployer` (RoleBinding per namespace) — namespaced resources
 - `gomin-crd-manager` (ClusterRoleBinding) — cluster-scoped resources + `verbs: ["*"]`
+
+**Step 2** — cert-manager + Let's Encrypt (run once via `Deploy Infrastructure` workflow, tick `deploy_cert_manager`):
+Installs cert-manager via Helm and creates a `letsencrypt-prod` ClusterIssuer.
+After this, any Ingress with `cert-manager.io/cluster-issuer: letsencrypt-prod` annotation gets a real TLS certificate automatically.
+
+To apply manually instead:
+```bash
+helm repo add jetstack https://charts.jetstack.io && helm repo update
+helm upgrade --install cert-manager jetstack/cert-manager \
+  --namespace cert-manager --create-namespace --set installCRDs=true
+kubectl wait --for=condition=ready pod -l app.kubernetes.io/component=webhook \
+  -n cert-manager --timeout=120s
+kubectl apply -f k8s/bootstrap/cert-manager.yaml
+```
 
 **RBAC gotchas:**
 - You cannot create a ClusterRole with permissions you don't already hold — including `*` verb (distinct from explicit verb list)

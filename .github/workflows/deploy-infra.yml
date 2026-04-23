@@ -3,6 +3,10 @@ name: Deploy Infrastructure
 on:
   workflow_dispatch:
     inputs:
+      deploy_cert_manager:
+        description: 'Install / upgrade cert-manager + Let''s Encrypt ClusterIssuer'
+        type: boolean
+        default: false
       deploy_linkerd:
         description: 'Install / upgrade Linkerd service mesh'
         type: boolean
@@ -21,7 +25,48 @@ on:
         default: false
 
 jobs:
-  # ── 0. Linkerd service mesh ──────────────────────────────────────────────────
+  # ── 0. cert-manager + Let's Encrypt ClusterIssuer ───────────────────────────
+  deploy-cert-manager:
+    name: Install cert-manager
+    if: ${{ inputs.deploy_cert_manager }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/setup-helm@v4
+
+      - name: Configure kubectl
+        run: |
+          mkdir -p ~/.kube
+          echo "${{ secrets.KUBECONFIG }}" > ~/.kube/config
+          chmod 600 ~/.kube/config
+
+      - name: Add Jetstack Helm repo
+        run: |
+          helm repo add jetstack https://charts.jetstack.io
+          helm repo update
+
+      - name: Helm upgrade — cert-manager
+        run: |
+          helm upgrade --install cert-manager jetstack/cert-manager \
+            --namespace cert-manager --create-namespace \
+            --set installCRDs=true \
+            --cleanup-on-fail \
+            --timeout 5m
+
+      - name: Wait for cert-manager webhook
+        run: |
+          kubectl wait --for=condition=ready pod \
+            -l app.kubernetes.io/component=webhook \
+            -n cert-manager --timeout=120s
+
+      - name: Apply ClusterIssuer
+        run: kubectl apply -f k8s/bootstrap/cert-manager.yaml
+
+      - name: Show pod status
+        if: always()
+        run: kubectl get pods -n cert-manager
+
+  # ── 1. Linkerd service mesh ──────────────────────────────────────────────────
   deploy-linkerd:
     name: Install Linkerd
     if: ${{ inputs.deploy_linkerd }}
