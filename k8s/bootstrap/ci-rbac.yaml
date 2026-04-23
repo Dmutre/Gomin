@@ -54,7 +54,7 @@ rules:
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
   - apiGroups: [""]
     resources: ["services", "configmaps", "secrets", "pods",
-                "serviceaccounts", "persistentvolumeclaims"]
+                "serviceaccounts", "serviceaccounts/token", "persistentvolumeclaims"]
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
   - apiGroups: ["batch"]
     resources: ["jobs"]
@@ -67,7 +67,7 @@ rules:
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
   - apiGroups: ["rbac.authorization.k8s.io"]
     resources: ["roles", "rolebindings"]
-    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete", "escalate", "bind"]
   - apiGroups: ["policy"]
     resources: ["poddisruptionbudgets"]
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
@@ -239,6 +239,7 @@ rules:
       - resourcequotas
       - limitranges
       - serviceaccounts
+      - serviceaccounts/token
       - events
       - persistentvolumeclaims
     verbs: ["*"]
