@@ -3,6 +3,10 @@ name: Deploy Infrastructure
 on:
   workflow_dispatch:
     inputs:
+      deploy_linkerd:
+        description: 'Install / upgrade Linkerd service mesh'
+        type: boolean
+        default: false
       deploy_redis:
         description: 'Deploy Redis'
         type: boolean
@@ -17,6 +21,39 @@ on:
         default: false
 
 jobs:
+  # ── 0. Linkerd service mesh ──────────────────────────────────────────────────
+  deploy-linkerd:
+    name: Install Linkerd
+    if: ${{ inputs.deploy_linkerd }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Configure kubectl
+        run: |
+          mkdir -p ~/.kube
+          echo "${{ secrets.KUBECONFIG }}" > ~/.kube/config
+          chmod 600 ~/.kube/config
+
+      - name: Install Linkerd CLI
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSfL https://run.linkerd.io/install | sh
+          echo "$HOME/.linkerd2/bin" >> $GITHUB_PATH
+
+      - name: Check prerequisites
+        run: linkerd check --pre
+
+      - name: Install Linkerd CRDs
+        run: linkerd install --crds | kubectl apply -f -
+
+      - name: Install Linkerd control plane
+        run: linkerd install | kubectl apply -f -
+
+      - name: Wait for control plane
+        run: linkerd check
+
+      - name: Show Linkerd pods
+        if: always()
+        run: kubectl get pods -n linkerd
+
   # ── 1. Redis + MinIO (gomin-infra chart) ────────────────────────────────────
   deploy-infra:
     name: Deploy Redis / MinIO

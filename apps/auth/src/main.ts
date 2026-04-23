@@ -20,10 +20,6 @@ async function bootstrap() {
           join(__dirname, 'protos', 'user-auth.proto'),
           join(__dirname, 'protos', 'service-identity.proto'),
         ],
-        channelOptions: {
-          'grpc.max_connection_age_ms': 30_000,
-          'grpc.max_connection_age_grace_ms': 5_000,
-        },
       },
     },
   );
