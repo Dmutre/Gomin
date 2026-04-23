@@ -17,6 +17,10 @@ async function bootstrap() {
         package: ['communication.v1'],
         url: microserviceUrl,
         protoPath: [join(__dirname, 'protos', 'communication.proto')],
+        channelOptions: {
+          'grpc.max_connection_age_ms': 30_000,
+          'grpc.max_connection_age_grace_ms': 5_000,
+        },
       },
     },
   );
