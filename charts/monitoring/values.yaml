@@ -184,3 +184,14 @@ opentelemetry-collector:
       containerPort: 4318
       servicePort: 4318
       protocol: TCP
+    prometheus:
+      enabled: true
+      containerPort: 8889
+      servicePort: 8889
+      protocol: TCP
+
+  serviceMonitor:
+    enabled: true
+    metricsEndpoints:
+      - port: prometheus
+        interval: 30s
