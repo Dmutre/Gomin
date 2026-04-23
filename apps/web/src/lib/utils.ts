@@ -70,7 +70,6 @@ export function getDeviceInfo() {
     os: detectOS(),
     browser: detectBrowser(),
     appVersion: '1.0.0',
-    ipAddress: '',
     userAgent: navigator.userAgent,
   };
 }
