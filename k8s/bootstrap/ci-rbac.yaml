@@ -17,32 +17,19 @@ metadata:
     gomin/namespace-type: infra
 
 ---
-# Required by Linkerd viz tap component (not present on k3s by default)
+# Required by Linkerd viz tap component (not present on k3s by default).
+# Must be a Role (not ClusterRole) — Linkerd viz install creates a RoleBinding
+# referencing this as kind: Role in kube-system.
 apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
+kind: Role
 metadata:
   name: extension-apiserver-authentication-reader
+  namespace: kube-system
 rules:
   - apiGroups: [""]
     resources: ["configmaps"]
     resourceNames: ["extension-apiserver-authentication"]
     verbs: ["get", "list", "watch"]
-
----
-# Required by Linkerd viz tap component
-apiVersion: rbac.authorization.k8s.io/v1
-kind: RoleBinding
-metadata:
-  name: linkerd-linkerd-viz-tap-auth-reader
-  namespace: kube-system
-subjects:
-  - kind: ServiceAccount
-    name: tap
-    namespace: linkerd-viz
-roleRef:
-  kind: ClusterRole
-  name: extension-apiserver-authentication-reader
-  apiGroup: rbac.authorization.k8s.io
 
 ---
 # ServiceAccount used exclusively by GitHub Actions CI/CD.

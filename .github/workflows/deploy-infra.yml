@@ -55,6 +55,8 @@ jobs:
 
       - name: Install or upgrade Linkerd viz
         run: |
+          kubectl delete rolebinding linkerd-linkerd-viz-tap-auth-reader \
+            -n kube-system --ignore-not-found
           linkerd viz install \
             --set dashboard.enforcedHostRegexp=".*" \
             | kubectl apply -f -
