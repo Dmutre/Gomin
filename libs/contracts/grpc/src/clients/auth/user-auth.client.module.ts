@@ -3,7 +3,7 @@ import { ClientsModule, Transport } from '@nestjs/microservices';
 import { join } from 'path';
 import { UserAuthGrpcClient } from './user-auth.grpc.client';
 import { USER_AUTH_CLIENT } from './user-auth.tokens';
-import { ROUND_ROBIN_SERVICE_CONFIG, toDnsUrl } from '../grpc-client.utils';
+import { GRPC_ROUND_ROBIN_OPTIONS, toDnsUrl } from '../grpc-client.utils';
 
 const PROTO_PATH = join(__dirname, 'protos', 'user-auth.proto');
 
@@ -23,9 +23,7 @@ export class AuthClientModule {
             package: 'user_auth.v1',
             protoPath: PROTO_PATH,
             url: toDnsUrl(options.url ?? 'localhost:5000'),
-            channelOptions: {
-              'grpc.service_config': ROUND_ROBIN_SERVICE_CONFIG,
-            },
+            channelOptions: GRPC_ROUND_ROBIN_OPTIONS,
           },
         },
       ]),
@@ -59,7 +57,7 @@ export class AuthClientModule {
                 protoPath: PROTO_PATH,
                 url: toDnsUrl(url),
                 channelOptions: {
-                  'grpc.service_config': ROUND_ROBIN_SERVICE_CONFIG,
+                  ...GRPC_ROUND_ROBIN_OPTIONS,
                 },
               },
             };
