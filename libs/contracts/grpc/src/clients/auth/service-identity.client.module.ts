@@ -3,7 +3,7 @@ import { ClientsModule, Transport } from '@nestjs/microservices';
 import { join } from 'path';
 import { ServiceIdentityGrpcClient } from './service-identity.client';
 import { SERVICE_IDENTITY_CLIENT } from './service-identity.tokens';
-export { SERVICE_IDENTITY_CLIENT };
+import { ROUND_ROBIN_SERVICE_CONFIG, toDnsUrl } from '../grpc-client.utils';
 
 const PROTO_PATH = join(__dirname, 'protos', 'service-identity.proto');
 
@@ -24,7 +24,10 @@ export class ServiceIdentityClientModule {
           options: {
             package: 'service_identity.v1',
             protoPath: PROTO_PATH,
-            url: options.url ?? 'localhost:5000',
+            url: toDnsUrl(options.url ?? 'localhost:5000'),
+            channelOptions: {
+              'grpc.service_config': ROUND_ROBIN_SERVICE_CONFIG,
+            },
           },
         },
       ]),
@@ -56,7 +59,10 @@ export class ServiceIdentityClientModule {
               options: {
                 package: 'service_identity.v1',
                 protoPath: PROTO_PATH,
-                url,
+                url: toDnsUrl(url),
+                channelOptions: {
+                  'grpc.service_config': ROUND_ROBIN_SERVICE_CONFIG,
+                },
               },
             };
           },

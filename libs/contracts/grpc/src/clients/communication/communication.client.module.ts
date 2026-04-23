@@ -3,7 +3,7 @@ import { ClientsModule, Transport } from '@nestjs/microservices';
 import { join } from 'path';
 import { CommunicationGrpcClient } from './communication.client';
 import { COMMUNICATION_CLIENT } from './communication.tokens';
-export { COMMUNICATION_CLIENT };
+import { ROUND_ROBIN_SERVICE_CONFIG, toDnsUrl } from '../grpc-client.utils';
 
 const PROTO_PATH = join(__dirname, 'protos', 'communication.proto');
 
@@ -24,7 +24,10 @@ export class CommunicationClientModule {
           options: {
             package: 'communication.v1',
             protoPath: PROTO_PATH,
-            url: options.url ?? 'localhost:5001',
+            url: toDnsUrl(options.url ?? 'localhost:5001'),
+            channelOptions: {
+              'grpc.service_config': ROUND_ROBIN_SERVICE_CONFIG,
+            },
           },
         },
       ]),
@@ -56,7 +59,10 @@ export class CommunicationClientModule {
               options: {
                 package: 'communication.v1',
                 protoPath: PROTO_PATH,
-                url,
+                url: toDnsUrl(url),
+                channelOptions: {
+                  'grpc.service_config': ROUND_ROBIN_SERVICE_CONFIG,
+                },
               },
             };
           },

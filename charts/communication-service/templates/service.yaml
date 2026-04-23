@@ -6,7 +6,7 @@ metadata:
   labels:
     {{- include "communication-service.labels" . | nindent 4 }}
 spec:
-  type: {{ .Values.service.type }}
+  clusterIP: None
   ports:
     - name: grpc
       port: {{ .Values.service.port }}

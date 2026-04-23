@@ -271,4 +271,5 @@ jobs:
             --set image.tag="${VERSION}" \
             --set migrations.enabled=false \
             --cleanup-on-fail \
+            --force \
             --timeout 5m

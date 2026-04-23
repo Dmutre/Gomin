@@ -75,18 +75,12 @@ export type {
   GetChatSenderKeysRequest,
   ChatSenderKeysResponse,
 } from './types/generated/communication';
-export {
-  AuthClientModule,
-  USER_AUTH_CLIENT,
-} from './clients/auth/user-auth.client.module';
+export { AuthClientModule } from './clients/auth/user-auth.client.module';
+export { USER_AUTH_CLIENT } from './clients/auth/user-auth.tokens';
 export { UserAuthGrpcClient } from './clients/auth/user-auth.grpc.client';
-export {
-  ServiceIdentityClientModule,
-  SERVICE_IDENTITY_CLIENT,
-} from './clients/auth/service-identity.client.module';
+export { ServiceIdentityClientModule } from './clients/auth/service-identity.client.module';
+export { SERVICE_IDENTITY_CLIENT } from './clients/auth/service-identity.tokens';
 export { ServiceIdentityGrpcClient } from './clients/auth/service-identity.client';
-export {
-  CommunicationClientModule,
-  COMMUNICATION_CLIENT,
-} from './clients/communication/communication.client.module';
+export { CommunicationClientModule } from './clients/communication/communication.client.module';
+export { COMMUNICATION_CLIENT } from './clients/communication/communication.tokens';
 export { CommunicationGrpcClient } from './clients/communication/communication.client';
