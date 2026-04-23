@@ -51,10 +51,9 @@ export class GrpcExceptionFilter extends BaseRpcExceptionFilter {
       );
     }
 
-    this.logger.error('Unhandled exception', {
-      error: exception instanceof Error ? exception.message : exception,
-      stack: exception instanceof Error ? exception.stack : undefined,
-    });
+    const msg = exception instanceof Error ? exception.message : String(exception);
+    const stack = exception instanceof Error ? exception.stack : undefined;
+    this.logger.error(`Unhandled exception: ${msg}${stack ? `\n${stack}` : ''}`);
 
     return throwError(
       (): GrpcErrorResponse => ({
