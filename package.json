@@ -17,6 +17,7 @@
     "@nestjs/platform-socket.io": "^11.1.19",
     "@nestjs/swagger": "^11.2.6",
     "@nestjs/websockets": "^11.1.19",
+    "@opentelemetry/api": "1.9.1",
     "@opentelemetry/auto-instrumentations-node": "^0.72.0",
     "@opentelemetry/exporter-logs-otlp-grpc": "^0.214.0",
     "@opentelemetry/exporter-metrics-otlp-grpc": "^0.214.0",
