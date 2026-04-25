@@ -1,12 +1,15 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { PinoLogger } from 'nestjs-pino';
 import { LogAllMethods, MicroserviceException } from '@gomin/app';
 import { status } from '@grpc/grpc-js';
 import * as argon2 from 'argon2';
 import { randomUUID } from 'crypto';
+import { maskFields } from '@gomin/logger';
 import { UserService } from '../users/user.service';
 import { UserSessionService } from '../user-sessions/user-session.service';
 import { CreateSessionParams } from '../user-sessions/types/user-session.domain.model';
 import { RevokeReason } from '../user-sessions/types/user-session.domain.model';
+import { USER_SENSITIVE_FIELDS } from '../users/types/user.domain.model';
 import type {
   RegisterResponse,
   LoginResponse,
@@ -44,7 +47,7 @@ export class UserAuthService {
     private readonly userService: UserService,
     private readonly userSessionService: UserSessionService,
     private readonly authMetrics: AuthMetricsService,
-    private readonly logger: Logger,
+    private readonly logger: PinoLogger,
   ) {}
 
   async register(data: RegisterDto): Promise<RegisterResponse> {
@@ -81,7 +84,7 @@ export class UserAuthService {
       updatedAt: new Date(),
     });
 
-    this.logger.log('User registered', { user });
+    this.logger.info({ user: maskFields(user, USER_SENSITIVE_FIELDS) }, 'User registered');
 
     const session = await this.userSessionService.createNewSession(
       this.toCreateSessionParams(user.id, data.deviceInfo),

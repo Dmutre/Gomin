@@ -20,3 +20,11 @@ export interface UserDomainModel {
   createdAt: Date;
   updatedAt: Date;
 }
+
+export const USER_SENSITIVE_FIELDS: string[] = [
+  'passwordHash',
+  'encryptedPrivateKey',
+  'encryptionSalt',
+  'encryptionIv',
+  'encryptionAuthTag',
+];
