@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { LogAllMethods, MicroserviceException } from '@gomin/app';
 import { status } from '@grpc/grpc-js';
 import * as argon2 from 'argon2';
@@ -44,6 +44,7 @@ export class UserAuthService {
     private readonly userService: UserService,
     private readonly userSessionService: UserSessionService,
     private readonly authMetrics: AuthMetricsService,
+    private readonly logger: Logger,
   ) {}
 
   async register(data: RegisterDto): Promise<RegisterResponse> {
@@ -79,6 +80,8 @@ export class UserAuthService {
       createdAt: new Date(),
       updatedAt: new Date(),
     });
+
+    this.logger.log('User registered', { user });
 
     const session = await this.userSessionService.createNewSession(
       this.toCreateSessionParams(user.id, data.deviceInfo),
