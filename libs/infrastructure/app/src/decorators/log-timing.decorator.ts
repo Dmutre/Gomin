@@ -1,6 +1,6 @@
 import { Logger } from '@nestjs/common';
 
-function wrapMethod(
+function wrapAsync(
   logger: Logger,
   methodName: string,
   original: (...args: unknown[]) => unknown,
@@ -19,14 +19,32 @@ function wrapMethod(
   };
 }
 
+function wrapSync(
+  logger: Logger,
+  methodName: string,
+  original: (...args: unknown[]) => unknown,
+): (...args: unknown[]) => unknown {
+  return function (this: unknown, ...args: unknown[]) {
+    const start = Date.now();
+    logger.debug(`${methodName}: start`);
+    try {
+      const result = original.apply(this, args);
+      logger.log(`${methodName}: done total=${Date.now() - start}ms`);
+      return result;
+    } catch (err) {
+      logger.log(`${methodName}: error total=${Date.now() - start}ms`);
+      throw err;
+    }
+  };
+}
+
 export function LogTiming(): MethodDecorator {
   return (target, propertyKey, descriptor: PropertyDescriptor) => {
     const logger = new Logger(target.constructor.name);
-    descriptor.value = wrapMethod(
-      logger,
-      String(propertyKey),
-      descriptor.value as (...args: unknown[]) => unknown,
-    );
+    const original = descriptor.value as (...args: unknown[]) => unknown;
+    const wrap =
+      original.constructor.name === 'AsyncFunction' ? wrapAsync : wrapSync;
+    descriptor.value = wrap(logger, String(propertyKey), original);
     return descriptor;
   };
 }
@@ -42,7 +60,9 @@ export function LogAllMethods(): ClassDecorator {
       if (!descriptor || typeof descriptor.value !== 'function') continue;
 
       const original = descriptor.value as (...args: unknown[]) => unknown;
-      descriptor.value = wrapMethod(logger, key, original);
+      const wrap =
+        original.constructor.name === 'AsyncFunction' ? wrapAsync : wrapSync;
+      descriptor.value = wrap(logger, key, original);
       Object.defineProperty(proto, key, descriptor);
     }
   };
