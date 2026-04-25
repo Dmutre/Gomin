@@ -6,10 +6,10 @@ import {
   Monitor,
   LogOut,
   Plus,
-  Shield,
   Hash,
   Users,
 } from 'lucide-react';
+import gominLogo from '../assets/gomin-logo.png';
 import * as ScrollArea from '@radix-ui/react-scroll-area';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '../store/auth.store';
@@ -187,9 +187,7 @@ export function Layout() {
       <aside className="flex w-64 shrink-0 flex-col border-r border-border">
         {/* Logo */}
         <div className="flex items-center gap-2 border-b border-border px-4 py-4">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-            <Shield className="h-4 w-4 text-primary-foreground" />
-          </div>
+          <img src={gominLogo} alt="Gomin" className="h-8 w-8 object-contain" />
           <div>
             <h1 className="text-sm font-bold text-foreground">Gomin</h1>
             <p className="text-[10px] text-muted-foreground">E2EE Messenger</p>
