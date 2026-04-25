@@ -23,7 +23,6 @@ import {
 } from '../lib/socket';
 import type { Chat, Message } from '../types';
 import { cn, formatDate, truncate } from '../lib/utils';
-import type { Chat } from '../types';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
 import { ReauthOverlay } from './ReauthOverlay';
