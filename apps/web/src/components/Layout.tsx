@@ -35,9 +35,17 @@ function ChatTypeIcon({ type }: { type: Chat['type'] }) {
   return <Users className="h-4 w-4 shrink-0 text-muted-foreground" />;
 }
 
+function getChatDisplayName(chat: Chat, currentUserId?: string): string {
+  if (chat.type === 'DIRECT' && currentUserId) {
+    const other = chat.members.find((m) => m.userId !== currentUserId);
+    return other?.username ?? other?.userId ?? 'Unknown';
+  }
+  return chat.name ?? chat.members.map((m) => m.username ?? m.userId).join(', ');
+}
+
 function ChatListItem({ chat }: { chat: Chat }) {
-  const displayName =
-    chat.name ?? chat.members.map((m) => m.username ?? m.userId).join(', ');
+  const { user } = useAuthStore();
+  const displayName = getChatDisplayName(chat, user?.id);
 
   return (
     <NavLink

@@ -709,10 +709,14 @@ export function ChatPage() {
     return <Users className="h-5 w-5" />;
   }
 
-  const chatDisplayName =
-    chat?.name ??
-    chat?.members.map((m) => m.username ?? m.userId).join(', ') ??
-    '...';
+  const chatDisplayName = (() => {
+    if (!chat) return '...';
+    if (chat.type === 'DIRECT') {
+      const other = chat.members.find((m) => m.userId !== user?.id);
+      return other?.username ?? other?.userId ?? 'Unknown';
+    }
+    return chat.name ?? chat.members.map((m) => m.username ?? m.userId).join(', ');
+  })();
 
   // ── Group messages by date ────────────────────────────────────────────────────
 

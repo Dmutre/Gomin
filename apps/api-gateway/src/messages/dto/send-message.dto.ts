@@ -10,7 +10,15 @@ import {
   Min,
   ValidateNested,
 } from 'class-validator';
-import { MessageType } from '@gomin/grpc';
+
+export enum MessageTypeDto {
+  TEXT = 'TEXT',
+  IMAGE = 'IMAGE',
+  VIDEO = 'VIDEO',
+  DOCUMENT = 'DOCUMENT',
+  VOICE = 'VOICE',
+  SYSTEM = 'SYSTEM',
+}
 
 export class EncryptedPayloadDto {
   @ApiProperty({ description: 'AES-256-GCM ciphertext (base64)' })
@@ -47,9 +55,9 @@ export class SendMessageDto {
   @Type(() => EncryptedPayloadDto)
   payload!: EncryptedPayloadDto;
 
-  @ApiProperty({ enum: MessageType, example: MessageType.MESSAGE_TYPE_TEXT })
-  @IsEnum(MessageType)
-  type!: MessageType;
+  @ApiProperty({ enum: MessageTypeDto, example: MessageTypeDto.TEXT })
+  @IsEnum(MessageTypeDto)
+  type!: MessageTypeDto;
 
   @ApiPropertyOptional({ description: 'ID of the message being replied to' })
   @IsOptional()

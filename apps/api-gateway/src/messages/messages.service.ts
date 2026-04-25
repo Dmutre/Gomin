@@ -1,12 +1,22 @@
 import { Injectable } from '@nestjs/common';
 import { Metadata } from '@grpc/grpc-js';
 import { MicroserviceIdentityAuthService } from '@gomin/service-identity';
-import { CommunicationGrpcClient } from '@gomin/grpc';
+import { CommunicationGrpcClient, MessageType } from '@gomin/grpc';
 import { RedisPubSubService } from '../websocket/redis-pubsub.service';
+import { MessageTypeDto } from './dto/send-message.dto';
 import type { SendMessageDto } from './dto/send-message.dto';
 import type { UpdateMessageDto } from './dto/update-message.dto';
 import type { AddReactionDto } from './dto/add-reaction.dto';
 import type { MarkAsReadDto } from './dto/mark-as-read.dto';
+
+const MESSAGE_TYPE_MAP: Record<MessageTypeDto, MessageType> = {
+  [MessageTypeDto.TEXT]: MessageType.MESSAGE_TYPE_TEXT,
+  [MessageTypeDto.IMAGE]: MessageType.MESSAGE_TYPE_IMAGE,
+  [MessageTypeDto.VIDEO]: MessageType.MESSAGE_TYPE_VIDEO,
+  [MessageTypeDto.DOCUMENT]: MessageType.MESSAGE_TYPE_DOCUMENT,
+  [MessageTypeDto.VOICE]: MessageType.MESSAGE_TYPE_VOICE,
+  [MessageTypeDto.SYSTEM]: MessageType.MESSAGE_TYPE_SYSTEM,
+};
 
 @Injectable()
 export class MessagesService {
@@ -30,7 +40,7 @@ export class MessagesService {
         chatId,
         senderId: userId,
         payload: dto.payload,
-        type: dto.type,
+        type: MESSAGE_TYPE_MAP[dto.type],
         replyToId: dto.replyToId ?? '',
       },
       metadata,

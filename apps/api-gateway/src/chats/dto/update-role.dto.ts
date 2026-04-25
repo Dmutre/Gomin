@@ -1,15 +1,12 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsEnum } from 'class-validator';
-import { ChatMemberRole } from '@gomin/grpc';
+import { MemberRoleDto } from './add-member.dto';
 
 export class UpdateMemberRoleDto {
   @ApiProperty({
-    enum: [
-      ChatMemberRole.CHAT_MEMBER_ROLE_ADMIN,
-      ChatMemberRole.CHAT_MEMBER_ROLE_MEMBER,
-    ],
+    enum: [MemberRoleDto.ADMIN, MemberRoleDto.MEMBER],
     description: 'New role. Use transfer-ownership endpoint to assign OWNER.',
   })
-  @IsEnum(ChatMemberRole)
-  newRole!: ChatMemberRole;
+  @IsEnum(MemberRoleDto)
+  newRole!: MemberRoleDto;
 }

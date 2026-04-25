@@ -3,9 +3,10 @@ import { Metadata } from '@grpc/grpc-js';
 import { status } from '@grpc/grpc-js';
 import { MicroserviceException } from '@gomin/app';
 import { MicroserviceIdentityAuthService } from '@gomin/service-identity';
-import { CommunicationGrpcClient, UserAuthGrpcClient, ChatType } from '@gomin/grpc';
+import { CommunicationGrpcClient, UserAuthGrpcClient, ChatType, ChatMemberRole } from '@gomin/grpc';
 import { RedisPubSubService } from '../websocket/redis-pubsub.service';
 import { ChatTypeDto } from './dto/create-chat.dto';
+import { MemberRoleDto } from './dto/add-member.dto';
 import type { CreateChatDto } from './dto/create-chat.dto';
 import type { AddMemberDto } from './dto/add-member.dto';
 import type { UpdateMemberRoleDto } from './dto/update-role.dto';
@@ -15,6 +16,12 @@ const CHAT_TYPE_MAP: Record<ChatTypeDto, ChatType> = {
   [ChatTypeDto.DIRECT]: ChatType.CHAT_TYPE_DIRECT,
   [ChatTypeDto.GROUP]: ChatType.CHAT_TYPE_GROUP,
   [ChatTypeDto.CHANNEL]: ChatType.CHAT_TYPE_CHANNEL,
+};
+
+const MEMBER_ROLE_MAP: Record<MemberRoleDto, ChatMemberRole> = {
+  [MemberRoleDto.OWNER]: ChatMemberRole.CHAT_MEMBER_ROLE_OWNER,
+  [MemberRoleDto.ADMIN]: ChatMemberRole.CHAT_MEMBER_ROLE_ADMIN,
+  [MemberRoleDto.MEMBER]: ChatMemberRole.CHAT_MEMBER_ROLE_MEMBER,
 };
 
 @Injectable()
@@ -93,8 +100,8 @@ export class ChatsService {
       {
         chatId,
         requestingUserId,
-        targetUserId: dto.targetUserId,
-        role: dto.role,
+        targetUserId: dto.userId,
+        role: MEMBER_ROLE_MAP[dto.role],
         canReadFrom: dto.canReadFrom ? new Date(dto.canReadFrom) : undefined,
       },
       metadata,
@@ -103,7 +110,7 @@ export class ChatsService {
     await this.pubSub.publish(this.pubSub.chatChannel(chatId), {
       event: 'chat:member_added',
       chatId,
-      data: { chatId, userId: dto.targetUserId, addedBy: requestingUserId },
+      data: { chatId, userId: dto.userId, addedBy: requestingUserId },
     });
 
     return result;
@@ -141,7 +148,7 @@ export class ChatsService {
         chatId,
         requestingUserId,
         targetUserId,
-        newRole: dto.newRole,
+        newRole: MEMBER_ROLE_MAP[dto.newRole],
       },
       metadata,
     );
