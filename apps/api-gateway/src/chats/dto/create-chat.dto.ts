@@ -5,14 +5,18 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
-  IsUUID,
 } from 'class-validator';
-import { ChatType } from '@gomin/grpc';
+
+export enum ChatTypeDto {
+  DIRECT = 'DIRECT',
+  GROUP = 'GROUP',
+  CHANNEL = 'CHANNEL',
+}
 
 export class CreateChatDto {
-  @ApiProperty({ enum: ChatType, example: ChatType.CHAT_TYPE_DIRECT })
-  @IsEnum(ChatType)
-  type!: ChatType;
+  @ApiProperty({ enum: ChatTypeDto, example: ChatTypeDto.DIRECT })
+  @IsEnum(ChatTypeDto)
+  type!: ChatTypeDto;
 
   @ApiPropertyOptional({ description: 'Required for GROUP and CHANNEL types' })
   @IsOptional()
@@ -22,9 +26,10 @@ export class CreateChatDto {
 
   @ApiProperty({
     type: [String],
-    description: 'User IDs of members to include (besides yourself)',
+    description: 'Usernames of members to include (besides yourself)',
   })
   @IsArray()
-  @IsUUID(undefined, { each: true })
-  memberUserIds!: string[];
+  @IsString({ each: true })
+  @IsNotEmpty({ each: true })
+  memberUsernames!: string[];
 }

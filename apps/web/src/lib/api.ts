@@ -106,7 +106,7 @@ export const chatsApi = {
   createChat: (dto: {
     type: ChatType;
     name?: string;
-    memberUserIds: string[];
+    memberUsernames: string[];
   }): Promise<{ chat: Chat }> =>
     apiClient.post('/chats', dto).then((r) => r.data),
 

@@ -11,7 +11,7 @@ import {
   Users,
 } from 'lucide-react';
 import * as ScrollArea from '@radix-ui/react-scroll-area';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '../store/auth.store';
 import { useCryptoStore } from '../store/crypto.store';
 import { authApi, chatsApi } from '../lib/api';
@@ -21,6 +21,7 @@ import {
   initSocket,
   subscribeManyChats,
 } from '../lib/socket';
+import type { Chat, Message } from '../types';
 import { cn, formatDate, truncate } from '../lib/utils';
 import type { Chat } from '../types';
 import { Badge } from './ui/badge';
@@ -85,6 +86,7 @@ export function Layout() {
   const { user, sessionToken, privateKey, logout } = useAuthStore();
   const clearCrypto = useCryptoStore((s) => s.clearAll);
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [socketReady, setSocketReady] = useState(false);
 
   // Init socket when we have both token and private key
@@ -101,7 +103,6 @@ export function Layout() {
     queryKey: ['chats'],
     queryFn: () => chatsApi.getChats(),
     enabled: !!sessionToken && !!privateKey,
-    refetchInterval: 10000,
   });
 
   // Subscribe to all chats for WS events
@@ -113,6 +114,50 @@ export function Layout() {
     const chatIds = chatsData.chats.map((c) => c.id);
     subscribeManyChats(chatIds);
   }, [socketReady, chatsData?.chats]);
+
+  // Real-time: new chat created → add to list + subscribe
+  useEffect(() => {
+    if (!socketReady) return;
+    const socket = getSocket();
+    if (!socket) return;
+
+    const onChatNew = (data: { chat: Chat }) => {
+      const chat = data?.chat;
+      if (!chat) return;
+      queryClient.setQueryData<{ chats: Chat[] }>(['chats'], (old) => {
+        if (!old) return { chats: [chat] };
+        if (old.chats.some((c) => c.id === chat.id)) return old;
+        return { chats: [chat, ...old.chats] };
+      });
+      subscribeManyChats([chat.id]);
+    };
+
+    socket.on('chat:new', onChatNew);
+    return () => { socket.off('chat:new', onChatNew); };
+  }, [socketReady, queryClient]);
+
+  // Real-time: new message → update lastMessage in sidebar
+  useEffect(() => {
+    if (!socketReady) return;
+    const socket = getSocket();
+    if (!socket) return;
+
+    const onMessageNew = (data: { message: Message }) => {
+      const message = data?.message;
+      if (!message) return;
+      queryClient.setQueryData<{ chats: Chat[] }>(['chats'], (old) => {
+        if (!old) return old;
+        return {
+          chats: old.chats.map((c) =>
+            c.id === message.chatId ? { ...c, lastMessage: message } : c,
+          ),
+        };
+      });
+    };
+
+    socket.on('message:new', onMessageNew);
+    return () => { socket.off('message:new', onMessageNew); };
+  }, [socketReady, queryClient]);
 
   // Presence ping interval
   useEffect(() => {

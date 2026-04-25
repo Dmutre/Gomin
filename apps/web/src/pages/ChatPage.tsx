@@ -368,13 +368,11 @@ export function ChatPage() {
     }
   }, [chatId, decryptMessages, loadAndDecryptSenderKeys]);
 
-  // ── Initial load + polling ───────────────────────────────────────────────────
+  // ── Initial load ─────────────────────────────────────────────────────────────
 
   useEffect(() => {
     if (!chatId) return;
     fetchMessages();
-    const interval = setInterval(fetchMessages, 3000);
-    return () => clearInterval(interval);
   }, [chatId, fetchMessages]);
 
   // ── WebSocket subscription ───────────────────────────────────────────────────
@@ -453,14 +451,55 @@ export function ChatPage() {
       }
     };
 
+    const onMessageNew = async (data: { message: Message }) => {
+      const msg = data?.message;
+      if (!msg || msg.chatId !== chatId) return;
+      const chainKey = cryptoStore.getChainKey(chatId, msg.senderId);
+      let decrypted = msg;
+      if (chainKey) {
+        try {
+          const decryptedContent = await decryptWithChainKey(msg.payload, chainKey);
+          decrypted = { ...msg, decryptedContent };
+        } catch { /* leave encrypted */ }
+      }
+      setMessages((prev) => {
+        if (prev.some((m) => m.id === decrypted.id)) return prev;
+        return [...prev, decrypted];
+      });
+    };
+
+    const onMessageUpdated = async (data: { message: Message }) => {
+      const msg = data?.message;
+      if (!msg || msg.chatId !== chatId) return;
+      const chainKey = cryptoStore.getChainKey(chatId, msg.senderId);
+      let decrypted = msg;
+      if (chainKey) {
+        try {
+          const decryptedContent = await decryptWithChainKey(msg.payload, chainKey);
+          decrypted = { ...msg, decryptedContent };
+        } catch { /* leave encrypted */ }
+      }
+      setMessages((prev) => prev.map((m) => (m.id === decrypted.id ? decrypted : m)));
+    };
+
+    const onMessageDeleted = ({ messageId }: { messageId: string }) => {
+      setMessages((prev) => prev.filter((m) => m.id !== messageId));
+    };
+
     socket.on('typing:start', onTypingStart);
     socket.on('typing:stop', onTypingStop);
     socket.on('sender_key:received', onSenderKeyReceived);
+    socket.on('message:new', onMessageNew);
+    socket.on('message:updated', onMessageUpdated);
+    socket.on('message:deleted', onMessageDeleted);
 
     return () => {
       socket.off('typing:start', onTypingStart);
       socket.off('typing:stop', onTypingStop);
       socket.off('sender_key:received', onSenderKeyReceived);
+      socket.off('message:new', onMessageNew);
+      socket.off('message:updated', onMessageUpdated);
+      socket.off('message:deleted', onMessageDeleted);
       unsubscribeFromChat(chatId);
     };
   }, [chatId, user?.id, privateKey, cryptoStore]);

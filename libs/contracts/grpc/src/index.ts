@@ -22,6 +22,9 @@ export type {
   ChangePasswordResponse,
   ValidateSessionRequest,
   ValidateSessionResponse,
+  ResolveUsersByUsernamesRequest,
+  ResolvedUser,
+  ResolveUsersByUsernamesResponse,
 } from './types/generated/user-auth';
 export type {
   AuthenticateServiceIdentityRequest,

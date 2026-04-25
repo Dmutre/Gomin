@@ -10,6 +10,10 @@ export class UserService {
     return this.userRepository.findByUsername(username);
   }
 
+  async findByUsernames(usernames: string[]): Promise<UserDomainModel[]> {
+    return this.userRepository.findByUsernames(usernames);
+  }
+
   async findByEmail(email: string): Promise<UserDomainModel | null> {
     return this.userRepository.findByEmail(email);
   }

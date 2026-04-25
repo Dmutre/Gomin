@@ -13,6 +13,7 @@ import type {
   GetUserPublicKeyResponse,
   ChangePasswordResponse,
   ValidateSessionResponse,
+  ResolveUsersByUsernamesResponse,
 } from '@gomin/grpc';
 import {
   RegisterDto,
@@ -100,5 +101,13 @@ export class UserAuthGrpcController {
     sessionToken: string;
   }): Promise<ValidateSessionResponse> {
     return this.userAuthService.validateSession(data.sessionToken);
+  }
+
+  @GrpcMethod('UserAuthService', 'ResolveUsersByUsernames')
+  @RequirePermission(Permission.AUTH_SERVICE_USERS_READ)
+  async resolveUsersByUsernames(data: {
+    usernames: string[];
+  }): Promise<ResolveUsersByUsernamesResponse> {
+    return this.userAuthService.resolveUsersByUsernames(data.usernames);
   }
 }

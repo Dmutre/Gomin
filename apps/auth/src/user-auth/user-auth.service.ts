@@ -20,6 +20,7 @@ import type {
   GetUserPublicKeyResponse,
   ChangePasswordResponse,
   ValidateSessionResponse,
+  ResolveUsersByUsernamesResponse,
 } from '@gomin/grpc';
 import {
   toUserProfile,
@@ -313,6 +314,15 @@ export class UserAuthService {
       country: null,
       city: null,
       userAgent: deviceInfo.userAgent,
+    };
+  }
+
+  async resolveUsersByUsernames(
+    usernames: string[],
+  ): Promise<ResolveUsersByUsernamesResponse> {
+    const users = await this.userService.findByUsernames(usernames);
+    return {
+      users: users.map((u) => ({ userId: u.id, username: u.username })),
     };
   }
 

@@ -1,17 +1,27 @@
 import { Injectable } from '@nestjs/common';
 import { Metadata } from '@grpc/grpc-js';
+import { status } from '@grpc/grpc-js';
+import { MicroserviceException } from '@gomin/app';
 import { MicroserviceIdentityAuthService } from '@gomin/service-identity';
-import { CommunicationGrpcClient } from '@gomin/grpc';
+import { CommunicationGrpcClient, UserAuthGrpcClient, ChatType } from '@gomin/grpc';
 import { RedisPubSubService } from '../websocket/redis-pubsub.service';
+import { ChatTypeDto } from './dto/create-chat.dto';
 import type { CreateChatDto } from './dto/create-chat.dto';
 import type { AddMemberDto } from './dto/add-member.dto';
 import type { UpdateMemberRoleDto } from './dto/update-role.dto';
 import type { TransferOwnershipDto } from './dto/transfer-ownership.dto';
 
+const CHAT_TYPE_MAP: Record<ChatTypeDto, ChatType> = {
+  [ChatTypeDto.DIRECT]: ChatType.CHAT_TYPE_DIRECT,
+  [ChatTypeDto.GROUP]: ChatType.CHAT_TYPE_GROUP,
+  [ChatTypeDto.CHANNEL]: ChatType.CHAT_TYPE_CHANNEL,
+};
+
 @Injectable()
 export class ChatsService {
   constructor(
     private readonly communicationClient: CommunicationGrpcClient,
+    private readonly userAuthClient: UserAuthGrpcClient,
     private readonly identityAuthService: MicroserviceIdentityAuthService,
     private readonly pubSub: RedisPubSubService,
   ) {}
@@ -25,15 +35,43 @@ export class ChatsService {
 
   async createChat(userId: string, dto: CreateChatDto) {
     const metadata = await this.buildMetadata();
-    return this.communicationClient.createChat(
+
+    const { users } = await this.userAuthClient.resolveUsersByUsernames(
+      { usernames: dto.memberUsernames },
+      metadata,
+    );
+
+    if (users.length !== dto.memberUsernames.length) {
+      const found = new Set(users.map((u) => u.username));
+      const missing = dto.memberUsernames.filter((u) => !found.has(u));
+      throw new MicroserviceException(
+        `Users not found: ${missing.join(', ')}`,
+        status.NOT_FOUND,
+      );
+    }
+
+    const result = await this.communicationClient.createChat(
       {
-        type: dto.type,
+        type: CHAT_TYPE_MAP[dto.type],
         name: dto.name ?? '',
         creatorUserId: userId,
-        memberUserIds: dto.memberUserIds,
+        memberUserIds: users.map((u) => u.userId),
       },
       metadata,
     );
+
+    if (result.chat?.members) {
+      await Promise.all(
+        result.chat.members.map((member) =>
+          this.pubSub.publish(this.pubSub.userChannel(member.userId), {
+            event: 'chat:new',
+            data: result,
+          }),
+        ),
+      );
+    }
+
+    return result;
   }
 
   async getChat(userId: string, chatId: string) {

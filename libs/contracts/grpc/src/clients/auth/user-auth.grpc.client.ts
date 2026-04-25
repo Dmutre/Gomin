@@ -23,6 +23,8 @@ import type {
   ChangePasswordResponse,
   ValidateSessionRequest,
   ValidateSessionResponse,
+  ResolveUsersByUsernamesRequest,
+  ResolveUsersByUsernamesResponse,
 } from '../../types/generated/user-auth';
 
 export interface IUserAuthService {
@@ -56,6 +58,10 @@ export interface IUserAuthService {
     data: ValidateSessionRequest,
     metadata?: Metadata,
   ): Observable<ValidateSessionResponse>;
+  resolveUsersByUsernames(
+    data: ResolveUsersByUsernamesRequest,
+    metadata?: Metadata,
+  ): Observable<ResolveUsersByUsernamesResponse>;
 }
 
 @Injectable()
@@ -125,5 +131,14 @@ export class UserAuthGrpcClient implements OnModuleInit {
     metadata?: Metadata,
   ): Promise<ValidateSessionResponse> {
     return firstValueFrom(this.service.validateSession(data, metadata));
+  }
+
+  resolveUsersByUsernames(
+    data: ResolveUsersByUsernamesRequest,
+    metadata?: Metadata,
+  ): Promise<ResolveUsersByUsernamesResponse> {
+    return firstValueFrom(
+      this.service.resolveUsersByUsernames(data, metadata),
+    );
   }
 }

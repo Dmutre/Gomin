@@ -47,42 +47,41 @@ export function ChatsPage() {
   const [chatType, setChatType] = useState<ChatType>('DIRECT');
   const [chatName, setChatName] = useState('');
   const [memberInput, setMemberInput] = useState('');
-  const [memberIds, setMemberIds] = useState<string[]>([]);
+  const [memberUsernames, setMemberUsernames] = useState<string[]>([]);
   const [creating, setCreating] = useState(false);
 
   function addMember() {
-    const id = memberInput.trim();
-    if (!id || memberIds.includes(id)) return;
-    setMemberIds((prev) => [...prev, id]);
+    const username = memberInput.trim();
+    if (!username || memberUsernames.includes(username)) return;
+    setMemberUsernames((prev) => [...prev, username]);
     setMemberInput('');
   }
 
-  function removeMember(id: string) {
-    setMemberIds((prev) => prev.filter((m) => m !== id));
+  function removeMember(username: string) {
+    setMemberUsernames((prev) => prev.filter((m) => m !== username));
   }
 
   async function handleCreate() {
     if (!user || !privateKey) return;
-    if (chatType !== 'DIRECT' && memberIds.length === 0) {
+    if (chatType !== 'DIRECT' && memberUsernames.length === 0) {
       toast.error('Add at least one member');
       return;
     }
 
     setCreating(true);
     try {
-      const allMemberIds = [...new Set([...memberIds])];
       const { chat } = await chatsApi.createChat({
         type: chatType,
         name: chatName || undefined,
-        memberUserIds: allMemberIds,
+        memberUsernames,
       });
 
       // Generate our chain key and distribute to all members
       const chainKey = generateChainKey();
       setChainKey(chat.id, user.id, chainKey);
 
-      // Encrypt chain key for each member + ourselves
-      const recipientIds = [...new Set([...allMemberIds, user.id])];
+      // Encrypt chain key for each member + ourselves (use resolved userIds from chat)
+      const recipientIds = [...new Set([...chat.members.map((m) => m.userId), user.id])];
       const keysToDistribute: Array<{
         senderId: string;
         recipientId: string;
@@ -131,7 +130,7 @@ export function ChatsPage() {
     setChatType('DIRECT');
     setChatName('');
     setMemberInput('');
-    setMemberIds([]);
+    setMemberUsernames([]);
   }
 
   return (
@@ -202,7 +201,7 @@ export function ChatsPage() {
             {/* Members */}
             <div className="flex flex-col gap-2">
               <label className="text-sm font-medium">
-                Member User IDs
+                Members
                 {chatType === 'DIRECT' && (
                   <span className="text-muted-foreground ml-1">
                     (one required)
@@ -213,7 +212,7 @@ export function ChatsPage() {
                 <Input
                   value={memberInput}
                   onChange={(e) => setMemberInput(e.target.value)}
-                  placeholder="Paste user ID"
+                  placeholder="Enter username"
                   onKeyDown={(e) =>
                     e.key === 'Enter' && (e.preventDefault(), addMember())
                   }
@@ -228,16 +227,16 @@ export function ChatsPage() {
                   Add
                 </Button>
               </div>
-              {memberIds.length > 0 && (
+              {memberUsernames.length > 0 && (
                 <div className="flex flex-wrap gap-1.5 mt-1">
-                  {memberIds.map((id) => (
+                  {memberUsernames.map((username) => (
                     <span
-                      key={id}
+                      key={username}
                       className="flex items-center gap-1 rounded-full bg-accent px-2 py-0.5 text-xs"
                     >
-                      <span className="font-mono">{id.slice(0, 8)}…</span>
+                      <span>@{username}</span>
                       <button
-                        onClick={() => removeMember(id)}
+                        onClick={() => removeMember(username)}
                         className="text-muted-foreground hover:text-foreground"
                       >
                         <X className="h-3 w-3" />

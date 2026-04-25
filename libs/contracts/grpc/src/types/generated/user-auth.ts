@@ -155,3 +155,16 @@ export interface ValidateSessionResponse {
   username: string;
   email: string;
 }
+
+export interface ResolveUsersByUsernamesRequest {
+  usernames: string[];
+}
+
+export interface ResolvedUser {
+  userId: string;
+  username: string;
+}
+
+export interface ResolveUsersByUsernamesResponse {
+  users: ResolvedUser[];
+}

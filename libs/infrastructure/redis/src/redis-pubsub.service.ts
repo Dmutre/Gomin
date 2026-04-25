@@ -17,6 +17,7 @@ export type PubSubEventType =
   | 'message:read_receipt'
   | 'typing:start'
   | 'typing:stop'
+  | 'chat:new'
   | 'chat:member_added'
   | 'chat:member_removed'
   | 'presence:update'
