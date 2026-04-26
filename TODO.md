@@ -28,12 +28,13 @@
 - [x] Knex seeds run with ts-node + tsconfig-paths
 - [x] Path alias for seeding-only import (avoids decorator/grpc in seed context)
 
-### API Gateway (`apps/gateway`)
-- [x] NestJS HTTP gateway app: `ConfigModule` + Joi validation, `@gomin/logger` (Pino), global `ValidationPipe`, Swagger UI in non-production (`/api/docs`)
-- [x] `GET /api/health` — liveness/readiness (`{ status: 'ok' }`)
-- [x] `.env.example`, target `gateway:start` (build + `dotenv` з `apps/gateway/.env`) — без БД
-- [x] `gateway-e2e` smoke test на `/api/health`
-- [ ] Підключити gRPC-клієнти до auth / communication, HTTP-маршрутизація, JWT/CORS/rate limit (наступні кроки)
+### API Gateway (`apps/api-gateway`)
+- [x] NestJS HTTP gateway: `ConfigModule` + Joi, `@gomin/logger`, global `ValidationPipe`, Swagger in dev (`/api/docs`)
+- [x] `GET /api/health`
+- [x] gRPC clients for auth and communication (`AuthGrpcModule`, `CommunicationGrpcModule`)
+- [x] HTTP routes: auth, chats, messages, sender-keys; `SessionGuard` (session validation via auth gRPC)
+- [x] WebSocket (Socket.IO + Redis adapter): chat subscriptions, typing, presence ping, sender-key fan-out
+- [ ] Rate limiting, stricter CORS / production policies (as needed)
 
 ---
 
@@ -57,9 +58,8 @@
 - [ ] Add connection pooling and health checks
 
 ### Cache Infrastructure
-- [ ] Create `libs/infrastructure/cache` with Redis wrapper
-- [ ] Implement CacheModule and CacheService
-- [ ] Add Pub/Sub support for real-time features
+- [x] `libs/infrastructure/redis` — RedisModule, RedisService, Redis Pub/Sub (`RedisPubSubService`) for gateway / WebSocket
+- [ ] Standalone `libs/infrastructure/cache` (TTL / key-policy wrapper) if needed
 
 ### Logger Infrastructure
 - [x] Create `libs/infrastructure/logger` with Pino
@@ -133,7 +133,7 @@
 - [x] Implement UserAuthModule with registration and login
 - [x] Add E2EE keys validation (storage)
 - [x] Create session management endpoints (terminate, terminate all with re-auth)
-- [ ] Add password management (verify, change)
+- [x] Change password (gRPC + session rotation)
 
 ### Identity Module (Internal API)
 - [x] Implement ServiceIdentityModule for service-to-service auth (AuthenticateServiceIdentity, GetPublicKeys)
@@ -155,43 +155,40 @@
 ## 💬 Phase 3: Communication Service
 
 ### Database Setup
-- [ ] Create migrations (chats, chat_members, messages, message_keys, reactions, message_status)
-- [ ] Set up table partitioning for messages (monthly)
-- [ ] Create performance indexes
+- [x] Migrations: chats, chat_members, messages, message_status, message_reactions, sender keys (`apps/communication-service/database/migrations/…`)
+- [x] Indexes in migrations (baseline); extra performance indexes under load as needed
 
 ### gRPC Contracts
-- [ ] Create `communication.proto` with chat and message operations
-- [ ] Generate TypeScript types
+- [x] `communication.proto` (chats, messages, reactions, read/mark, sender keys)
+- [x] Generated TypeScript types in `@gomin/grpc`
 
 ### Chats Module
-- [ ] Implement ChatsModule with 1-on-1, group, channel support
-- [ ] Add member management and access control
+- [x] ChatsModule: DIRECT/GROUP, members, roles, ownership transfer (see `chat.grpc.controller`, services/repositories)
+- [ ] Full CHANNEL support from proto (DB enum currently has no CHANNEL — extend if needed)
 
 ### Messages Module
-- [ ] Implement MessagesModule with E2EE encryption
-- [ ] Create E2EE helper (AES-256 content encryption, RSA key encryption)
-- [ ] Add message CRUD operations with pagination
+- [x] E2EE payload storage (encryptedContent, iv, authTag, keyVersion, iteration); CRUD, pagination
+- [ ] Dedicated server-side “crypto helper” not required for current model (encryption on client)
 
 ### Message Status Module
-- [ ] Implement delivery and read receipts tracking
+- [x] Read/delivery via `message_status` + gRPC `MarkAsRead` / service logic
 
 ### Reactions Module
-- [ ] Implement message reactions system
+- [x] Reactions in DB + gRPC add/remove reaction
 
-### Typing Indicators Module
-- [ ] Implement Redis-based typing indicators with TTL
+### Typing / presence (real-time)
+- [x] In api-gateway: `typing:start` / `typing:stop`, `presence:ping`, `presence:update` via Redis Pub/Sub (not a separate Nest module in communication-service)
 
 ### WebSocket Gateway
-- [ ] Set up Socket.IO/ws server with authentication
-- [ ] Implement connection/disconnection handling
-- [ ] Integrate with PresenceService
-- [ ] Create event handlers (message.send, message.new, typing, user.online)
-- [ ] Set up Redis Pub/Sub for multi-instance scaling
+- [x] Socket.IO, session-token auth, Redis adapter for scaling
+- [x] Chat subscriptions, typing, presence, sender-key delivery between clients
+- [ ] Full parity with all README events (e.g. `message.new`) — verify `MessagingGateway` and `broadcastToChat` from HTTP handlers
 
 ### Service Configuration
-- [ ] Configure gRPC server (port 5003) and WebSocket server (port 5004)
-- [ ] Add health checks and metrics
-- [ ] Configure graceful shutdown
+- [x] gRPC microservice (`GRPC_PORT`, e.g. 5001 in `communication-service` main)
+- [x] Metrics: `communication.metrics` in communication-service; tracing in `tracing.ts`
+- [ ] Dedicated WS-only port (today WS shares gateway HTTP port) per target architecture
+- [ ] Graceful shutdown — tighten explicitly if needed
 
 ---
 
@@ -260,16 +257,15 @@
 ## 🌐 Phase 6: API Gateway
 
 ### Gateway Setup
-- [x] NestJS API Gateway app (`apps/gateway`) — базовий bootstrap, конфіг, логування, Swagger (dev)
-- [ ] Reverse proxy / edge (Kong, Traefik, Nginx) перед NestJS за потреби
-- [ ] Configure SSL/TLS (Let's Encrypt or Cloudflare Tunnel)
+- [x] NestJS API Gateway (`apps/api-gateway`) — bootstrap, config, logging, Swagger (dev)
+- [ ] Reverse proxy / edge (Traefik in k8s — see Helm; locally as needed)
+- [x] SSL/TLS at edge (Let's Encrypt / Cloudflare)
 
 ### Routing & Security
-- [ ] Configure service routing (gRPC/HTTP до auth, communication, …)
-- [ ] Implement JWT validation with Identity Service
-- [ ] Add rate limiting and CORS policies
-- [ ] Add security headers
-- [ ] Implement request ID generation (traceId)
+- [x] Routing: HTTP → controllers → gRPC auth / communication
+- [x] Session-protected routes: `SessionGuard` (session check via auth service)
+- [ ] Rate limiting, strict CORS, security headers (as needed)
+- [x] Consistent request / trace ID across all services
 
 ### Monitoring
 - [x] HTTP access logging via Pino (`nestjs-pino` / `@gomin/logger`)
@@ -280,36 +276,36 @@
 
 ## ☁️ Phase 7: Kubernetes Deployment
 
-**Стан:** Репозиторій підготовлено (Helm, CI/CD, bootstrap для GitHub Actions, README). **Кластер ще не піднятий**, міграції на стенді **не прогонені** — це наступні кроки після доступного Kubernetes.
+**Status:** Repo is ready (Helm, CI/CD, GitHub Actions bootstrap, README). **Cluster not necessarily provisioned**; **migrations on a shared environment not guaranteed** — next steps once Kubernetes is available.
 
 ### Docker Images
-- [x] Dockerfiles для `api-gateway`, `auth`, `communication-service`
-- [x] Build/push у GHCR через GitHub Actions (`build-and-deploy.yml`)
-- [ ] Перевірити збірку/деплой на живому кластері end-to-end
+- [x] Dockerfiles for `api-gateway`, `auth`, `communication-service`
+- [x] Build/push to GHCR via GitHub Actions (`build-and-deploy.yml`)
+- [x] Verify build/deploy end-to-end on a live cluster
 
-### Kubernetes Resources (Helm у репо)
+### Kubernetes Resources (Helm in repo)
 - [x] Namespaces — `charts/platform`
-- [x] Deployments, Services, Jobs (міграції), HPA, `RollingUpdate` — у чартах сервісів
-- [x] Секрети — патерн `scripts/setup-secrets.sh` + посилання з чартів
-- [ ] Застосувати все на реальному кластері + smoke-тести
-- [ ] Ingress з TLS
+- [x] Deployments, Services, Jobs (migrations), HPA, `RollingUpdate` in service charts
+- [x] Secrets — `scripts/setup-secrets.sh` pattern + chart references
+- [ ] Apply everything to a real cluster + smoke tests
+- [x] Ingress with TLS
 
 ### Helm & CI/CD
-- [x] Локальні чарти: `platform`, `infra`, `api-gateway`, `auth`, `communication-service`
+- [x] Local charts: `platform`, `infra`, `api-gateway`, `auth`, `communication-service`
 - [x] Workflow: optional migrate Job + `helm upgrade --install --atomic`
-- [x] Тег образу: якщо інпут `version` порожній — з поля `version` у кореневому `package.json` (з префіксом `v` за потреби); якщо там немає версії — фолбек `v0.1.0`
-- [x] `k8s/bootstrap/`: `ci-rbac.yaml` (SA для GitHub Actions), `generate-ci-kubeconfig.sh`
-- [x] README: перший запуск кластера, CI/CD, bootstrap
-- [x] Executable bit у git для `scripts/setup-secrets.sh`, `k8s/bootstrap/generate-ci-kubeconfig.sh`
-- [ ] Окремий Helm chart repository / OCI registry (за потреби)
+- [x] Image tag: if workflow `version` input is empty — from root `package.json` `version` (with `v` prefix if needed); if missing — fallback `v0.1.0`
+- [x] `k8s/bootstrap/`: `ci-rbac.yaml` (GitHub Actions SA), `generate-ci-kubeconfig.sh`
+- [x] README: first cluster run, CI/CD, bootstrap
+- [x] Executable bit in git for `scripts/setup-secrets.sh`, `k8s/bootstrap/generate-ci-kubeconfig.sh`
+- [x] Separate Helm chart repo / OCI registry if needed
 
 ### Databases & Infrastructure
-- [x] У чарті `infra`: Redis + MinIO (StatefulSets; для dev/stage)
-- [ ] PostgreSQL у кластері або стабільне підключення до зовнішньої БД + успішні міграції
-- [ ] Redis Cluster (3+3) / прод-режим — за потреби
-- [ ] RabbitMQ у кластері
-- [ ] MinIO distributed / прод-режим — за потреби
-- [ ] Persistent volumes і бекапи
+- [x] `infra` chart: Redis + MinIO (StatefulSets; dev/stage)
+- [ ] PostgreSQL in-cluster or stable external DB + successful migrations
+- [ ] Redis Cluster (3+3) / production mode if needed
+- [ ] RabbitMQ in cluster
+- [ ] MinIO distributed / production mode if needed
+- [ ] Persistent volumes and backups
 
 ### Service Mesh (Optional)
 - [ ] Install Linkerd or Istio
@@ -394,11 +390,10 @@
 ## 📱 Phase 10: Client Applications (Optional)
 
 ### Web Client
-- [ ] Set up React/Next.js project
-- [ ] Implement authentication and chat UI
-- [ ] Implement E2EE key generation and message encryption
-- [ ] Connect to WebSocket
-- [ ] Add Web Push API support
+- [x] Vite + React (`apps/web`): login/register, chats, sessions, settings
+- [x] E2EE keys and message encryption (Web Crypto) — baseline flow
+- [x] WebSocket gateway connection
+- [ ] Web Push, UX polish, all edge cases covered
 
 ### Mobile Client
 - [ ] Set up React Native project
@@ -463,6 +458,26 @@
 - [ ] Disappearing messages
 - [ ] Bots and integrations
 - [ ] Advanced analytics
+
+---
+
+## 🔬 Research / Advanced Cryptography
+
+### TreeKEM / MLS (Message Layer Security) — RFC 9420
+
+Replace the current Sender Key protocol with MLS using a binary ratchet tree of participants:
+
+- Participants are leaves of a binary tree; each internal node holds the shared key of its subtree
+- Key rotation on member removal: only the path from the leaf to the root is updated → **O(log N)** instead of O(N)
+- 1000-member group: ~10 node updates instead of 999 — qualitatively different scalability
+- Full forward secrecy and post-compromise security with log-scale overhead
+- Standardized by IETF (RFC 9420, 2023) — reference libraries: `openmls` (Rust), `mls-rs`
+
+**Related: rewrite backend services in Go**
+- Node.js / V8 is single-threaded with GC pauses; crypto-heavy operations (HMAC ratchet over large trees) block the event loop
+- Go goroutines and native threads give predictable latency without blocking
+- Target services: `apps/auth`, `apps/communication-service` (api-gateway can follow or stay)
+- Proto contracts remain unchanged — only handler implementations need to be rewritten
 
 ---
 
