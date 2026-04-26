@@ -35,7 +35,7 @@ import {
   unsubscribeFromChat,
 } from '../lib/socket';
 import { cn } from '../lib/utils';
-import type { MemberRole, Message, SenderKey } from '../types';
+import type { MemberRole, Message, MessageReaction, SenderKey } from '../types';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Badge } from '../components/ui/badge';
@@ -272,6 +272,36 @@ function MessageBubble({
   );
 }
 
+function aggregateReactions(
+  raw: Array<{ userId?: string; emoji?: string } & Record<string, unknown>>,
+): MessageReaction[] {
+  const map = new Map<string, MessageReaction>();
+  for (const r of raw ?? []) {
+    if (!r.emoji) continue;
+    const entry = map.get(r.emoji);
+    if (entry) {
+      entry.count++;
+      if (r.userId) entry.userIds.push(r.userId);
+    } else {
+      map.set(r.emoji, {
+        emoji: r.emoji,
+        count: 1,
+        userIds: r.userId ? [r.userId] : [],
+      });
+    }
+  }
+  return Array.from(map.values());
+}
+
+function normalizeMessageReactions(msg: Message): Message {
+  if (!msg.reactions?.length) return msg;
+  const first = msg.reactions[0];
+  if (typeof first.count === 'number' && first.count > 0 && first.userIds !== undefined) {
+    return msg;
+  }
+  return { ...msg, reactions: aggregateReactions(msg.reactions as never) };
+}
+
 // ── Main ChatPage ─────────────────────────────────────────────────────────────
 
 export function ChatPage() {
@@ -373,12 +403,10 @@ export function ChatPage() {
       const { messages: raw } = await messagesApi.getMessages(chatId, {
         limit: 50,
       });
-      const decrypted = await decryptMessages(raw);
-      const sorted = [...decrypted].sort(
-        (a, b) =>
-          new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
-      );
-      setMessages(sorted);
+      const normalized = raw.map(normalizeMessageReactions);
+      const decrypted = await decryptMessages(normalized);
+      // Backend returns DESC (newest first); reverse to get ASC for display
+      setMessages([...decrypted].reverse());
     } catch {
       // ignore
     }
@@ -501,7 +529,7 @@ export function ChatPage() {
     const onMessageNew = async (data: { message: Message }) => {
       const msg = data?.message;
       if (!msg || msg.chatId !== chatId) return;
-      const decrypted = await tryDecrypt(msg);
+      const decrypted = await tryDecrypt(normalizeMessageReactions(msg));
       setMessages((prev) => {
         if (prev.some((m) => m.id === decrypted.id)) return prev;
         return [...prev, decrypted];
@@ -511,7 +539,7 @@ export function ChatPage() {
     const onMessageUpdated = async (data: { message: Message }) => {
       const msg = data?.message;
       if (!msg || msg.chatId !== chatId) return;
-      const decrypted = await tryDecrypt(msg);
+      const decrypted = await tryDecrypt(normalizeMessageReactions(msg));
       setMessages((prev) =>
         prev.map((m) => (m.id === decrypted.id ? decrypted : m)),
       );
@@ -608,7 +636,8 @@ export function ChatPage() {
   // ── Scroll to bottom on new messages ─────────────────────────────────────────
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    const viewport = scrollAreaRef.current;
+    if (viewport) viewport.scrollTop = viewport.scrollHeight;
   }, [messages.length]);
 
   // ── Send message ─────────────────────────────────────────────────────────────
