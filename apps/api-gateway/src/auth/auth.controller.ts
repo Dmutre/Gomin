@@ -125,4 +125,5 @@ export class AuthController {
   ) {
     return this.authService.getUserPublicKey(user.sessionToken, userId);
   }
+
 }

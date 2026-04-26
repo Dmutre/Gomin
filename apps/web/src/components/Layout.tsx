@@ -14,7 +14,7 @@ import * as ScrollArea from '@radix-ui/react-scroll-area';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '../store/auth.store';
 import { useCryptoStore } from '../store/crypto.store';
-import { authApi, chatsApi } from '../lib/api';
+import { authApi, chatsApi, normalizeChat } from '../lib/api';
 import {
   disconnectSocket,
   getSocket,
@@ -131,8 +131,9 @@ export function Layout() {
     if (!socket) return;
 
     const onChatNew = (data: { chat: Chat }) => {
-      const chat = data?.chat;
-      if (!chat) return;
+      const raw = data?.chat;
+      if (!raw) return;
+      const chat = normalizeChat(raw);
       queryClient.setQueryData<{ chats: Chat[] }>(['chats'], (old) => {
         if (!old) return { chats: [chat] };
         if (old.chats.some((c) => c.id === chat.id)) return old;

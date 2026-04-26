@@ -99,19 +99,29 @@ export const authApi = {
 
 // ── Chats ─────────────────────────────────────────────────────────────────────
 
+const CHAT_TYPE_NUM: Record<number, ChatType> = { 1: 'DIRECT', 2: 'GROUP', 3: 'CHANNEL' };
+
+export function normalizeChat(raw: Chat): Chat {
+  return {
+    ...raw,
+    type: (typeof raw.type === 'number' ? CHAT_TYPE_NUM[raw.type] : raw.type) ?? 'DIRECT',
+    name: raw.name || undefined,
+  };
+}
+
 export const chatsApi = {
   getChats: (): Promise<{ chats: Chat[] }> =>
-    apiClient.get('/chats').then((r) => r.data),
+    apiClient.get('/chats').then((r) => ({ chats: (r.data.chats ?? []).map(normalizeChat) })),
 
   createChat: (dto: {
     type: ChatType;
     name?: string;
     memberUsernames: string[];
   }): Promise<{ chat: Chat }> =>
-    apiClient.post('/chats', dto).then((r) => r.data),
+    apiClient.post('/chats', dto).then((r) => ({ chat: normalizeChat(r.data.chat) })),
 
   getChat: (chatId: string): Promise<{ chat: Chat }> =>
-    apiClient.get(`/chats/${chatId}`).then((r) => r.data),
+    apiClient.get(`/chats/${chatId}`).then((r) => ({ chat: normalizeChat(r.data.chat) })),
 
   addMember: (
     chatId: string,
