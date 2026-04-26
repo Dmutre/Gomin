@@ -49,6 +49,8 @@ export class ChatService {
   async createChat(
     options: CreateChatOptions,
   ): Promise<{ chat: ChatDomainModel; members: ChatMemberDomainModel[] }> {
+    await this.assertNoDuplicateDirectChat(options);
+
     const chat = await this.chatRepo.create({
       type: options.type,
       name: options.name,
@@ -87,6 +89,28 @@ export class ChatService {
     this.commMetrics.recordMembersAdded(allMembers.length);
 
     return { chat, members: [creator, ...otherMembers] };
+  }
+
+  private async assertNoDuplicateDirectChat(
+    options: CreateChatOptions,
+  ): Promise<void> {
+    if (options.type !== 'DIRECT') return;
+
+    const otherUserId = options.memberUserIds.find(
+      (id) => id !== options.creatorUserId,
+    );
+    if (!otherUserId) return;
+
+    const existing = await this.chatRepo.findDirectBetween(
+      options.creatorUserId,
+      otherUserId,
+    );
+    if (existing) {
+      throw new MicroserviceException(
+        `DIRECT_EXISTS:${existing.id}`,
+        status.ALREADY_EXISTS,
+      );
+    }
   }
 
   async getChat(

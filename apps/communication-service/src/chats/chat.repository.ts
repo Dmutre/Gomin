@@ -46,6 +46,30 @@ export class ChatRepository {
     return rows.map(ChatMapper.toDomain);
   }
 
+  async findDirectBetween(
+    userIdA: string,
+    userIdB: string,
+  ): Promise<ChatDomainModel | null> {
+    const bChatIds = this.knex(TABLE_CHAT_MEMBERS)
+      .select('chatId')
+      .where('userId', userIdB)
+      .whereNull('leftAt');
+
+    const row = await this.knex<ChatDb>(this.table)
+      .join(
+        TABLE_CHAT_MEMBERS,
+        `${TABLE_CHATS}.id`,
+        `${TABLE_CHAT_MEMBERS}.chatId`,
+      )
+      .where(`${TABLE_CHATS}.type`, 'DIRECT')
+      .where(`${TABLE_CHAT_MEMBERS}.userId`, userIdA)
+      .whereNull(`${TABLE_CHAT_MEMBERS}.leftAt`)
+      .whereIn(`${TABLE_CHATS}.id`, bChatIds)
+      .select(`${TABLE_CHATS}.*`)
+      .first();
+    return row ? ChatMapper.toDomain(row) : null;
+  }
+
   async create(params: CreateChatParams): Promise<ChatDomainModel> {
     const now = new Date();
     const [row] = await this.knex<ChatDb>(this.table)

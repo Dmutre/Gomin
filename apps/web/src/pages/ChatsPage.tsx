@@ -7,7 +7,7 @@ import { encryptChainKeyForRecipient, generateChainKey } from '../lib/crypto';
 import { useCryptoStore } from '../store/crypto.store';
 import { useAuthStore } from '../store/auth.store';
 import { toast } from '../store/toast.store';
-import type { ChatType, MemberRole } from '../types';
+import type { Chat, ChatType } from '../types';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import {
@@ -17,7 +17,6 @@ import {
   DialogTitle,
   DialogFooter,
 } from '../components/ui/dialog';
-import { Badge } from '../components/ui/badge';
 
 const CHAT_TYPE_OPTIONS: {
   value: ChatType;
@@ -66,6 +65,24 @@ export function ChatsPage() {
     if (chatType !== 'DIRECT' && memberUsernames.length === 0) {
       toast.error('Add at least one member');
       return;
+    }
+
+    // For DIRECT chats, navigate to the existing one if already in cache
+    if (chatType === 'DIRECT' && memberUsernames.length > 0) {
+      const cached = queryClient.getQueryData<{ chats: Chat[] }>(['chats']);
+      const existing = cached?.chats.find(
+        (c) =>
+          c.type === 'DIRECT' &&
+          c.members.some(
+            (m) => m.username === memberUsernames[0] && m.userId !== user.id,
+          ),
+      );
+      if (existing) {
+        setOpen(false);
+        resetForm();
+        navigate(`/chats/${existing.id}`);
+        return;
+      }
     }
 
     setCreating(true);
@@ -121,8 +138,15 @@ export function ChatsPage() {
     } catch (err: unknown) {
       const msg =
         (err as { response?: { data?: { message?: string } } })?.response?.data
-          ?.message ?? 'Failed to create chat';
-      toast.error(typeof msg === 'string' ? msg : 'Failed to create chat');
+          ?.message ?? '';
+      if (typeof msg === 'string' && msg.startsWith('DIRECT_EXISTS:')) {
+        const existingId = msg.slice('DIRECT_EXISTS:'.length);
+        setOpen(false);
+        resetForm();
+        navigate(`/chats/${existingId}`);
+        return;
+      }
+      toast.error(typeof msg === 'string' && msg ? msg : 'Failed to create chat');
     } finally {
       setCreating(false);
     }

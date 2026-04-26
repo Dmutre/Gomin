@@ -332,6 +332,7 @@ export function ChatPage() {
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const activeChatIdRef = useRef<string | undefined>(undefined);
 
   // ── Fetch chat metadata ──────────────────────────────────────────────────────
 
@@ -391,8 +392,8 @@ export function ChatPage() {
 
   const fetchMessages = useCallback(async () => {
     if (!chatId) return;
+    const fetchingFor = chatId;
     try {
-      // Load sender keys first so messages can be decrypted
       try {
         const { keys } = await senderKeysApi.getSenderKeys(chatId);
         await loadAndDecryptSenderKeys(keys);
@@ -405,7 +406,8 @@ export function ChatPage() {
       });
       const normalized = raw.map(normalizeMessageReactions);
       const decrypted = await decryptMessages(normalized);
-      // Backend returns DESC (newest first); reverse to get ASC for display
+      // Guard: discard if user switched chats while this fetch was in flight
+      if (activeChatIdRef.current !== fetchingFor) return;
       setMessages([...decrypted].reverse());
     } catch {
       // ignore
@@ -416,6 +418,8 @@ export function ChatPage() {
 
   useEffect(() => {
     if (!chatId) return;
+    activeChatIdRef.current = chatId;
+    setMessages([]);
     fetchMessages();
   }, [chatId, fetchMessages]);
 

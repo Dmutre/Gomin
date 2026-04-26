@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { useEffect, useRef, useState } from 'react';
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import {
   MessageSquare,
   Settings,
@@ -14,6 +14,7 @@ import * as ScrollArea from '@radix-ui/react-scroll-area';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '../store/auth.store';
 import { useCryptoStore } from '../store/crypto.store';
+import { toast } from '../store/toast.store';
 import { authApi, chatsApi, normalizeChat } from '../lib/api';
 import {
   disconnectSocket,
@@ -95,8 +96,30 @@ export function Layout() {
   const { user, sessionToken, privateKey, logout } = useAuthStore();
   const clearCrypto = useCryptoStore((s) => s.clearAll);
   const navigate = useNavigate();
+  const location = useLocation();
   const queryClient = useQueryClient();
   const [socketReady, setSocketReady] = useState(false);
+
+  const currentChatId = location.pathname.startsWith('/chats/')
+    ? location.pathname.split('/chats/')[1]
+    : undefined;
+  const currentChatIdRef = useRef<string | undefined>(undefined);
+  useEffect(() => {
+    currentChatIdRef.current = currentChatId;
+  }, [currentChatId]);
+
+  // Reset unread count when entering a chat
+  useEffect(() => {
+    if (!currentChatId) return;
+    queryClient.setQueryData<{ chats: Chat[] }>(['chats'], (old) => {
+      if (!old) return old;
+      return {
+        chats: old.chats.map((c) =>
+          c.id === currentChatId ? { ...c, unreadCount: 0 } : c,
+        ),
+      };
+    });
+  }, [currentChatId, queryClient]);
 
   // Init socket when we have both token and private key
   useEffect(() => {
@@ -157,14 +180,31 @@ export function Layout() {
     const onMessageNew = (data: { message: Message }) => {
       const message = data?.message;
       if (!message) return;
+      const isCurrentChat = message.chatId === currentChatIdRef.current;
       queryClient.setQueryData<{ chats: Chat[] }>(['chats'], (old) => {
         if (!old) return old;
         return {
           chats: old.chats.map((c) =>
-            c.id === message.chatId ? { ...c, lastMessage: message } : c,
+            c.id === message.chatId
+              ? {
+                  ...c,
+                  lastMessage: message,
+                  unreadCount: isCurrentChat
+                    ? (c.unreadCount ?? 0)
+                    : (c.unreadCount ?? 0) + 1,
+                }
+              : c,
           ),
         };
       });
+      if (!isCurrentChat) {
+        const cached = queryClient.getQueryData<{ chats: Chat[] }>(['chats']);
+        const chat = cached?.chats.find((c) => c.id === message.chatId);
+        const chatName = chat ? getChatDisplayName(chat, user?.id) : 'New message';
+        const sender = message.senderUsername ? `${message.senderUsername}: ` : '';
+        const preview = (message.decryptedContent ?? '🔒 Encrypted').slice(0, 50);
+        toast.info(`${chatName} — ${sender}${preview}`);
+      }
     };
 
     socket.on('message:new', onMessageNew);
