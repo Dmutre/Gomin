@@ -25,6 +25,7 @@ export type {
   ResolveUsersByUsernamesRequest,
   ResolvedUser,
   ResolveUsersByUsernamesResponse,
+  ResolveUsersByIdsRequest,
 } from './types/generated/user-auth';
 export type {
   AuthenticateServiceIdentityRequest,

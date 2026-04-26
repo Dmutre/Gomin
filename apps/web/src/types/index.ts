@@ -62,10 +62,10 @@ export interface Message {
   replyTo?: Message;
   reactions?: MessageReaction[];
   readBy?: string[];
+  isEdited?: boolean;
   createdAt: string;
   updatedAt?: string;
   deletedAt?: string;
-  // Client-side decrypted content
   decryptedContent?: string;
 }
 

@@ -63,7 +63,9 @@ export function RegisterPage() {
 
     try {
       if (!crypto.subtle) {
-        toast.error('Web Crypto API requires HTTPS or localhost. Open the app over https:// or via localhost.');
+        toast.error(
+          'Web Crypto API requires HTTPS or localhost. Open the app over https:// or via localhost.',
+        );
         return;
       }
 

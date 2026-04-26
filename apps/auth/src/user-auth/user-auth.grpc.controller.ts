@@ -110,4 +110,12 @@ export class UserAuthGrpcController {
   }): Promise<ResolveUsersByUsernamesResponse> {
     return this.userAuthService.resolveUsersByUsernames(data.usernames);
   }
+
+  @GrpcMethod('UserAuthService', 'ResolveUsersByIds')
+  @RequirePermission(Permission.AUTH_SERVICE_USERS_READ)
+  async resolveUsersByIds(data: {
+    userIds: string[];
+  }): Promise<ResolveUsersByUsernamesResponse> {
+    return this.userAuthService.resolveUsersByIds(data.userIds);
+  }
 }

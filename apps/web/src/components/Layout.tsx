@@ -40,7 +40,9 @@ function getChatDisplayName(chat: Chat, currentUserId?: string): string {
     const other = chat.members.find((m) => m.userId !== currentUserId);
     return other?.username ?? other?.userId ?? 'Unknown';
   }
-  return chat.name ?? chat.members.map((m) => m.username ?? m.userId).join(', ');
+  return (
+    chat.name ?? chat.members.map((m) => m.username ?? m.userId).join(', ')
+  );
 }
 
 function ChatListItem({ chat }: { chat: Chat }) {
@@ -140,7 +142,9 @@ export function Layout() {
     };
 
     socket.on('chat:new', onChatNew);
-    return () => { socket.off('chat:new', onChatNew); };
+    return () => {
+      socket.off('chat:new', onChatNew);
+    };
   }, [socketReady, queryClient]);
 
   // Real-time: new message → update lastMessage in sidebar
@@ -163,7 +167,9 @@ export function Layout() {
     };
 
     socket.on('message:new', onMessageNew);
-    return () => { socket.off('message:new', onMessageNew); };
+    return () => {
+      socket.off('message:new', onMessageNew);
+    };
   }, [socketReady, queryClient]);
 
   // Presence ping interval

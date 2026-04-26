@@ -49,6 +49,12 @@ export class UserRepository {
     return rows.map(UserMapper.toDomainModel);
   }
 
+  async findByIds(ids: string[]): Promise<UserDomainModel[]> {
+    if (ids.length === 0) return [];
+    const rows = await this.knex<UserDb>(this.tableName).whereIn('id', ids);
+    return rows.map(UserMapper.toDomainModel);
+  }
+
   async findByEmail(email: string): Promise<UserDomainModel | null> {
     const userDb = await this.knex<UserDb>(this.tableName)
       .where({ email })

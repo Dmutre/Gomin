@@ -15,6 +15,7 @@ service UserAuthService {
   rpc ChangePassword(ChangePasswordRequest) returns (ChangePasswordResponse);
   rpc ValidateSession(ValidateSessionRequest) returns (ValidateSessionResponse);
   rpc ResolveUsersByUsernames(ResolveUsersByUsernamesRequest) returns (ResolveUsersByUsernamesResponse);
+  rpc ResolveUsersByIds(ResolveUsersByIdsRequest) returns (ResolveUsersByUsernamesResponse);
 }
 
 enum DeviceType {
@@ -177,4 +178,8 @@ message ResolvedUser {
 
 message ResolveUsersByUsernamesResponse {
   repeated ResolvedUser users = 1;
+}
+
+message ResolveUsersByIdsRequest {
+  repeated string userIds = 1;
 }

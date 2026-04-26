@@ -3,7 +3,13 @@ import { Metadata } from '@grpc/grpc-js';
 import { status } from '@grpc/grpc-js';
 import { MicroserviceException } from '@gomin/app';
 import { MicroserviceIdentityAuthService } from '@gomin/service-identity';
-import { CommunicationGrpcClient, UserAuthGrpcClient, ChatType, ChatMemberRole } from '@gomin/grpc';
+import {
+  CommunicationGrpcClient,
+  UserAuthGrpcClient,
+  ChatType,
+  ChatMemberRole,
+} from '@gomin/grpc';
+import type { Chat } from '@gomin/grpc';
 import { RedisPubSubService } from '../websocket/redis-pubsub.service';
 import { ChatTypeDto } from './dto/create-chat.dto';
 import { MemberRoleDto } from './dto/add-member.dto';
@@ -40,6 +46,56 @@ export class ChatsService {
     return metadata;
   }
 
+  private async enrichChatWithUsernames(
+    chat: Chat,
+    metadata: Metadata,
+  ): Promise<Chat> {
+    const userIds = [...new Set((chat.members ?? []).map((m) => m.userId))];
+    if (!userIds.length) return chat;
+    try {
+      const { users } = await this.userAuthClient.resolveUsersByIds(
+        { userIds },
+        metadata,
+      );
+      const usernameMap = new Map(users.map((u) => [u.userId, u.username]));
+      return {
+        ...chat,
+        members: chat.members.map((m) => ({
+          ...m,
+          username: usernameMap.get(m.userId),
+        })),
+      } as Chat;
+    } catch {
+      return chat;
+    }
+  }
+
+  private async enrichChatsWithUsernames(
+    chats: Chat[],
+    metadata: Metadata,
+  ): Promise<Chat[]> {
+    const userIds = [
+      ...new Set(chats.flatMap((c) => (c.members ?? []).map((m) => m.userId))),
+    ];
+    if (!userIds.length) return chats;
+    try {
+      const { users } = await this.userAuthClient.resolveUsersByIds(
+        { userIds },
+        metadata,
+      );
+      const usernameMap = new Map(users.map((u) => [u.userId, u.username]));
+      return chats.map((c) => ({
+        ...c,
+        members: c.members.map((m) => ({
+          ...m,
+          username: usernameMap.get(m.userId),
+        })),
+      })) as Chat[];
+    } catch {
+      return chats;
+    }
+  }
+
   async createChat(userId: string, dto: CreateChatDto) {
     const metadata = await this.buildMetadata();
 
@@ -67,31 +123,48 @@ export class ChatsService {
       metadata,
     );
 
-    if (result.chat?.members) {
+    const enrichedChat = result.chat
+      ? await this.enrichChatWithUsernames(result.chat, metadata)
+      : result.chat;
+    const enrichedResult = { ...result, chat: enrichedChat };
+
+    if (enrichedChat?.members) {
       await Promise.all(
-        result.chat.members.map((member) =>
+        enrichedChat.members.map((member) =>
           this.pubSub.publish(this.pubSub.userChannel(member.userId), {
             event: 'chat:new',
-            data: result,
+            data: enrichedResult,
           }),
         ),
       );
     }
 
-    return result;
+    return enrichedResult;
   }
 
   async getChat(userId: string, chatId: string) {
     const metadata = await this.buildMetadata();
-    return this.communicationClient.getChat({ chatId, userId }, metadata);
+    const result = await this.communicationClient.getChat(
+      { chatId, userId },
+      metadata,
+    );
+    const enrichedChat = result.chat
+      ? await this.enrichChatWithUsernames(result.chat, metadata)
+      : result.chat;
+    return { ...result, chat: enrichedChat };
   }
 
   async getChats(userId: string, limit = 20, offset = 0) {
     const metadata = await this.buildMetadata();
-    return this.communicationClient.getChatsByUserId(
+    const result = await this.communicationClient.getChatsByUserId(
       { userId, limit, offset },
       metadata,
     );
+    const enrichedChats = await this.enrichChatsWithUsernames(
+      result.chats ?? [],
+      metadata,
+    );
+    return { ...result, chats: enrichedChats };
   }
 
   async addMember(requestingUserId: string, chatId: string, dto: AddMemberDto) {

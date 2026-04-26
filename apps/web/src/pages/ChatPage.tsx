@@ -34,8 +34,8 @@ import {
   subscribeToChat,
   unsubscribeFromChat,
 } from '../lib/socket';
-import { cn, formatTime, formatDate } from '../lib/utils';
-import type { Chat, MemberRole, Message, SenderKey } from '../types';
+import { cn } from '../lib/utils';
+import type { MemberRole, Message, SenderKey } from '../types';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Badge } from '../components/ui/badge';
@@ -55,6 +55,7 @@ interface MessageBubbleProps {
   message: Message;
   isOwn: boolean;
   chatId: string;
+  senderNames: Record<string, string>;
   onEdit: (message: Message) => void;
   onDelete: (messageId: string) => void;
   onReaction: (messageId: string, emoji: string) => void;
@@ -65,6 +66,7 @@ function MessageBubble({
   message,
   isOwn,
   chatId,
+  senderNames,
   onEdit,
   onDelete,
   onReaction,
@@ -75,6 +77,18 @@ function MessageBubble({
 
   const content = message.decryptedContent;
   const isEncrypted = !content;
+  const displayName =
+    message.senderUsername ??
+    senderNames[message.senderId] ??
+    message.senderId.slice(0, 8);
+  const createdAtDate = message.createdAt ? new Date(message.createdAt) : null;
+  const timeStr =
+    createdAtDate && !isNaN(createdAtDate.getTime())
+      ? createdAtDate.toLocaleTimeString([], {
+          hour: '2-digit',
+          minute: '2-digit',
+        })
+      : null;
 
   return (
     <div
@@ -85,7 +99,7 @@ function MessageBubble({
     >
       {/* Avatar */}
       <div className="shrink-0 h-7 w-7 rounded-full bg-accent flex items-center justify-center text-xs font-bold mt-1">
-        {(message.senderUsername ?? message.senderId)[0]?.toUpperCase()}
+        {displayName[0]?.toUpperCase()}
       </div>
 
       <div
@@ -99,12 +113,12 @@ function MessageBubble({
           )}
         >
           <span className="text-xs font-medium text-foreground">
-            {message.senderUsername ?? message.senderId.slice(0, 8)}
+            {displayName}
           </span>
-          <span className="text-[10px] text-muted-foreground">
-            {formatTime(message.createdAt)}
-          </span>
-          {message.updatedAt && message.updatedAt !== message.createdAt && (
+          {timeStr && (
+            <span className="text-[10px] text-muted-foreground">{timeStr}</span>
+          )}
+          {message.isEdited && (
             <span className="text-[10px] text-muted-foreground italic">
               (edited)
             </span>
@@ -305,7 +319,6 @@ export function ChatPage() {
     async (keys: SenderKey[]) => {
       if (!privateKey || !chatId) return;
       for (const key of keys) {
-        if (key.senderId === user?.id) continue; // Skip own key — we already have it
         const existing = cryptoStore.getChainKey(chatId, key.senderId);
         if (existing) continue;
         try {
@@ -315,11 +328,11 @@ export function ChatPage() {
           );
           cryptoStore.setChainKey(chatId, key.senderId, chainKey);
         } catch {
-          // Skip keys we can't decrypt
+          // ignore keys we can't decrypt
         }
       }
     },
-    [privateKey, chatId, user?.id, cryptoStore],
+    [privateKey, chatId, cryptoStore],
   );
 
   // ── Fetch and decrypt messages ───────────────────────────────────────────────
@@ -349,11 +362,7 @@ export function ChatPage() {
   const fetchMessages = useCallback(async () => {
     if (!chatId) return;
     try {
-      const { messages: raw } = await messagesApi.getMessages(chatId, {
-        limit: 50,
-      });
-
-      // Ensure sender keys are loaded
+      // Load sender keys first so messages can be decrypted
       try {
         const { keys } = await senderKeysApi.getSenderKeys(chatId);
         await loadAndDecryptSenderKeys(keys);
@@ -361,10 +370,17 @@ export function ChatPage() {
         // ignore
       }
 
+      const { messages: raw } = await messagesApi.getMessages(chatId, {
+        limit: 50,
+      });
       const decrypted = await decryptMessages(raw);
-      setMessages(decrypted);
+      const sorted = [...decrypted].sort(
+        (a, b) =>
+          new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+      );
+      setMessages(sorted);
     } catch {
-      // ignore polling errors silently
+      // ignore
     }
   }, [chatId, decryptMessages, loadAndDecryptSenderKeys]);
 
@@ -451,17 +467,41 @@ export function ChatPage() {
       }
     };
 
+    const tryDecrypt = async (msg: Message): Promise<Message> => {
+      let chainKey = cryptoStore.getChainKey(chatId, msg.senderId);
+      if (!chainKey && privateKey) {
+        try {
+          const { key } = await senderKeysApi.getSenderKeyBySender(
+            chatId,
+            msg.senderId,
+          );
+          if (key?.encryptedSenderKey) {
+            chainKey = await decryptChainKey(
+              key.encryptedSenderKey,
+              privateKey,
+            );
+            cryptoStore.setChainKey(chatId, msg.senderId, chainKey);
+          }
+        } catch {
+          /* ignore */
+        }
+      }
+      if (!chainKey) return msg;
+      try {
+        const decryptedContent = await decryptWithChainKey(
+          msg.payload,
+          chainKey,
+        );
+        return { ...msg, decryptedContent };
+      } catch {
+        return msg;
+      }
+    };
+
     const onMessageNew = async (data: { message: Message }) => {
       const msg = data?.message;
       if (!msg || msg.chatId !== chatId) return;
-      const chainKey = cryptoStore.getChainKey(chatId, msg.senderId);
-      let decrypted = msg;
-      if (chainKey) {
-        try {
-          const decryptedContent = await decryptWithChainKey(msg.payload, chainKey);
-          decrypted = { ...msg, decryptedContent };
-        } catch { /* leave encrypted */ }
-      }
+      const decrypted = await tryDecrypt(msg);
       setMessages((prev) => {
         if (prev.some((m) => m.id === decrypted.id)) return prev;
         return [...prev, decrypted];
@@ -471,19 +511,76 @@ export function ChatPage() {
     const onMessageUpdated = async (data: { message: Message }) => {
       const msg = data?.message;
       if (!msg || msg.chatId !== chatId) return;
-      const chainKey = cryptoStore.getChainKey(chatId, msg.senderId);
-      let decrypted = msg;
-      if (chainKey) {
-        try {
-          const decryptedContent = await decryptWithChainKey(msg.payload, chainKey);
-          decrypted = { ...msg, decryptedContent };
-        } catch { /* leave encrypted */ }
-      }
-      setMessages((prev) => prev.map((m) => (m.id === decrypted.id ? decrypted : m)));
+      const decrypted = await tryDecrypt(msg);
+      setMessages((prev) =>
+        prev.map((m) => (m.id === decrypted.id ? decrypted : m)),
+      );
     };
 
     const onMessageDeleted = ({ messageId }: { messageId: string }) => {
       setMessages((prev) => prev.filter((m) => m.id !== messageId));
+    };
+
+    const onReactionAdded = ({
+      chatId: cid,
+      messageId,
+      userId,
+      emoji,
+    }: {
+      chatId: string;
+      messageId: string;
+      userId: string;
+      emoji: string;
+    }) => {
+      if (cid !== chatId) return;
+      setMessages((prev) =>
+        prev.map((m) => {
+          if (m.id !== messageId) return m;
+          const reactions = [...(m.reactions ?? [])];
+          const idx = reactions.findIndex((r) => r.emoji === emoji);
+          if (idx >= 0) {
+            reactions[idx] = {
+              ...reactions[idx],
+              count: reactions[idx].count + 1,
+              userIds: [...(reactions[idx].userIds ?? []), userId],
+            };
+          } else {
+            reactions.push({ emoji, count: 1, userIds: [userId] });
+          }
+          return { ...m, reactions };
+        }),
+      );
+    };
+
+    const onReactionRemoved = ({
+      chatId: cid,
+      messageId,
+      userId,
+      emoji,
+    }: {
+      chatId: string;
+      messageId: string;
+      userId: string;
+      emoji: string;
+    }) => {
+      if (cid !== chatId) return;
+      setMessages((prev) =>
+        prev.map((m) => {
+          if (m.id !== messageId) return m;
+          const reactions = (m.reactions ?? [])
+            .map((r) =>
+              r.emoji !== emoji
+                ? r
+                : {
+                    ...r,
+                    count: r.count - 1,
+                    userIds: (r.userIds ?? []).filter((id) => id !== userId),
+                  },
+            )
+            .filter((r) => r.count > 0);
+          return { ...m, reactions };
+        }),
+      );
     };
 
     socket.on('typing:start', onTypingStart);
@@ -492,6 +589,8 @@ export function ChatPage() {
     socket.on('message:new', onMessageNew);
     socket.on('message:updated', onMessageUpdated);
     socket.on('message:deleted', onMessageDeleted);
+    socket.on('message:reaction_added', onReactionAdded);
+    socket.on('message:reaction_removed', onReactionRemoved);
 
     return () => {
       socket.off('typing:start', onTypingStart);
@@ -500,6 +599,8 @@ export function ChatPage() {
       socket.off('message:new', onMessageNew);
       socket.off('message:updated', onMessageUpdated);
       socket.off('message:deleted', onMessageDeleted);
+      socket.off('message:reaction_added', onReactionAdded);
+      socket.off('message:reaction_removed', onReactionRemoved);
       unsubscribeFromChat(chatId);
     };
   }, [chatId, user?.id, privateKey, cryptoStore]);
@@ -585,8 +686,6 @@ export function ChatPage() {
         );
         await messagesApi.sendMessage(chatId, payload, 'TEXT');
       }
-
-      await fetchMessages();
     } catch (err: unknown) {
       const msg =
         (err as { response?: { data?: { message?: string } } })?.response?.data
@@ -617,7 +716,6 @@ export function ChatPage() {
     if (!chatId) return;
     try {
       await messagesApi.deleteMessage(chatId, messageId);
-      await fetchMessages();
     } catch {
       toast.error('Failed to delete message');
     }
@@ -629,7 +727,6 @@ export function ChatPage() {
     if (!chatId) return;
     try {
       await messagesApi.addReaction(chatId, messageId, emoji);
-      await fetchMessages();
     } catch {
       toast.error('Failed to add reaction');
     }
@@ -639,7 +736,6 @@ export function ChatPage() {
     if (!chatId) return;
     try {
       await messagesApi.removeReaction(chatId, messageId, emoji);
-      await fetchMessages();
     } catch {
       toast.error('Failed to remove reaction');
     }
@@ -715,14 +811,26 @@ export function ChatPage() {
       const other = chat.members.find((m) => m.userId !== user?.id);
       return other?.username ?? other?.userId ?? 'Unknown';
     }
-    return chat.name ?? chat.members.map((m) => m.username ?? m.userId).join(', ');
+    return (
+      chat.name ?? chat.members.map((m) => m.username ?? m.userId).join(', ')
+    );
   })();
+
+  // ── Sender username lookup map ────────────────────────────────────────────────
+
+  const senderNames: Record<string, string> = {};
+  for (const m of chat?.members ?? []) {
+    if (m.username) senderNames[m.userId] = m.username;
+  }
 
   // ── Group messages by date ────────────────────────────────────────────────────
 
   const groupedMessages: Array<{ date: string; messages: Message[] }> = [];
   for (const msg of messages) {
-    const dateStr = new Date(msg.createdAt).toLocaleDateString();
+    const d = new Date(msg.createdAt);
+    const dateStr = isNaN(d.getTime())
+      ? 'Unknown date'
+      : d.toLocaleDateString();
     const last = groupedMessages[groupedMessages.length - 1];
     if (!last || last.date !== dateStr) {
       groupedMessages.push({ date: dateStr, messages: [msg] });
@@ -787,6 +895,7 @@ export function ChatPage() {
                       message={msg}
                       isOwn={msg.senderId === user?.id}
                       chatId={chatId!}
+                      senderNames={senderNames}
                       onEdit={setEditingMessage}
                       onDelete={handleDelete}
                       onReaction={handleReaction}

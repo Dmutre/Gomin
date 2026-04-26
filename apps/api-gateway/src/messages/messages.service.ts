@@ -33,7 +33,12 @@ export class MessagesService {
     return metadata;
   }
 
-  async sendMessage(userId: string, chatId: string, dto: SendMessageDto) {
+  async sendMessage(
+    userId: string,
+    username: string,
+    chatId: string,
+    dto: SendMessageDto,
+  ) {
     const metadata = await this.buildMetadata();
     const result = await this.communicationClient.sendMessage(
       {
@@ -46,13 +51,17 @@ export class MessagesService {
       metadata,
     );
 
+    const enriched = result.message
+      ? { ...result, message: { ...result.message, senderUsername: username } }
+      : result;
+
     await this.pubSub.publish(this.pubSub.chatChannel(chatId), {
       event: 'message:new',
       chatId,
-      data: result,
+      data: enriched,
     });
 
-    return result;
+    return enriched;
   }
 
   async getMessages(

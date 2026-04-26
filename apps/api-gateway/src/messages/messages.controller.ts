@@ -46,7 +46,12 @@ export class MessagesController {
     @Param('chatId') chatId: string,
     @Body() dto: SendMessageDto,
   ) {
-    return this.messagesService.sendMessage(user.userId, chatId, dto);
+    return this.messagesService.sendMessage(
+      user.userId,
+      user.username,
+      chatId,
+      dto,
+    );
   }
 
   @Get('/chats/:chatId/messages')

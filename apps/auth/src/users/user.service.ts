@@ -14,6 +14,10 @@ export class UserService {
     return this.userRepository.findByUsernames(usernames);
   }
 
+  async findByIds(ids: string[]): Promise<UserDomainModel[]> {
+    return this.userRepository.findByIds(ids);
+  }
+
   async findByEmail(email: string): Promise<UserDomainModel | null> {
     return this.userRepository.findByEmail(email);
   }

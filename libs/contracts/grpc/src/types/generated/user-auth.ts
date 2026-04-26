@@ -168,3 +168,7 @@ export interface ResolvedUser {
 export interface ResolveUsersByUsernamesResponse {
   users: ResolvedUser[];
 }
+
+export interface ResolveUsersByIdsRequest {
+  userIds: string[];
+}

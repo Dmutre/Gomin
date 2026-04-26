@@ -85,7 +85,10 @@ export class UserAuthService {
       updatedAt: new Date(),
     });
 
-    this.logger.info({ user: maskFields(user, USER_SENSITIVE_FIELDS) }, 'User registered');
+    this.logger.info(
+      { user: maskFields(user, USER_SENSITIVE_FIELDS) },
+      'User registered',
+    );
 
     const session = await this.userSessionService.createNewSession(
       this.toCreateSessionParams(user.id, data.deviceInfo),
@@ -321,6 +324,15 @@ export class UserAuthService {
     usernames: string[],
   ): Promise<ResolveUsersByUsernamesResponse> {
     const users = await this.userService.findByUsernames(usernames);
+    return {
+      users: users.map((u) => ({ userId: u.id, username: u.username })),
+    };
+  }
+
+  async resolveUsersByIds(
+    ids: string[],
+  ): Promise<ResolveUsersByUsernamesResponse> {
+    const users = await this.userService.findByIds(ids);
     return {
       users: users.map((u) => ({ userId: u.id, username: u.username })),
     };

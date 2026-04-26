@@ -187,9 +187,9 @@ export const messagesApi = {
       .delete(`/chats/${chatId}/messages/${messageId}/reactions/${emoji}`)
       .then(() => undefined),
 
-  markRead: (chatId: string, lastReadMessageId: string): Promise<void> =>
+  markRead: (chatId: string, upToMessageId: string): Promise<void> =>
     apiClient
-      .post(`/chats/${chatId}/read`, { lastReadMessageId })
+      .post(`/chats/${chatId}/read`, { upToMessageId })
       .then(() => undefined),
 };
 

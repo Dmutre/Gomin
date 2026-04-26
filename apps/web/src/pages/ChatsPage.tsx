@@ -81,7 +81,9 @@ export function ChatsPage() {
       setChainKey(chat.id, user.id, chainKey);
 
       // Encrypt chain key for each member + ourselves (use resolved userIds from chat)
-      const recipientIds = [...new Set([...chat.members.map((m) => m.userId), user.id])];
+      const recipientIds = [
+        ...new Set([...chat.members.map((m) => m.userId), user.id]),
+      ];
       const keysToDistribute: Array<{
         senderId: string;
         recipientId: string;
