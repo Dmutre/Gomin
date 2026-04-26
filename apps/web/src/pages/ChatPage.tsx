@@ -31,8 +31,6 @@ import {
   emitTypingStart,
   emitTypingStop,
   getSocket,
-  subscribeToChat,
-  unsubscribeFromChat,
 } from '../lib/socket';
 import { cn } from '../lib/utils';
 import type { MemberRole, Message, MessageReaction, SenderKey } from '../types';
@@ -416,10 +414,14 @@ export function ChatPage() {
 
   // ── Initial load ─────────────────────────────────────────────────────────────
 
+  // Clear messages immediately on chatId change (synchronous, before any fetch)
   useEffect(() => {
-    if (!chatId) return;
     activeChatIdRef.current = chatId;
     setMessages([]);
+  }, [chatId]);
+
+  useEffect(() => {
+    if (!chatId) return;
     fetchMessages();
   }, [chatId, fetchMessages]);
 
@@ -427,7 +429,6 @@ export function ChatPage() {
 
   useEffect(() => {
     if (!chatId) return;
-    subscribeToChat(chatId);
 
     const socket = getSocket();
     if (!socket) return;
@@ -633,7 +634,6 @@ export function ChatPage() {
       socket.off('message:deleted', onMessageDeleted);
       socket.off('message:reaction_added', onReactionAdded);
       socket.off('message:reaction_removed', onReactionRemoved);
-      unsubscribeFromChat(chatId);
     };
   }, [chatId, user?.id, privateKey, cryptoStore]);
 
