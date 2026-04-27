@@ -62,8 +62,8 @@ export class ChatGrpcController {
       data.offset,
     );
     return {
-      chats: results.map(({ chat, members }) =>
-        ChatGrpcMapper.chatToProto(chat, members),
+      chats: results.map(({ chat, members, unreadCount }) =>
+        ChatGrpcMapper.chatToProto(chat, members, unreadCount),
       ),
     };
   }

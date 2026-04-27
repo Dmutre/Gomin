@@ -62,6 +62,7 @@ export interface Chat {
   members: ChatMember[];
   createdAt: Date | undefined;
   updatedAt: Date | undefined;
+  unreadCount: number;
 }
 
 export interface CreateChatRequest {

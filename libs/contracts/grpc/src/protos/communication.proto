@@ -95,6 +95,7 @@ message Chat {
   repeated ChatMember members = 5;
   google.protobuf.Timestamp createdAt = 6;
   google.protobuf.Timestamp updatedAt = 7;
+  int32 unreadCount = 8;
 }
 
 message CreateChatRequest {

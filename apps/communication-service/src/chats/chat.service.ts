@@ -138,12 +138,17 @@ export class ChatService {
     userId: string,
     limit: number,
     offset: number,
-  ): Promise<{ chat: ChatDomainModel; members: ChatMemberDomainModel[] }[]> {
+  ): Promise<
+    { chat: ChatDomainModel; members: ChatMemberDomainModel[]; unreadCount: number }[]
+  > {
     const chats = await this.chatRepo.findByUserId(userId, limit, offset);
     return Promise.all(
       chats.map(async (chat) => {
-        const members = await this.memberRepo.findAllActive(chat.id);
-        return { chat, members };
+        const [members, unreadCount] = await Promise.all([
+          this.memberRepo.findAllActive(chat.id),
+          this.chatRepo.countUnread(chat.id, userId),
+        ]);
+        return { chat, members, unreadCount };
       }),
     );
   }

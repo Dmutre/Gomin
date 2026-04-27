@@ -8,7 +8,12 @@ import type {
   DomainChatType,
 } from './types/chat.domain.model';
 import { ChatMapper } from './chat.mapper';
-import { TABLE_CHAT_MEMBERS, TABLE_CHATS } from '../../database/table-names';
+import {
+  TABLE_CHAT_MEMBERS,
+  TABLE_CHATS,
+  TABLE_MESSAGES,
+  TABLE_MESSAGE_STATUS,
+} from '../../database/table-names';
 
 export interface CreateChatParams {
   type: DomainChatType;
@@ -68,6 +73,21 @@ export class ChatRepository {
       .select(`${TABLE_CHATS}.*`)
       .first();
     return row ? ChatMapper.toDomain(row) : null;
+  }
+
+  async countUnread(chatId: string, userId: string): Promise<number> {
+    const result = await this.knex(TABLE_MESSAGE_STATUS)
+      .join(
+        TABLE_MESSAGES,
+        `${TABLE_MESSAGE_STATUS}.messageId`,
+        `${TABLE_MESSAGES}.id`,
+      )
+      .where(`${TABLE_MESSAGES}.chatId`, chatId)
+      .where(`${TABLE_MESSAGE_STATUS}.userId`, userId)
+      .whereNot(`${TABLE_MESSAGE_STATUS}.status`, 'READ')
+      .count('* as count')
+      .first();
+    return Number((result as { count: string | number } | undefined)?.count ?? 0);
   }
 
   async create(params: CreateChatParams): Promise<ChatDomainModel> {

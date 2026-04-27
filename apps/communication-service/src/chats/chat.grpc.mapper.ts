@@ -62,6 +62,7 @@ export class ChatGrpcMapper {
   static chatToProto(
     chat: ChatDomainModel,
     members: ChatMemberDomainModel[],
+    unreadCount = 0,
   ): Chat {
     return {
       id: chat.id,
@@ -71,6 +72,7 @@ export class ChatGrpcMapper {
       members: members.map(ChatGrpcMapper.memberToProto),
       createdAt: chat.createdAt,
       updatedAt: chat.updatedAt,
+      unreadCount,
     };
   }
 }
