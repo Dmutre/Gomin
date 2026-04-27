@@ -6,6 +6,9 @@ import { COMMUNICATION_CLIENT } from './communication.tokens';
 
 const PROTO_PATH = join(__dirname, 'protos', 'communication.proto');
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const LOADER_OPTIONS = { dates: true } as any;
+
 export interface CommunicationClientModuleOptions {
   url?: string;
 }
@@ -24,6 +27,7 @@ export class CommunicationClientModule {
             package: 'communication.v1',
             protoPath: PROTO_PATH,
             url: options.url ?? 'localhost:5001',
+            loader: LOADER_OPTIONS,
           },
         },
       ]),
@@ -56,6 +60,7 @@ export class CommunicationClientModule {
                 package: 'communication.v1',
                 protoPath: PROTO_PATH,
                 url,
+                loader: LOADER_OPTIONS,
               },
             };
           },

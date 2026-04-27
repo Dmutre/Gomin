@@ -18,8 +18,10 @@ export function formatTime(dateStr: string): string {
   return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
-export function formatDate(dateStr: string): string {
+export function formatDate(dateStr: unknown): string {
+  if (!dateStr || typeof dateStr !== 'string') return '';
   const date = new Date(dateStr);
+  if (isNaN(date.getTime())) return '';
   const now = new Date();
   const diff = now.getTime() - date.getTime();
   const dayMs = 24 * 60 * 60 * 1000;

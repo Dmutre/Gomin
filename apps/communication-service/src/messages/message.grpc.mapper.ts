@@ -63,6 +63,14 @@ export class MessageGrpcMapper {
     };
   }
 
+  static dateToTimestamp(
+    date: Date | undefined,
+  ): { seconds: number; nanos: number } | undefined {
+    if (!date) return undefined;
+    const ms = date.getTime();
+    return { seconds: Math.floor(ms / 1000), nanos: (ms % 1000) * 1_000_000 };
+  }
+
   static fullMessageToProto(full: FullMessage): Message {
     const msg: MessageDomainModel = full.message;
     return {
@@ -82,8 +90,8 @@ export class MessageGrpcMapper {
       replyToId: msg.replyToId ?? '',
       reactions: full.reactions.map(MessageGrpcMapper.reactionToProto),
       statuses: full.statuses.map(MessageGrpcMapper.statusInfoToProto),
-      createdAt: msg.createdAt,
-      updatedAt: msg.updatedAt,
+      createdAt: MessageGrpcMapper.dateToTimestamp(msg.createdAt) as unknown as Date,
+      updatedAt: MessageGrpcMapper.dateToTimestamp(msg.updatedAt) as unknown as Date,
     };
   }
 }
