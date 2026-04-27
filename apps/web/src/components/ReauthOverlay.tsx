@@ -2,18 +2,16 @@ import { useState } from 'react';
 import { Lock } from 'lucide-react';
 import { useAuthStore } from '../store/auth.store';
 import { unwrapPrivateKey } from '../lib/crypto';
-import { initSocket } from '../lib/socket';
 import { toast } from '../store/toast.store';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
-import { Spinner } from './ui/spinner';
 
 /**
  * Shown when sessionToken is present but privateKey has been lost (page refresh).
  * The user provides their password to re-derive the private key from the stored e2eeKeys.
  */
 export function ReauthOverlay() {
-  const { e2eeKeys, sessionToken, setPrivateKey } = useAuthStore();
+  const { e2eeKeys, setPrivateKey } = useAuthStore();
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const logout = useAuthStore((s) => s.logout);
@@ -25,7 +23,6 @@ export function ReauthOverlay() {
     try {
       const privateKey = await unwrapPrivateKey(e2eeKeys, password);
       setPrivateKey(privateKey);
-      if (sessionToken) initSocket(sessionToken);
       toast.success('Keys restored successfully');
     } catch {
       toast.error('Wrong password — could not decrypt private key');
