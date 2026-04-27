@@ -21,10 +21,6 @@ type WsUser = CurrentUser;
 type ChannelHandler = (msg: PubSubMessage) => void;
 
 @WebSocketGateway({
-  cors: {
-    origin: '*',
-    credentials: true,
-  },
   namespace: '/',
 })
 export class MessagingGateway

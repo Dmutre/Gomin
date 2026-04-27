@@ -28,22 +28,28 @@ async function bootstrap() {
   });
   const subClient = pubClient.duplicate();
 
+  const rawOrigin = config.get<string>('app.corsOrigin') ?? '*';
+  const corsOrigin =
+    rawOrigin === '*' ? '*' : rawOrigin.split(',').map((o) => o.trim());
+
   class RedisIoAdapter extends IoAdapter {
     createIOServer(port: number, options?: Record<string, unknown>) {
-      const server = super.createIOServer(port, options);
+      const server = super.createIOServer(port, {
+        ...options,
+        cors: { origin: corsOrigin, credentials: true },
+      });
       server.adapter(createAdapter(pubClient, subClient));
       return server;
     }
   }
 
-  app.useWebSocketAdapter(new RedisIoAdapter(app));
-
-  const rawOrigin = config.get<string>('app.corsOrigin') ?? '*';
   app.enableCors({
-    origin: rawOrigin === '*' ? '*' : rawOrigin.split(',').map((o) => o.trim()),
+    origin: corsOrigin,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
   });
+
+  app.useWebSocketAdapter(new RedisIoAdapter(app));
 
   app.useGlobalFilters(new GrpcExceptionFilter());
 

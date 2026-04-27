@@ -380,6 +380,7 @@
 - [ ] Optimize based on results
 
 ### Security Testing
+- [ ] Manually review OWASP Top 10 checklist against the codebase — identify and fix applicable vulnerabilities (injection, broken auth, sensitive data exposure, XXE, broken access control, security misconfiguration, XSS, insecure deserialization, known vulnerabilities, insufficient logging)
 - [ ] Run security scanner (OWASP ZAP)
 - [ ] Test for common vulnerabilities (SQL injection, XSS, CSRF)
 - [ ] Test authentication, authorization, and E2EE
