@@ -187,6 +187,7 @@ export function Layout() {
 
     const onMessageNew = (data: { message: Message }) => {
       const message = data?.message;
+      console.log('[Layout] message:new', message?.chatId, 'current:', currentChatIdRef.current);
       if (!message) return;
       const isCurrentChat = message.chatId === currentChatIdRef.current;
       queryClient.setQueryData<{ chats: Chat[] }>(['chats'], (old) => {
@@ -211,12 +212,15 @@ export function Layout() {
         const chatName = chat ? getChatDisplayName(chat, userRef.current?.id) : 'New message';
         const sender = message.senderUsername ? `${message.senderUsername}: ` : '';
         const preview = (message.decryptedContent ?? '🔒 Encrypted').slice(0, 50);
+        console.log('[Layout] showing toast:', chatName, sender, preview);
         toast.info(`${chatName} — ${sender}${preview}`);
       }
     };
 
+    console.log('[Layout] registering message:new handler, socketReady:', socketReady);
     socket.on('message:new', onMessageNew);
     return () => {
+      console.log('[Layout] unregistering message:new handler');
       socket.off('message:new', onMessageNew);
     };
   }, [socketReady, queryClient]);
