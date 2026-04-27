@@ -104,6 +104,13 @@ export function Layout() {
     ? location.pathname.split('/chats/')[1]
     : undefined;
 
+  // Inline refs — updated on every render so handlers always read the latest value
+  // without needing to be in effect deps (avoids re-registration on every navigation)
+  const currentChatIdRef = useRef<string | undefined>(currentChatId);
+  currentChatIdRef.current = currentChatId;
+  const userRef = useRef(user);
+  userRef.current = user;
+
   // Reset unread count when entering a chat
   useEffect(() => {
     if (!currentChatId) return;
@@ -133,18 +140,19 @@ export function Layout() {
     enabled: !!sessionToken && !!privateKey,
   });
 
-  // Subscribe to all chats for WS events — only re-subscribe when the set of IDs changes
-  const subscribedChatIdsRef = useRef<string>('');
+  // Subscribe to all chats for WS events; re-subscribe on reconnect
   useEffect(() => {
     if (!socketReady || !chatsData?.chats?.length) return;
     const socket = getSocket();
     if (!socket) return;
 
-    const chatIds = chatsData.chats.map((c) => c.id).sort();
-    const key = chatIds.join(',');
-    if (key === subscribedChatIdsRef.current) return;
-    subscribedChatIdsRef.current = key;
-    subscribeManyChats(chatIds);
+    const chatIds = chatsData.chats.map((c) => c.id);
+    const resubscribe = () => subscribeManyChats(chatIds);
+    resubscribe();
+    socket.on('connect', resubscribe);
+    return () => {
+      socket.off('connect', resubscribe);
+    };
   }, [socketReady, chatsData?.chats]);
 
   // Real-time: new chat created → add to list + subscribe
@@ -180,7 +188,7 @@ export function Layout() {
     const onMessageNew = (data: { message: Message }) => {
       const message = data?.message;
       if (!message) return;
-      const isCurrentChat = message.chatId === currentChatId;
+      const isCurrentChat = message.chatId === currentChatIdRef.current;
       queryClient.setQueryData<{ chats: Chat[] }>(['chats'], (old) => {
         if (!old) return old;
         return {
@@ -200,7 +208,7 @@ export function Layout() {
       if (!isCurrentChat) {
         const cached = queryClient.getQueryData<{ chats: Chat[] }>(['chats']);
         const chat = cached?.chats.find((c) => c.id === message.chatId);
-        const chatName = chat ? getChatDisplayName(chat, user?.id) : 'New message';
+        const chatName = chat ? getChatDisplayName(chat, userRef.current?.id) : 'New message';
         const sender = message.senderUsername ? `${message.senderUsername}: ` : '';
         const preview = (message.decryptedContent ?? '🔒 Encrypted').slice(0, 50);
         toast.info(`${chatName} — ${sender}${preview}`);
@@ -211,7 +219,7 @@ export function Layout() {
     return () => {
       socket.off('message:new', onMessageNew);
     };
-  }, [socketReady, queryClient, currentChatId, user]);
+  }, [socketReady, queryClient]);
 
   // Presence ping interval
   useEffect(() => {
