@@ -1,964 +1,297 @@
-# Gomin - High-Load Messenger Platform
+# Gomin — Secure Messenger Platform
 
-A scalable messenger application built with microservices architecture, designed to handle high load with End-to-End encryption support.
+A scalable, End-to-End encrypted messenger built on NestJS microservices.
+Developed as a **bachelor diploma project**, released as open-source.
 
-> **Note:** This project was developed as a **bachelor diploma work** and is released as an **open-source** project.
+## Table of Contents
 
-## 📋 Table of Contents
-
-- [Project Overview](#project-overview)
 - [Architecture](#architecture)
 - [Technology Stack](#technology-stack)
-- [Microservices](#microservices)
 - [Security](#security)
-- [Infrastructure](#infrastructure)
-- [Data Flow](#data-flow)
 - [Getting Started](#getting-started)
-- [Development](#development)
-- [Deployment](#-deployment)
+- [Deployment](#deployment)
   - [First-time cluster setup](#first-time-cluster-setup)
   - [CI/CD ServiceAccount](#cicd-serviceaccount)
-  - [GitHub Actions workflow](#cicd--github-actions)
+  - [GitHub Actions](#cicd--github-actions)
 
 ---
 
-## 🎯 Project Overview
+## Architecture
 
-Gomin is a modern messenger platform built on microservices architecture with focus on:
-
-- **Scalability**: Horizontal scaling of each component
-- **Security**: End-to-End encryption for messages
-- **Performance**: Optimized for high-load scenarios
-- **Reliability**: Distributed architecture with fault tolerance
-- **Real-time Communication**: WebSocket support for instant messaging
-
-### Key Features
-
-- 📱 One-to-one and group chats
-- 🔒 End-to-End encryption (E2EE)
-- 📁 Media file sharing (images, videos, documents)
-- 🔔 Push notifications
-- 🔍 Message search
-- 👥 User presence (online/offline status)
-- ✍️ Typing indicators
-- ✅ Read receipts
-- 📊 Message reactions
-
----
-
-## 🏗️ Architecture
-
-### High-Level Architecture Diagram
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                     CLIENT APPLICATIONS                         │
-│              (Web, Mobile, Desktop clients)                     │
-└────────────────────────────┬────────────────────────────────────┘
-                             │
-                             │ WebSocket/HTTP
-                             │
-┌────────────────────────────▼────────────────────────────────────┐
-│                    API GATEWAY / INGRESS                        │
-│         (Kong/Traefik + Rate Limiting + Auth)                   │
-└─────┬───────────────────────────────────────────────────┬───────┘
-      │                                                   │
-      │            Kubernetes Cluster                     │
-      │                                                   │
-┌─────▼───────────────────────────────────────────────────────────┐
-│                    MICROSERVICES LAYER                          │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                 │
-│  ┌──────────────────────────────────────────────────────┐       │
-│  │        IDENTITY & ACCESS SERVICE                     │       │
-│  │              (Node.js/NestJS)                        │       │
-│  ├──────────────────────────────────────────────────────┤       │
-│  │ - User authentication (JWT, OAuth2)                  │       │
-│  │ - User profiles & settings                           │       │
-│  │ - Contacts management                                │       │
-│  │ - Access control & permissions                       │     │
-│  │                                                      │     │
-│  │ DB: PostgreSQL (users, sessions, contacts)           │     │
-│  │ Cache: Redis (sessions, tokens)                      │     │
-│  └──────────────────────────────────────────────────────┘     │
-│                                                               │
-│  ┌──────────────────────────────────────────────────────┐     │
-│  │          COMMUNICATION SERVICE                       │     │
-│  │         (Node.js/NestJS + Go workers)                │     │
-│  ├──────────────────────────────────────────────────────┤     │
-│  │ - Chat/Room management                               │     │
-│  │ - Message CRUD & delivery                            │     │
-│  │ - Real-time WebSocket gateway                        │     │
-│  │ - Typing indicators & read receipts                  │     │
-│  │ - Message reactions & editing                        │     │
-│  │                                                      │     │
-│  │ DB: PostgreSQL (chats, messages - partitioned)       │     │
-│  │ Cache: Redis (recent msgs, presence, pub/sub)        │     │
-│  │ Search: Elasticsearch (message search)               │     │
-│  └──────────────────────────────────────────────────────┘     │
-│                                                               │
-│  ┌──────────────────────────────────────────────────────┐     │
-│  │             MEDIA SERVICE                            │     │
-│  │            (Go - high throughput)                    │     │
-│  ├──────────────────────────────────────────────────────┤     │
-│  │ - File upload/download (presigned URLs)              │     │
-│  │ - Image processing & thumbnails                      │     │
-│  │ - Video transcoding (async workers)                  │     │
-│  │ - File validation & antivirus scanning               │     │
-│  │ - EXIF data cleaning                                 │     │
-│  │                                                      │     │
-│  │ Storage: MinIO (S3-compatible)                       │     │
-│  │ DB: PostgreSQL (metadata)                            │     │
-│  │ Queue: RabbitMQ (async processing)                   │     │
-│  └──────────────────────────────────────────────────────┘     │
-│                                                                 │
-│  ┌──────────────────────────────────────────────────────┐     │
-│  │          NOTIFICATION SERVICE                        │     │
-│  │            (Node.js/NestJS)                          │     │
-│  ├──────────────────────────────────────────────────────┤     │
-│  │ - Push notifications (FCM, APNS)                     │     │
-│  │ - Email notifications                                │     │
-│  │ - In-app notifications                               │     │
-│  │ - Notification preferences                           │     │
-│  │                                                      │     │
-│  │ DB: PostgreSQL (notification history)                │     │
-│  │ Queue: RabbitMQ (async delivery)                     │     │
-│  └──────────────────────────────────────────────────────┘     │
-│                                                                 │
-│         All services communicate via gRPC                      │
-│                                                                 │
-└─────┬──────────────────┬──────────────────┬────────────────────┘
-      │                  │                  │
-┌─────▼──────┐  ┌────────▼────────┐  ┌─────▼──────────┐
-│  RabbitMQ  │  │   Event Bus     │  │  File Storage  │
-│  (Queue)   │  │   (RabbitMQ)    │  │  MinIO (S3)    │
-└─────┬──────┘  └────────┬────────┘  └─────┬──────────┘
-      │                  │                  │
-┌─────▼──────────────────▼──────────────────▼────────────┐
-│                   DATA LAYER                            │
-├─────────────────────────────────────────────────────────┤
-│  ┌──────────┐  ┌──────────┐  ┌───────────────┐        │
-│  │PostgreSQL│  │  Redis   │  │ Elasticsearch │        │
-│  │(Primary) │  │ (Cache)  │  │   (Search)    │        │
-│  └──────────┘  └──────────┘  └───────────────┘        │
-└─────────────────────────────────────────────────────────┘
-
-┌─────────────────────────────────────────────────────────┐
-│        OBSERVABILITY & MONITORING LAYER                 │
-├─────────────────────────────────────────────────────────┤
-│  ┌──────────┐  ┌──────────┐  ┌──────────────┐         │
-│  │Prometheus│  │  Jaeger  │  │  ELK Stack   │         │
-│  │(Metrics) │  │(Tracing) │  │   (Logs)     │         │
-│  └────┬─────┘  └────┬─────┘  └──────┬───────┘         │
-│       └─────────────▼────────────────┘                  │
-│              ┌───────▼────────┐                         │
-│              │    Grafana     │                         │
-│              │  (Dashboards)  │                         │
-│              └────────────────┘                         │
-└─────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────┐
+│            CLIENT (Web / Mobile)             │
+└───────────────────┬──────────────────────────┘
+                    │ HTTPS / WSS
+┌───────────────────▼──────────────────────────┐
+│         Traefik Ingress  (TLS termination)   │
+└───────┬───────────────────────────┬──────────┘
+        │                           │
+┌───────▼──────────┐   ┌────────────▼──────────┐
+│   API Gateway    │   │      Web Frontend     │
+│  HTTP + Socket.IO│   │  (Vite + React + E2EE)│
+└──┬────────────┬──┘   └───────────────────────┘
+   │ gRPC       │ gRPC
+┌──▼──────┐  ┌──▼────────────────────┐
+│  Auth   │  │  Communication Service│
+│ Service │  │  (chats, messages,    │
+│         │  │   sender keys)        │
+└──┬──────┘  └──┬────────────────────┘
+   │             │
+┌──▼─────────────▼──────────────────────────────┐
+│                  PostgreSQL                   │
+├───────────────────────────────────────────────┤
+│  auth DB: users, sessions, service_identities │
+│  comm DB: chats, messages, sender_keys        │
+└───────────────────────────────────────────────┘
+┌───────────────────────────────────────────────┐
+│                    Redis                      │
+│  WebSocket pub/sub · session cache            │
+└───────────────────────────────────────────────┘
+┌───────────────────────────────────────────────┐
+│           Observability (gomin-monitoring)    │
+│  OTel Collector → Prometheus / Loki / Tempo   │
+│                   Grafana                     │
+└───────────────────────────────────────────────┘
 ```
 
-### Domain-Driven Design
+### Services
 
-Services are organized by business domains:
-
-- **Identity & Access**: User management, authentication, authorization
-- **Communication**: Chat functionality, messaging, real-time features
-- **Media**: File handling, storage, processing
-- **Notification**: Push, email, in-app notifications
+| Service | Port | Responsibility |
+|---|---|---|
+| `api-gateway` | 3000 (HTTP/WS) | HTTP routing, WebSocket, session auth |
+| `auth` | 5000 (gRPC) | Registration, login, JWT, sessions, E2EE key storage |
+| `communication-service` | 5001 (gRPC) | Chats, messages, reactions, sender keys |
 
 ---
 
-## 🛠️ Technology Stack
+## Technology Stack
 
 ### Backend
 
-| Technology | Purpose | Version |
-|------------|---------|---------|
-| **Node.js** | Runtime for most services | 18+ |
-| **NestJS** | Framework for microservices | 10+ |
-| **Go** | Media Service (high throughput) | 1.21+ |
-| **TypeScript** | Type safety | 5+ |
-| **gRPC** | Inter-service communication | - |
-
-### Databases & Storage
-
 | Technology | Purpose |
-|------------|---------|
+|---|---|
+| **Node.js 22 + NestJS** | All services |
+| **TypeScript** | Type safety across monorepo |
+| **gRPC** (`@nestjs/microservices`) | Inter-service communication |
+| **Knex** | Query builder + migrations |
 | **PostgreSQL** | Primary database |
-| **Redis** | Caching, sessions, pub/sub |
-| **MinIO** | S3-compatible object storage |
-| **Elasticsearch** | Full-text search |
-
-### Message Broker
-
-| Technology | Purpose |
-|------------|---------|
-| **RabbitMQ** | Async message queue, events |
+| **Redis** | WebSocket pub/sub, session cache |
+| **Socket.IO** | Real-time WebSocket gateway |
 
 ### Infrastructure
 
 | Technology | Purpose |
-|------------|---------|
-| **Kubernetes** | Container orchestration |
-| **Docker** | Containerization |
-| **Istio** | Service mesh (optional) |
-| **Helm** | K8s package manager |
+|---|---|
+| **Kubernetes (k3s)** | Container orchestration |
+| **Helm** | Kubernetes package manager |
+| **Traefik** | Ingress controller (built into k3s) |
+| **cert-manager** | Automatic TLS via Let's Encrypt |
+| **MinIO** | S3-compatible object storage |
 
-### Monitoring & Observability
-
-| Technology | Purpose |
-|------------|---------|
-| **Prometheus** | Metrics collection |
-| **Grafana** | Dashboards & visualization |
-| **Jaeger** | Distributed tracing |
-| **ELK Stack** | Centralized logging |
-
-### API Gateway
+### Observability
 
 | Technology | Purpose |
-|------------|---------|
-| **Kong** / **Traefik** | API Gateway, rate limiting, auth |
+|---|---|
+| **OpenTelemetry Collector** | Telemetry aggregation (traces, logs, metrics) |
+| **Prometheus** | Metrics storage |
+| **Loki** | Log storage |
+| **Tempo** | Distributed tracing |
+| **Grafana** | Dashboards (`http://grafana.84.247.133.45.nip.io`) |
+
+### Frontend
+
+| Technology | Purpose |
+|---|---|
+| **Vite + React** | Web client |
+| **Web Crypto API** | Client-side E2EE |
 
 ---
 
-## 🔧 Microservices
+## Security
 
-### 1. Identity & Access Service
+Security is layered across transport, authentication, authorization, and message encryption.
 
-**Responsibilities:**
-- User registration & authentication
-- JWT token management
-- OAuth2 integration
-- User profiles & settings
-- Contact management
-- Permission & role-based access control
+### 1. Transport Security (TLS)
 
-**API Endpoints:**
-```
-POST   /auth/register
-POST   /auth/login
-POST   /auth/logout
-POST   /auth/refresh
-GET    /users/:id
-PUT    /users/:id
-GET    /users/:id/contacts
-POST   /users/:id/contacts
-```
+All external traffic is encrypted via **HTTPS/WSS**. TLS certificates are issued automatically by **Let's Encrypt** and managed by `cert-manager`:
 
-**gRPC Services:**
-```protobuf
-service IdentityService {
-  rpc Authenticate(AuthRequest) returns (AuthResponse);
-  rpc GetUserProfile(UserIdRequest) returns (UserProfile);
-  rpc CheckPermission(PermissionRequest) returns (PermissionResponse);
-  rpc GetUsersByIds(UserIdsRequest) returns (UsersResponse);
-}
-```
+1. `cert-manager` watches Ingress annotations (`cert-manager.io/cluster-issuer: letsencrypt-prod`)
+2. Performs **ACME HTTP-01 challenge** — creates a temporary Pod + Ingress to prove domain ownership
+3. Stores the issued certificate as a Kubernetes Secret (`api-gateway-tls`, `web-tls`)
+4. **Traefik** reads those Secrets and terminates TLS at the edge
 
-**Database Schema (Auth / users):**
-```sql
-Users (
-  id, username, email, password_hash,  -- Argon2
-  public_key, encrypted_private_key,
-  encryption_salt, encryption_iv, encryption_auth_tag,
-  avatar_url, ...
-)
-UserSessions (id, user_id, session_token, device_id, ...)
-```
-
----
-
-### 2. Communication Service
-
-**Responsibilities:**
-- Chat & room management (1-on-1, groups, channels)
-- Message CRUD operations
-- Real-time WebSocket gateway
-- Message delivery & status tracking
-- Typing indicators & read receipts
-- Message reactions & editing
-
-**API Endpoints:**
-```
-POST   /chats
-GET    /chats
-GET    /chats/:id
-POST   /chats/:id/members
-POST   /messages
-GET    /chats/:id/messages
-PUT    /messages/:id
-DELETE /messages/:id
-POST   /messages/:id/reactions
-```
-
-**WebSocket Events:**
-```typescript
-// Client -> Server
-{ type: 'message.send', payload: {...} }
-{ type: 'typing.start', payload: {...} }
-{ type: 'message.read', payload: {...} }
-
-// Server -> Client
-{ type: 'message.new', payload: {...} }
-{ type: 'message.delivered', payload: {...} }
-{ type: 'user.online', payload: {...} }
-{ type: 'typing.indicator', payload: {...} }
-```
-
-**gRPC Services:**
-```protobuf
-service CommunicationService {
-  rpc CreateChat(CreateChatRequest) returns (ChatResponse);
-  rpc SendMessage(SendMessageRequest) returns (MessageResponse);
-  rpc GetMessages(GetMessagesRequest) returns (MessagesResponse);
-  rpc GetChatsByUserId(UserIdRequest) returns (ChatsResponse);
-  rpc MarkAsRead(MarkAsReadRequest) returns (StatusResponse);
-}
-```
-
-**Database Schema (E2EE-oriented fields):**
-```sql
-chats (id, type, name, key_version, ...)
-chat_members (chat_id, user_id, joined_at, can_read_from, ...)
-messages (
-  id, chat_id, sender_id,
-  encrypted_content, iv, auth_tag, key_version,
-  type, created_at, ...
-)
-message_keys (message_id, user_id, encrypted_key)  -- RSA-OAEP wrapped AES key per recipient
-message_reactions (message_id, user_id, emoji, ...)
-message_status (message_id, user_id, status, delivered_at, read_at)
-```
-
-
----
-
-### 3. Media Service
-
-**Responsibilities:**
-- File upload/download with presigned URLs
-- Image processing & thumbnail generation
-- Video transcoding
-- File validation (magic bytes, size, type)
-- Antivirus scanning (ClamAV)
-- EXIF data removal for privacy
-
-**Upload Flow:**
-```
-1. POST /media/upload/init
-   → Returns presigned URL for MinIO
-
-2. Client uploads directly to MinIO
-   PUT https://files.gomin.com/signed-url
-
-3. POST /media/upload/complete
-   → Validates file, queues processing
-
-4. Worker processes file (async)
-   → Virus scan, thumbnail, metadata
-```
-
-**API Endpoints:**
-```
-POST   /media/upload/init
-POST   /media/upload/complete
-GET    /media/:id
-DELETE /media/:id
-GET    /media/:id/metadata
-```
-
-**gRPC Services:**
-```protobuf
-service MediaService {
-  rpc InitUpload(InitUploadRequest) returns (UploadResponse);
-  rpc CompleteUpload(CompleteUploadRequest) returns (FileResponse);
-  rpc GetFileUrl(FileIdRequest) returns (UrlResponse);
-  rpc DeleteFile(FileIdRequest) returns (StatusResponse);
-}
-```
-
-**MinIO Bucket Structure:**
-```
-avatars/
-images/
-  ├── original/
-  └── thumbnails/
-videos/
-  ├── original/
-  └── transcoded/
-documents/
-voice/
-```
-
-**Database Schema:**
-```sql
-media_files (
-  id, type, original_name, mime_type, size,
-  storage_path, thumbnail_path,
-  uploaded_by, message_id, chat_id,
-  status, metadata jsonb, created_at
-)
-```
-
-**File Validation Layers:**
-1. Size & type validation at init
-2. Presigned URL with Content-Type restriction
-3. Magic bytes detection at complete
-4. Async virus scan (ClamAV)
-5. File structure validation
-6. EXIF data removal
-
----
-
-### 4. Notification Service
-
-**Responsibilities:**
-- Push notifications (FCM for Android, APNS for iOS)
-- Email notifications
-- In-app notifications
-- Notification preferences management
-
-**API Endpoints:**
-```
-POST   /notifications/device-token
-GET    /notifications
-PUT    /notifications/:id/read
-GET    /notifications/preferences
-PUT    /notifications/preferences
-```
-
-**gRPC Services:**
-```protobuf
-service NotificationService {
-  rpc SendNotification(NotificationRequest) returns (StatusResponse);
-  rpc GetNotifications(UserIdRequest) returns (NotificationsResponse);
-  rpc UpdatePreferences(PreferencesRequest) returns (StatusResponse);
-  rpc RegisterDevice(DeviceRequest) returns (StatusResponse);
-}
-```
-
-**Database Schema:**
-```sql
-notifications (
-  id, user_id, type, title, body,
-  data jsonb, read, created_at
-)
-notification_preferences (
-  user_id, push_enabled, email_enabled,
-  muted_chats uuid[]
-)
-device_tokens (user_id, token, platform, device_info)
-```
-
----
-
-## 🔒 Security
-
-### End-to-end encryption (E2EE) model
-
-This section describes the cryptography and data model the platform targets. **Message payloads and per-message keys live in the Communication service** (not implemented in this repo yet). The **Auth service** stores user identity material needed for E2EE and session management.
-
-#### User key material (Auth service / client)
-
-| Data | Server | Client only |
-|------|--------|-------------|
-| RSA public key (e.g. SPKI, base64) | Stored; readable by authenticated services | — |
-| RSA private key (plaintext) | Never | After unlock: memory / IndexedDB |
-| Encrypted private key + AES-GCM metadata | Stored (`encryptedPrivateKey`, `encryptionIv`, `encryptionAuthTag`) | — |
-| PBKDF2/Argon2 salt for wrapping the private key | Stored (`encryptionSalt`) | — |
-| Account password | Never stored in plaintext | User entry; used locally to derive the wrap key and sent over TLS only for verification |
-
-**Password has two independent roles:**
-
-1. **Authentication:** the server stores an **Argon2** hash of the password (separate from the E2EE salt). Login compares the password to this hash over HTTPS.
-2. **Private key wrapping:** the client derives a symmetric key with **PBKDF2 (or Argon2) + `encryptionSalt`**, then **AES-256-GCM** decrypts `encryptedPrivateKey`. That salt is not the same as the Argon2 salt used for `passwordHash`.
-
-**Registration (client):** generate RSA-2048 (or agreed size); wrap `privateKey` with AES-GCM using a key derived from the password; upload `publicKey`, ciphertext, salt, IV, auth tag. Never send the raw private key or plaintext password except the password over TLS for hashing.
-
-**Login:** after password verification, the Auth service returns the E2EE bundle so the client can unlock the private key locally. **Multi-device** uses the same encrypted blob from the server and the same account password on each device; no extra sync protocol is required for the same user account.
-
-**gRPC (Auth):** `Login` / `Register` return session tokens; `Login` includes `e2eeKeys` when the bundle is complete. `GetUserPublicKey` returns another user’s public key for encrypting message keys (callers pass a valid `sessionToken`). `ChangePassword` updates the Argon2 password hash and **replaces** the stored E2EE bundle (client must re-wrap the private key with a new key derived from the new password; RSA public key can stay the same).
-
-#### Hybrid encryption for messages (Communication service — planned)
-
-RSA-2048 (OAEP) encrypts at most ~190 bytes per operation, so **message bodies are not RSA-encrypted**. The intended pattern matches TLS/PGP-style hybrid encryption:
-
-1. Per message: random **AES-256** key + **AES-GCM** for `encryptedContent` (with IV + auth tag).
-2. That AES key is encrypted for each recipient with **RSA-OAEP** using each recipient’s **public** key.
-3. **Direct chat:** two `message_keys` rows (sender and recipient). **Group chat:** N rows for N members; one `messages` row, N wrapped keys.
-
-**Scaling groups:** wrapping the AES key per member is **O(N) RSA operations per message**, which does not scale to very large groups. Production messengers (e.g. Signal/WhatsApp-style **sender keys**) reduce send cost by distributing a symmetric key to members once and rotating on membership changes. Gomin may use **per-message wrapping for small groups** and **sender keys for large groups** as a product decision.
-
-#### Sender keys (group chats, design)
-
-This is **not** “one admin generates a key and everyone derives the rest from it.” Each **sender** has their **own** sender key material. Everyone else stores a local copy of **each participant’s** chain state so they can decrypt that sender’s messages.
-
-**Per sender**
-
-- Alice encrypts her traffic with **her** sender chain (`senderKey` / chain state for Alice).
-- Bob encrypts with **his** chain.
-- Vasyl encrypts with **his** chain.
-
-So there is no single shared chain for the whole group; there are **parallel chains**, one logical stream per sender.
-
-**Distributing a sender key (one-time, pairwise RSA)**
-
-When Alice joins or creates a group, she generates her sender key (random material + chain state as defined by the chosen protocol, e.g. Signal-style sender-key derivation). She must give **her** key to Bob and Vasyl **confidentially**:
-
-- `RSA-OAEP(senderKey_payload, publicKey_bob)` → to Bob  
-- `RSA-OAEP(senderKey_payload, publicKey_vasyl)` → to Vasyl  
-
-Bob and Vasyl do the same for their peers. The server may **relay** these blobs but cannot decrypt them without private keys.
-
-**Sending a normal message**
-
-- Alice advances **her** chain to derive a **message key**, encrypts the plaintext with **AES-GCM** (or the agreed AEAD), uploads **one** ciphertext blob to the server.
-- The server fans out the **same** blob to all members (no per-member RSA on each message).
-- Recipients who have Alice’s sender state locally derive the **same** message key from the **same** chain step (deterministic KDF/HMAC chain), then decrypt.
-
-**Chain / “next keys”**
-
-Implementations use a **KDF chain** (conceptually: derive a message key from the current chain step, then ratchet the chain forward). Sender and receivers stay in sync because the derivation is deterministic **as long as** they process messages in a consistent order for **that sender’s** stream.
-
-**Forward secrecy (per message key)**
-
-Past message keys are discarded after use; compromising today’s chain state should not recover older plaintexts (exact properties depend on the ratchet design—Signal’s sender keys document the intended guarantees).
-
-**Concurrency and ordering**
-
-- **Two different people** send at the same time: **no conflict**—they use **different** sender chains and different message keys.
-- **The same person** sends two messages quickly and they **arrive out of order**: recipients may see message with **iteration / counter** `6` before `5`. Real protocols attach metadata (e.g. `distributionId`, chain step, **message counter / iteration**) so the receiver can:
-  - advance the chain forward and **buffer** skipped message keys, or
-  - delay decrypt until the missing index arrives,
-
-so decryption stays consistent with the sender’s chain. (Signal uses explicit counters/skipping logic in the sender-key message format.)
-
-**Removing a member**
-
-A removed user must not be able to derive **future** keys. You **do not** only “continue the same chain” if they could have observed prior state. Typically each remaining member generates **new** random sender key material (**v2**), redistributes it via **RSA pairwise among remaining members**, and **stops using v1** for new traffic. The removed user keeps old ciphertext but cannot decrypt new messages.
-
-#### Sender key distribution — transport (Communication service — planned)
-
-Key distribution is **session-oriented and often real-time** (push to online clients, queue for offline). A plain **request/response HTTP** handler alone is a poor fit for “everyone must receive key updates quickly”; the natural options in a NestJS stack are:
-
-- **WebSocket gateway** (e.g. namespace `/keys` or under the main chat socket): events such as `distribute_sender_key` (payload: `groupId`, `recipientId`, `encryptedSenderKey`), and `sender_key_received` on the recipient; **or**
-- **gRPC streaming** / long-lived channel from Communication service to clients (mobile/web may still prefer WebSockets).
-
-The server may **persist pending** encrypted blobs (e.g. Redis + DB) keyed by `recipientId` + `groupId` so offline users fetch them on reconnect (`fetch_pending_keys`-style). The service only ever stores **RSA ciphertext**; it never holds users’ private keys.
-
-#### Group membership and keys (Communication service — planned)
-
-- **Add member:** existing members (or an admin) decrypt their copy of the message key (with their private key) and encrypt it for the new member’s public key; batch-insert new `message_keys`. Optionally limit history (e.g. last N messages) or use `canReadFrom` / `joinedAt` so the server only exposes keys for allowed messages.
-- **Remove member:** delete that user’s `message_keys` rows; bump **`keyVersion`** on the chat; new messages use the new version so the server can **omit** wrapped keys for removed users.
-
-#### Authentication & Authorization
-
-- **JWT-based authentication**
-- Access tokens (15 min expiry)
-- Refresh tokens (7 days expiry)
-- Token stored in Redis with TTL
-- Role-based access control (RBAC)
-
-### API Security
-
-- Rate limiting (Kong/Traefik)
-- CORS configuration
-- Input validation (class-validator)
-- SQL injection prevention (Prisma/parameterized queries)
-- XSS protection
-
-### File Upload Security
-
-1. Presigned URLs (15 min expiry)
-2. Size limits (100MB per file)
-3. MIME type validation
-4. Magic bytes detection
-5. Antivirus scanning (ClamAV)
-6. EXIF data removal
-
----
-
-## ☁️ Infrastructure
-
-### Kubernetes Deployment
-
-**Namespace Structure:**
-```
-gomin-prod
-  ├── identity-service
-  ├── communication-service
-  ├── media-service
-  ├── notification-service
-  ├── postgresql
-  ├── redis
-  ├── rabbitmq
-  ├── minio
-  ├── elasticsearch
-  └── monitoring
-```
-
-**Service Replicas (Production):**
-```yaml
-Identity Service:      3-5 pods
-Communication Service: 5-10 pods (high traffic)
-Media Service:         3-5 pods + workers
-Notification Service:  3-5 pods
-```
-
-**Horizontal Pod Autoscaler (HPA):**
-```yaml
-metrics:
-  - type: Resource
-    resource:
-      name: cpu
-      target:
-        type: Utilization
-        averageUtilization: 70
-  - type: Resource
-    resource:
-      name: memory
-      target:
-        type: Utilization
-        averageUtilization: 80
-```
-
-### Ingress Configuration
-```yaml
-# API Gateway
-api.gomin.com       → API Gateway → Microservices
-
-# Direct MinIO access (bypass gateway for files)
-files.gomin.com     → MinIO (direct upload/download)
-
-# WebSocket
-ws.gomin.com        → Communication Service (WebSocket gateway)
-```
-
-### Database Scaling
-
-**PostgreSQL:**
-- Primary-Replica setup
-- Read replicas for queries
-- Connection pooling (PgBouncer)
-- Table partitioning for `messages` table
-
-**Redis:**
-- Redis Cluster (3 master + 3 replica)
-- Pub/Sub for WebSocket scaling
-
-**MinIO:**
-- Distributed mode (4+ nodes)
-- Erasure coding for data redundancy
-
----
-
-## 📊 Data Flow Examples
-
-### 1. Send Message with File
-```
-┌────────┐                                          ┌──────────────┐
-│ Client │                                          │Communication │
-└───┬────┘                                          │   Service    │
-    │                                               └──────┬───────┘
-    │ 1. POST /media/upload/init                          │
-    │    { fileName, size, mimeType, chatId }             │
-    ├────────────────────────────────────────────────┐    │
-    │                                           ┌────▼────▼───┐
-    │                                           │    Media    │
-    │                                           │   Service   │
-    │                                           └────┬────────┘
-    │ 2. Return signed URL                           │
-    │    { fileId, uploadUrl, expiresIn: 900 }       │
-    │<───────────────────────────────────────────────┤
-    │                                                │
-    │ 3. PUT uploadUrl (direct to MinIO)             │
-    │─────────────────────────┐                      │
-    │                    ┌────▼─────┐                │
-    │                    │  MinIO   │                │
-    │                    └──────────┘                │
-    │                                                │
-    │ 4. POST /media/upload/complete                 │
-    │    { fileId }                                  │
-    ├────────────────────────────────────────────────┤
-    │                                           ┌────▼────────┐
-    │                                           │    Media    │
-    │                                           │   Service   │
-    │                                           │ - Validate  │
-    │                                           │ - Queue job │
-    │                                           └─────────────┘
-    │ 5. Return { fileId, url }                      │
-    │<───────────────────────────────────────────────┤
-    │                                                │
-    │ 6. POST /messages                              │
-    │    { chatId, text, fileId }                    │
-    ├───────────────────────────────────────────────>│
-    │                                          ┌─────▼────────┐
-    │                                          │Communication │
-    │                                          │   Service    │
-    │                                          │ - Save msg   │
-    │                                          │ - Notify     │
-    │                                          └──────────────┘
-```
+Internal service-to-service traffic travels over the cluster network (no public exposure). gRPC between services is unencrypted within the cluster but isolated by Kubernetes network policies and namespaces.
 
 ### 2. User Authentication
+
+**Registration:**
+- Password is hashed with **Argon2id** — never stored in plaintext
+- Client generates an **RSA-2048 key pair** locally
+- Private key is wrapped with **AES-256-GCM** using a key derived from the password via **PBKDF2 + unique salt**
+- Server stores: `publicKey`, `encryptedPrivateKey`, `encryptionIv`, `encryptionAuthTag`, `encryptionSalt`
+- Server **never sees the plaintext private key**
+
+**Login:**
+- Server verifies password against the Argon2 hash
+- Returns a **session token** (opaque, stored in DB + Redis) and the encrypted E2EE bundle
+- Client decrypts the private key locally using the password
+
+**Sessions:**
+- Session token is sent as `Authorization: Bearer <token>` on every HTTP request
+- `SessionGuard` in `api-gateway` validates the token via gRPC call to `auth`
+- WebSocket connections authenticate via `?token=<sessionToken>` at handshake time (`WsSessionGuard`)
+
+### 3. Service-to-Service Authentication
+
+Every gRPC call between services is authenticated by `MicroserviceIdentityGuard`:
+
 ```
-┌────────┐                                    ┌──────────────┐
-│ Client │                                    │   Identity   │
-└───┬────┘                                    │   Service    │
-    │                                         └──────┬───────┘
-    │ 1. POST /auth/login                            │
-    │    { email, password }                         │
-    ├───────────────────────────────────────────────>│
-    │                                                │
-    │                                         - Verify password
-    │                                         - Generate tokens
-    │                                         - Save session (Redis)
-    │                                                │
-    │ 2. Return tokens + user                        │
-    │    {                                           │
-    │      accessToken: "eyJhbG...",                 │
-    │      refreshToken: "eyJhbG...",                │
-    │      user: {...}                               │
-    │    }                                           │
-    │<───────────────────────────────────────────────┤
-    │                                                │
-    │ 3. Subsequent requests                         │
-    │    Authorization: Bearer eyJhbG...             │
-    ├───────────────────────────────┐                │
-    │                          ┌────▼─────┐          │
-    │                          │   API    │          │
-    │                          │ Gateway  │          │
-    │                          └────┬─────┘          │
-    │                               │                │
-    │                               │ Validate token (gRPC)
-    │                               ├───────────────>│
-    │                               │                │
-    │                               │ Return user context
-    │                               │<───────────────┤
-    │                               │                │
-    │                          Add X-User-Id header  │
-    │                               │                │
-    │                          Forward to service    │
+api-gateway → auth service:
+  1. api-gateway holds a SERVICE_SECRET configured via Kubernetes Secret
+  2. Calls AuthenticateServiceIdentity(serviceName, serviceSecret) → gets a JWT (RS256)
+  3. Attaches the JWT as metadata on every subsequent gRPC call
+  4. auth validates the JWT on each call via MicroserviceIdentityGuard + RequirePermission
 ```
 
-### 3. Real-time Message Delivery
+Each service has a fixed set of **permissions** (e.g. `SESSIONS_READ`, `USERS_WRITE`) defined in the database. The guard checks both token validity and permission presence. A compromised service can only call endpoints it is explicitly permitted to.
+
+### 4. CORS
+
+HTTP and WebSocket CORS are both restricted to the frontend origin via the `CORS_ORIGIN` environment variable (stored in the `api-gateway-secret` Kubernetes Secret):
+
 ```
-┌─────────┐                    ┌──────────────┐                    ┌─────────┐
-│ Alice   │                    │Communication │                    │   Bob   │
-│ Client  │                    │   Service    │                    │ Client  │
-└────┬────┘                    └──────┬───────┘                    └────┬────┘
-     │                                │                                  │
-     │ WebSocket connection           │           WebSocket connection   │
-     │<──────────────────────────────>│<─────────────────────────────────>│
-     │                                │                                  │
-     │ 1. Send message                │                                  │
-     │ { type: 'message.send',        │                                  │
-     │   payload: {...} }             │                                  │
-     ├───────────────────────────────>│                                  │
-     │                                │                                  │
-     │                         - Save to DB                              │
-     │                         - Publish to Redis Pub/Sub               │
-     │                                │                                  │
-     │                                │ 2. Broadcast via Redis Pub/Sub   │
-     │                                │────────────────┐                 │
-     │                                │                │                 │
-     │                                │<───────────────┘                 │
-     │                                │                                  │
-     │                                │ 3. Send to Bob                   │
-     │                                │ { type: 'message.new',           │
-     │                                │   payload: {...} }               │
-     │                                ├─────────────────────────────────>│
-     │                                │                                  │
-     │                                │ 4. Bob sends read receipt        │
-     │                                │<─────────────────────────────────┤
-     │                                │                                  │
-     │ 5. Notify Alice                │                                  │
-     │ { type: 'message.read' }       │                                  │
-     │<───────────────────────────────┤                                  │
+CORS_ORIGIN=https://app.84.247.133.45.nip.io
 ```
+
+`app.enableCors()` and Socket.IO's `createIOServer` both read this value. Requests from any other origin are rejected by the browser before they reach the server.
+
+### 5. Input Validation
+
+All HTTP request bodies are validated globally by NestJS `ValidationPipe`:
+
+```typescript
+new ValidationPipe({
+  whitelist: true,           // strips fields not in the DTO
+  forbidNonWhitelisted: true,// rejects requests with unknown fields
+  transform: true,           // coerces types automatically
+})
+```
+
+This prevents mass-assignment attacks and ensures only declared fields reach the service layer.
+
+### 6. End-to-End Encryption (E2EE)
+
+Messages are encrypted on the client and the server stores only ciphertext. Two schemes are used depending on group size:
+
+**Direct / small group — per-message hybrid encryption:**
+
+```
+1. Client generates a random AES-256 key for the message
+2. Encrypts the message body with AES-GCM  → encryptedContent + iv + authTag
+3. Wraps the AES key with each recipient's RSA-2048 public key (RSA-OAEP)
+4. Uploads: one ciphertext blob + N wrapped keys (one per recipient)
+```
+
+**Large groups — Sender Keys:**
+
+```
+1. Each sender generates their own sender key (random chain material)
+2. Distributes it to each group member via RSA-OAEP (pairwise, one-time)
+3. For each message: derives a message key from the KDF chain, encrypts with AES-GCM
+4. Uploads one ciphertext blob; all recipients derive the same key locally
+   → O(1) ciphertext per message instead of O(N) RSA operations
+```
+
+Key rotation on member removal: remaining members generate new sender key material and redistribute it, making future messages unreadable to the removed user.
+
+### 7. Kubernetes Secrets Management
+
+All sensitive values (passwords, tokens, DB URLs) are stored in Kubernetes Secrets — never in git:
+
+```
+api-gateway-secret   → CORS_ORIGIN, SERVICE_SECRET, REDIS_PASSWORD, ...
+auth-secret          → JWT_SIGNING_KEYS, DATABASE_URL, ...
+communication-service-secret → DATABASE_URL, SERVICE_SECRET, ...
+redis-secret         → REDIS_PASSWORD
+minio-secret         → rootUser, rootPassword
+```
+
+Pods mount secrets via `envFrom.secretRef` — the application reads them as environment variables without any knowledge of the secret layer.
+
+### 8. CI/CD Least-Privilege
+
+The GitHub Actions ServiceAccount (`github-actions`) has **write access only to `gomin-apps` and `gomin-infra`**. It cannot read or modify `kube-system`, create namespaces, or access any cluster-wide resource. See the [CI/CD ServiceAccount](#cicd-serviceaccount) section.
 
 ---
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 
-- Node.js 18+
-- pnpm 8+
-- Docker & Docker Compose
-- Kubernetes (Minikube or cloud provider)
-- PostgreSQL 15+
-- Redis 7+
-- MinIO
+- Node.js 22+
+- pnpm 9+
+- Docker (for local infrastructure)
+- PostgreSQL 15+, Redis 7+
 
-### Installation
+### Install
+
 ```bash
-# Clone repository
 git clone https://github.com/Dmutre/Gomin.git
 cd Gomin
-
-# Install dependencies
 pnpm install
-
-# Set up environment variables
-cp .env.example .env
 ```
 
-### Environment Variables
-```env
-# Database
-DATABASE_URL=postgresql://user:password@localhost:5432/gomin
-REDIS_URL=redis://localhost:6379
+### Local development
 
-# MinIO
-MINIO_ENDPOINT=localhost
-MINIO_PORT=9000
-MINIO_ACCESS_KEY=minioadmin
-MINIO_SECRET_KEY=minioadmin
-
-# RabbitMQ
-RABBITMQ_URL=amqp://localhost:5672
-
-# JWT
-JWT_SECRET=your-secret-key
-JWT_EXPIRES_IN=15m
-REFRESH_TOKEN_EXPIRES_IN=7d
-
-# Elasticsearch
-ELASTICSEARCH_NODE=http://localhost:9200
-```
-
-### Development
 ```bash
-# Run all services
-pnpm nx run-many --target=serve --all
+# Start infrastructure (PostgreSQL + Redis)
+docker compose up -d
 
-# Run specific service
-pnpm nx serve identity-service
+# Run a service
+pnpm nx serve api-gateway
+pnpm nx serve auth
 pnpm nx serve communication-service
-pnpm nx serve media-service
-pnpm nx serve notification-service
 
-# Build all services
+# Build all
 pnpm nx run-many --target=build --all
 
-# Run tests
-pnpm nx test identity-service
-
 # Lint
-pnpm nx lint identity-service
+pnpm nx run-many --target=lint --all
 
-# View dependency graph
+# Dependency graph
 pnpm nx graph
 ```
 
-### Docker Compose (Local Development)
-```bash
-# Start infrastructure services
-docker-compose up -d postgres redis rabbitmq minio elasticsearch
+### Key environment variables (per service)
 
-# Check services
-docker-compose ps
-
-# View logs
-docker-compose logs -f
-```
-
-### Kubernetes Deployment
-
-See the [Deployment](#-deployment) section for the full guide.
+| Variable | Service | Description |
+|---|---|---|
+| `DATABASE_URL` | auth, communication-service | PostgreSQL connection string |
+| `REDIS_HOST` / `REDIS_PORT` / `REDIS_PASSWORD` | all | Redis connection |
+| `JWT_SIGNING_KEYS` | auth | JSON array of RSA key pairs |
+| `GRPC_PORT` | auth, communication-service | gRPC listen port |
+| `AUTH_SERVICE_URL` | api-gateway, communication-service | gRPC address of auth |
+| `COMMUNICATION_SERVICE_URL` | api-gateway | gRPC address of communication-service |
+| `SERVICE_NAME` / `SERVICE_SECRET` | api-gateway, communication-service | Inter-service auth identity |
+| `CORS_ORIGIN` | api-gateway | Allowed frontend origin (e.g. `https://app.example.com`) |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | all | OTel Collector gRPC endpoint |
 
 ---
 
-## 📈 Monitoring & Observability
-
-### Metrics (Prometheus + Grafana)
-
-**Key Metrics:**
-- Request rate (requests/sec)
-- Response time (p50, p95, p99)
-- Error rate (%)
-- WebSocket connections count
-- Message throughput
-- Database query performance
-- Cache hit rate
-- Queue length
-
-**Grafana Dashboards:**
-- Service health overview
-- Database performance
-- Message delivery metrics
-- File upload statistics
-- User activity
-
-### Tracing (Jaeger)
-
-Distributed tracing across services:
-```
-Client Request
-  └─ API Gateway (10ms)
-      └─ Identity Service: ValidateToken (5ms)
-      └─ Communication Service: SendMessage (50ms)
-          └─ Media Service: GetFileUrl (20ms)
-          └─ RabbitMQ: PublishEvent (10ms)
-          └─ PostgreSQL: InsertMessage (15ms)
-```
-
-### Logging (ELK Stack)
-
-Centralized logging with structured logs:
-```json
-{
-  "timestamp": "2026-02-12T10:30:00Z",
-  "level": "info",
-  "service": "communication-service",
-  "traceId": "abc123",
-  "userId": "user-456",
-  "action": "message.sent",
-  "chatId": "chat-789",
-  "duration": 45
-}
-```
-
----
-
-## 📝 API Documentation
-
-API documentation available at:
-- Swagger UI: `http://api.gomin.com/docs`
-- Postman Collection: `/docs/postman`
-- gRPC Proto files: `/libs/shared/proto`
-
----
-
-## 🧪 Testing
-```bash
-# Unit tests
-pnpm nx test identity-service
-
-# E2E tests
-pnpm nx e2e identity-service-e2e
-
-# Integration tests
-pnpm nx test:integration communication-service
-
-# Load testing (k6)
-k6 run tests/load/message-send.js
-```
-
----
-
-## 🚀 Deployment
+## Deployment
 
 ### Helm chart structure
 
 ```
 charts/
   platform/               # Cluster-level: namespaces
-  infra/                  # Redis + MinIO (StatefulSets with PVCs)
+  infra/                  # Redis + MinIO
   api-gateway/            # HTTP / WebSocket gateway
   auth/                   # Auth gRPC microservice + migrations
   communication-service/  # Messaging gRPC microservice + migrations
+  web/                    # Static frontend
+  monitoring/             # Prometheus, Loki, Tempo, Grafana, OTel Collector
 ```
 
 **Namespaces:**
@@ -966,109 +299,106 @@ charts/
 | Namespace | Contents |
 |---|---|
 | `gomin-infra` | Redis, MinIO |
-| `gomin-apps` | api-gateway, auth, communication-service |
-| `gomin-monitoring` | Prometheus, Grafana, Loki, Tempo |
+| `gomin-apps` | api-gateway, auth, communication-service, web |
+| `gomin-monitoring` | Prometheus, Grafana, Loki, Tempo, OTel Collector |
+
+**Live endpoints:**
+
+| Service | URL |
+|---|---|
+| API Gateway | `https://api.84.247.133.45.nip.io` |
+| Web Frontend | `https://app.84.247.133.45.nip.io` |
+| Grafana | `http://grafana.84.247.133.45.nip.io` |
+| Swagger | `https://api.84.247.133.45.nip.io/docs` |
 
 ---
 
 ### First-time cluster setup
 
-Bootstrap assets for the cluster and **CI/CD (GitHub Actions kubeconfig)** live in [`k8s/bootstrap/`](k8s/bootstrap/): RBAC for the deployer ServiceAccount and a script to generate the restricted kubeconfig.
+**1. Bootstrap namespaces + CI/CD ServiceAccount:**
+```bash
+kubectl apply -f k8s/bootstrap/ci-rbac.yaml
+```
 
-**1. Install `metrics-server`** (required for HPA):
+Creates: `gomin-apps`, `gomin-infra`, `ServiceAccount github-actions`, RBAC, long-lived token.
+
+**2. Install metrics-server** (required for HPA):
 ```bash
 kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
 ```
 
-**2. Bootstrap namespaces + CI/CD ServiceAccount** — один файл, безпечно на голому кластері:
-```bash
-kubectl apply -f k8s/ci-rbac.yaml
-```
-
-Це створює: `gomin-apps`, `gomin-infra`, `ServiceAccount github-actions`, RBAC, довготривалий токен. Після цього можна генерувати kubeconfig для CI ([інструкція нижче](#cicd-serviceaccount)).
-
-**3. Create all secrets** interactively (passwords are never written to disk or git):
+**3. Create all secrets interactively** (passwords are never written to disk or git):
 ```bash
 chmod +x scripts/setup-secrets.sh
 ./scripts/setup-secrets.sh
 ```
 
-The script prompts for: Redis password, MinIO credentials, PostgreSQL URLs, JWT secret, gRPC ports. Re-running updates existing secrets safely (idempotent).
+Prompts for: Redis password, MinIO credentials, PostgreSQL URLs, JWT keys, service secrets, CORS origin. Re-running updates existing secrets safely (idempotent).
 
-**4. (Optional) Create `gomin-monitoring` namespace:**
+**4. Deploy namespaces + infrastructure:**
 ```bash
 helm upgrade --install platform ./charts/platform
+helm upgrade --install infra    ./charts/infra --namespace gomin-infra
 ```
 
-**5. Deploy infrastructure** (Redis + MinIO):
-```bash
-helm upgrade --install infra ./charts/infra --namespace gomin-infra
-```
-
-**6. Deploy application services:**
+**5. Deploy application services:**
 ```bash
 helm upgrade --install auth                  ./charts/auth                  --namespace gomin-apps
 helm upgrade --install communication-service ./charts/communication-service --namespace gomin-apps
 helm upgrade --install api-gateway           ./charts/api-gateway           --namespace gomin-apps
+helm upgrade --install web                   ./charts/web                   --namespace gomin-apps
+```
+
+**6. (Optional) Deploy monitoring stack:**
+```bash
+helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+helm repo add grafana               https://grafana.github.io/helm-charts
+helm repo add open-telemetry        https://open-telemetry.github.io/opentelemetry-helm-charts
+helm dependency update charts/monitoring
+helm upgrade --install monitoring ./charts/monitoring --namespace gomin-monitoring \
+  --set kube-prometheus-stack.grafana.adminPassword="<password>"
 ```
 
 ---
 
 ### CI/CD ServiceAccount
 
-GitHub Actions deploys using a dedicated `github-actions` ServiceAccount that has write access **only** to `gomin-apps` and `gomin-infra`. Even if the token leaks, an attacker cannot touch anything outside those two namespaces.
+GitHub Actions deploys using `github-actions` ServiceAccount — write access **only** to `gomin-apps` and `gomin-infra`.
 
 The manifest is at [`k8s/bootstrap/ci-rbac.yaml`](k8s/bootstrap/ci-rbac.yaml). It creates:
 - `ServiceAccount` `github-actions` in `gomin-apps`
-- `ClusterRole` `gomin-deployer` — minimum permissions Helm needs (CRUD on deployments, services, secrets, jobs, HPA, ingresses, StatefulSets)
-- Two `RoleBinding`s — binds the role to `gomin-apps` and `gomin-infra`
-- A long-lived `Secret` token (Kubernetes 1.24+ no longer auto-creates tokens)
-
-#### Apply the RBAC
-
-```bash
-# namespaces must already exist (step 2 above creates them)
-kubectl apply -f k8s/bootstrap/ci-rbac.yaml
-```
+- `ClusterRole` `gomin-deployer` — minimum Helm permissions (CRUD on deployments, services, secrets, jobs, HPA, ingresses)
+- `RoleBinding` in both `gomin-apps` and `gomin-infra`
+- `ClusterRole` `gomin-crd-manager` + `ClusterRoleBinding` — CRD and cluster-scoped resource access
+- A long-lived `Secret` token (required since Kubernetes 1.24)
 
 #### Generate the restricted kubeconfig
 
-On your VDS (or any host with admin `kubectl`), from the **repository root**:
-
 ```bash
 chmod +x k8s/bootstrap/generate-ci-kubeconfig.sh
-./k8s/bootstrap/generate-ci-kubeconfig.sh "<VDS_IP_OR_HOSTNAME>" ci-kubeconfig.yaml
+./k8s/bootstrap/generate-ci-kubeconfig.sh "<VDS_IP>" ci-kubeconfig.yaml
+cat ci-kubeconfig.yaml   # copy output
+rm  ci-kubeconfig.yaml   # delete locally
 ```
 
-Use the server’s public IP or DNS name; if you omit `https://`, the API URL is set to `https://<host>:6443`. To pass a full URL (e.g. behind a load balancer), use `https://api.example:6443` as the first argument.
-
-#### Add to GitHub Secrets
-
-```bash
-cat ci-kubeconfig.yaml   # copy the output
-rm ci-kubeconfig.yaml    # delete locally after copying
-```
-
-Go to **GitHub → Settings → Secrets and variables → Actions → New repository secret**:
+Add to **GitHub → Settings → Secrets → Actions**:
 
 | Name | Value |
 |---|---|
-| `KUBECONFIG` | Paste the copied kubeconfig content |
+| `KUBECONFIG` | Paste the kubeconfig content |
 
-#### Verify permissions are restricted
+#### Verify least-privilege
 
 ```bash
-# can deploy to our namespaces
+# Allowed
 kubectl auth can-i create deployments \
   --as=system:serviceaccount:gomin-apps:github-actions -n gomin-apps   # yes
-
 kubectl auth can-i create deployments \
   --as=system:serviceaccount:gomin-apps:github-actions -n gomin-infra  # yes
 
-# cannot touch anything else
+# Denied
 kubectl auth can-i delete namespaces \
   --as=system:serviceaccount:gomin-apps:github-actions                 # no
-
 kubectl auth can-i get secrets \
   --as=system:serviceaccount:gomin-apps:github-actions -n kube-system  # no
 ```
@@ -1077,150 +407,86 @@ kubectl auth can-i get secrets \
 
 ### CI/CD — GitHub Actions
 
-The workflow **Actions → Build & Deploy** (`.github/workflows/build-and-deploy.yml`) handles building images and deploying to the cluster.
+**Workflow:** `.github/workflows/build-and-deploy.yml`
 
-#### Triggering a build
-
-Go to **Actions → Build & Deploy → Run workflow**, then fill in:
+Go to **Actions → Build & Deploy → Run workflow**:
 
 | Input | Description |
 |---|---|
-| `version` | Image tag to publish, e.g. `v1.2.0`. Leave **empty** to use the root `package.json` `version` field (a `v` prefix is added if missing). If that field is missing, the workflow uses `v0.1.0`. |
-| `Build api-gateway` | Checkbox — build & push this service |
-| `Build auth` | Checkbox — build & push this service |
-| `Build communication-service` | Checkbox — build & push this service |
-| `Deploy to Kubernetes` | Run `helm upgrade` for every selected service after build |
-| `Run DB migrations` | Before deploying, run Knex migrations for `auth` and/or `communication-service` (whichever are selected). Ignored if Deploy is unchecked. |
-| Branch selector | Native GitHub UI — choose any branch |
+| `version` | Image tag (e.g. `v1.2.0`). Empty = use `package.json` version. |
+| `Build <service>` | Checkbox per service |
+| `Deploy to Kubernetes` | Run `helm upgrade` after build |
+| `Run DB migrations` | Run Knex migrations before deploy |
 
-Any combination of services can be selected. All selected services build in parallel.
-
-#### What happens
+#### Pipeline
 
 ```
-setup    → computes two matrices:
-           • all selected apps      (build + deploy)
-           • migration-capable apps (auth, communication-service only)
+setup   → compute build + migration matrices
 
-build    → parallel per selected service:
-           docker build → ghcr.io/<owner>/gomin-<service>:<version> + :latest
+build   → parallel per service:
+          docker build → ghcr.io/<owner>/gomin-<service>:<version>
 
-migrate  → (only if Deploy + Run migrations are both checked,
-            and at least one of auth / communication-service is selected)
-           parallel per migration service:
-           kubectl apply Job → node knex migrate:latest
-           kubectl wait  Job --for=condition=complete --timeout=5m
-           Job auto-deletes after 10 min (ttlSecondsAfterFinished)
+migrate → (if Deploy + Run migrations checked)
+          kubectl apply Job → knex migrate:latest
+          kubectl wait  --for=condition=complete --timeout=5m
+          Job auto-deletes after 10 min
 
-deploy   → runs only if build succeeded AND migrate succeeded-or-skipped
-           parallel per selected service:
-           helm upgrade --install --atomic --timeout 5m
-           --set migrations.enabled=false  ← skips Helm hook (CI already ran them)
-           auto-rollback on failure
+deploy  → parallel per service (only if build + migrate succeeded):
+          helm upgrade --install --atomic --timeout 5m
+          auto-rollback on failure
 ```
 
-Images are published to **GitHub Container Registry** (`ghcr.io`) — no extra registry setup needed for a public repo.
+#### Migration table
 
-#### Migration behaviour
-
-| Deploy | Run migrations | auth selected | Result |
+| Deploy | Run migrations | Service selected | Result |
 |---|---|---|---|
-| ✅ | ✅ | ✅ | migrate job runs → then deploy |
-| ✅ | ✅ | ❌ | migrate skipped → deploy runs normally |
-| ✅ | ❌ | ✅ | no migrations → deploy runs (schema must already be up to date) |
-| ❌ | any | any | only images are built and pushed |
-
-If a migration Job fails, the entire pipeline stops — `deploy` is blocked and the currently running pods are untouched.
+| ✅ | ✅ | ✅ | migrate → deploy |
+| ✅ | ✅ | ❌ | skip migrate → deploy |
+| ✅ | ❌ | ✅ | skip migrate → deploy (schema must be current) |
+| ❌ | any | any | build + push only |
 
 #### Update strategy
 
-All deployments use `RollingUpdate` with `maxUnavailable: 0` and `maxSurge: 1`:
-
-- A new pod is brought up first
-- Old pod is only terminated after the new one passes readiness checks
-- Minimum 2 pods (per `minReplicas`) are always available
-
-`--atomic` means a failed rollout automatically reverts to the previous Helm release.
+All deployments use `RollingUpdate` with `maxUnavailable: 0`, `maxSurge: 1` — new pod must pass readiness before old one terminates. `--atomic` auto-reverts on failure.
 
 ---
 
-### Manual image build
+### Useful commands
 
 ```bash
-# Build from workspace root — context must be the repo root
-docker build -f apps/auth/Dockerfile -t ghcr.io/<owner>/gomin-auth:v1.0.0 .
-docker push ghcr.io/<owner>/gomin-auth:v1.0.0
-```
+# Pod status
+kubectl get pods -n gomin-apps
+kubectl get pods -n gomin-infra
 
-### Database migrations
+# Logs
+kubectl logs -f deployment/api-gateway -n gomin-apps
 
-`auth` and `communication-service` compile their Knex migrations into the Docker image. Migrations run automatically as a Kubernetes **Job** before each Helm release (`migrations.enabled: true` in values).
+# HPA status
+kubectl get hpa -n gomin-apps
 
-To run manually:
-```bash
+# Helm history / rollback
+helm history auth -n gomin-apps
+helm rollback  auth -n gomin-apps
+
+# Port-forward MinIO console
+kubectl port-forward -n gomin-infra svc/minio 9001:9001
+
+# Manual migration
 kubectl create job --from=cronjob/auth-migrate auth-migrate-manual -n gomin-apps
 kubectl wait --for=condition=complete job/auth-migrate-manual -n gomin-apps --timeout=120s
 ```
 
-### Useful kubectl commands
-
-```bash
-# Check pod status
-kubectl get pods -n gomin-apps
-kubectl get pods -n gomin-infra
-
-# Stream logs
-kubectl logs -f deployment/api-gateway -n gomin-apps
-
-# Port-forward MinIO console locally
-kubectl port-forward -n gomin-infra svc/minio 9001:9001
-
-# Check HPA scaling
-kubectl get hpa -n gomin-apps
-
-# Helm release history
-helm history auth -n gomin-apps
-
-# Manual rollback
-helm rollback auth -n gomin-apps
-```
-
 ---
 
-## 🤝 Contributing
+## License
 
-1. Fork the repository
-2. Create feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit changes (`git commit -m 'feat: add amazing feature'`)
-4. Push to branch (`git push origin feature/amazing-feature`)
-5. Open Pull Request
+Released as open-source. Developed as a bachelor diploma project.
 
----
+## Authors
 
-## 📄 License
+- **Dmytro Lesko** — initial work
 
-This project was developed as a **bachelor diploma work** and is released as an **open-source** project.
+## Acknowledgments
 
----
-
-## 👥 Authors
-
-- **Dmytro** - *Initial work*
-
----
-
-## 🙏 Acknowledgments
-
-- Signal Protocol for E2EE inspiration
-- NestJS community
-- Kubernetes documentation
-
----
-
-## 📞 Contact
-
-For questions or feedback, please open an issue on GitHub.
-
----
-
-**Built with ❤️ for high-load messaging**
+- Signal Protocol — E2EE design inspiration
+- NestJS, Kubernetes, Let's Encrypt communities
