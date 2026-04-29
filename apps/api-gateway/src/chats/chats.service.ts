@@ -238,4 +238,36 @@ export class ChatsService {
       metadata,
     );
   }
+
+  async deleteChat(requestingUserId: string, chatId: string) {
+    const metadata = await this.buildMetadata();
+
+    // Fetch members before deletion so we can notify them
+    let memberIds: string[] = [];
+    try {
+      const result = await this.communicationClient.getChat(
+        { chatId, userId: requestingUserId },
+        metadata,
+      );
+      memberIds = (result.chat?.members ?? []).map((m) => m.userId);
+    } catch {
+      // If fetch fails, still proceed with deletion
+    }
+
+    await this.communicationClient.deleteChat(
+      { chatId, requestingUserId },
+      metadata,
+    );
+
+    await Promise.all(
+      memberIds.map((userId) =>
+        this.pubSub.publish(this.pubSub.userChannel(userId), {
+          event: 'chat:deleted',
+          data: { chatId },
+        }),
+      ),
+    );
+
+    return { success: true };
+  }
 }

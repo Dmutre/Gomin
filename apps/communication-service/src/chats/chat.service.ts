@@ -320,6 +320,29 @@ export class ChatService {
     return updated;
   }
 
+  async deleteChat(chatId: string, requestingUserId: string): Promise<void> {
+    const chat = await this.chatRepo.findById(chatId);
+    if (!chat) {
+      throw new MicroserviceException('Chat not found', status.NOT_FOUND);
+    }
+
+    const member = await this.memberRepo.findActive(chatId, requestingUserId);
+    if (!member) {
+      throw new MicroserviceException('Access denied', status.PERMISSION_DENIED);
+    }
+
+    if (chat.type !== 'DIRECT' && member.role !== 'OWNER') {
+      throw new MicroserviceException(
+        'Only the chat owner can delete a group chat',
+        status.PERMISSION_DENIED,
+      );
+    }
+
+    await this.chatRepo.deleteById(chatId);
+
+    this.logger.info({ chatId, deletedBy: requestingUserId }, 'Chat deleted');
+  }
+
   async transferOwnership(
     chatId: string,
     currentOwnerId: string,

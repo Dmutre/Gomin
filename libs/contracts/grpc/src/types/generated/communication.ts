@@ -110,6 +110,11 @@ export interface TransferOwnershipRequest {
   newOwnerId: string;
 }
 
+export interface DeleteChatRequest {
+  chatId: string;
+  requestingUserId: string;
+}
+
 export interface ChatResponse {
   chat: Chat | undefined;
 }

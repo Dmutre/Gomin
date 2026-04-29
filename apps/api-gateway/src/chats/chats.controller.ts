@@ -106,4 +106,13 @@ export class ChatsController {
   ) {
     return this.chatsService.transferOwnership(user.userId, chatId, dto);
   }
+
+  @Delete('/:chatId')
+  @ApiOperation({ summary: 'Delete a chat and all its messages and keys' })
+  deleteChat(
+    @CurrentUser() user: CurrentUserType,
+    @Param('chatId') chatId: string,
+  ) {
+    return this.chatsService.deleteChat(user.userId, chatId);
+  }
 }

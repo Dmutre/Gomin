@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Send,
@@ -304,6 +304,7 @@ function normalizeMessageReactions(msg: Message): Message {
 
 export function ChatPage() {
   const { chatId } = useParams<{ chatId: string }>();
+  const navigate = useNavigate();
   const { user, privateKey } = useAuthStore();
   const cryptoStore = useCryptoStore();
   const queryClient = useQueryClient();
@@ -327,6 +328,10 @@ export function ChatPage() {
   const [newMemberUserId, setNewMemberUserId] = useState('');
   const [newMemberRole, setNewMemberRole] = useState<MemberRole>('MEMBER');
   const [addingMember, setAddingMember] = useState(false);
+
+  // Delete chat dialog
+  const [deleteChatOpen, setDeleteChatOpen] = useState(false);
+  const [deletingChat, setDeletingChat] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
@@ -821,6 +826,28 @@ export function ChatPage() {
     }
   }
 
+  // ── Delete chat ───────────────────────────────────────────────────────────────
+
+  async function handleDeleteChat() {
+    if (!chatId) return;
+    setDeletingChat(true);
+    try {
+      await chatsApi.deleteChat(chatId);
+      cryptoStore.clearChat(chatId);
+      queryClient.removeQueries({ queryKey: ['chat', chatId] });
+      queryClient.invalidateQueries({ queryKey: ['chats'] });
+      navigate('/');
+    } catch (err: unknown) {
+      const msg =
+        (err as { response?: { data?: { message?: string } } })?.response?.data
+          ?.message ?? 'Failed to delete chat';
+      toast.error(typeof msg === 'string' ? msg : 'Failed to delete chat');
+      setDeleteChatOpen(false);
+    } finally {
+      setDeletingChat(false);
+    }
+  }
+
   // ── Mark read on scroll ───────────────────────────────────────────────────────
 
   useEffect(() => {
@@ -904,6 +931,15 @@ export function ChatPage() {
           title="Add member"
         >
           <UserPlus className="h-4 w-4" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setDeleteChatOpen(true)}
+          title="Delete chat"
+          className="text-destructive hover:text-destructive"
+        >
+          <Trash2 className="h-4 w-4" />
         </Button>
       </div>
 
@@ -1067,6 +1103,31 @@ export function ChatPage() {
             </Button>
             <Button onClick={handleAddMember} loading={addingMember}>
               Add
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Chat Dialog */}
+      <Dialog open={deleteChatOpen} onOpenChange={setDeleteChatOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Delete chat</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground py-2">
+            This will permanently delete the chat, all messages, and all
+            encryption keys. This action cannot be undone.
+          </p>
+          <DialogFooter className="gap-2 mt-2">
+            <Button variant="outline" onClick={() => setDeleteChatOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteChat}
+              loading={deletingChat}
+            >
+              Delete
             </Button>
           </DialogFooter>
         </DialogContent>

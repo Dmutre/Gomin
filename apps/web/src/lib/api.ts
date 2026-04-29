@@ -145,6 +145,9 @@ export const chatsApi = {
     apiClient
       .patch(`/chats/${chatId}/members/${userId}/role`, { role })
       .then(() => undefined),
+
+  deleteChat: (chatId: string): Promise<void> =>
+    apiClient.delete(`/chats/${chatId}`).then(() => undefined),
 };
 
 // ── Messages ─────────────────────────────────────────────────────────────────

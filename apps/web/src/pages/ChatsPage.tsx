@@ -33,7 +33,6 @@ const CHAT_TYPE_OPTIONS: {
     label: 'Group Chat',
     description: 'Private group with multiple members',
   },
-  { value: 'CHANNEL', label: 'Channel', description: 'Broadcast channel' },
 ];
 
 export function ChatsPage() {
@@ -214,8 +213,8 @@ export function ChatsPage() {
               </div>
             </div>
 
-            {/* Name (for group / channel) */}
-            {(chatType === 'GROUP' || chatType === 'CHANNEL') && (
+            {/* Name (for group) */}
+            {chatType === 'GROUP' && (
               <Input
                 label="Chat Name"
                 value={chatName}

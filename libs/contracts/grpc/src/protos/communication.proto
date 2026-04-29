@@ -15,6 +15,7 @@ service CommunicationService {
   rpc RemoveChatMember(RemoveChatMemberRequest) returns (StatusResponse);
   rpc UpdateMemberRole(UpdateMemberRoleRequest) returns (ChatMemberResponse);
   rpc TransferOwnership(TransferOwnershipRequest) returns (StatusResponse);
+  rpc DeleteChat(DeleteChatRequest) returns (StatusResponse);
 
   // Message operations
   rpc SendMessage(SendMessageRequest) returns (MessageResponse);
@@ -147,6 +148,11 @@ message TransferOwnershipRequest {
   // Must be the current OWNER
   string currentOwnerId = 2;
   string newOwnerId = 3;
+}
+
+message DeleteChatRequest {
+  string chatId = 1;
+  string requestingUserId = 2;
 }
 
 message ChatResponse {

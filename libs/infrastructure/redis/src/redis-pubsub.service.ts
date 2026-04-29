@@ -20,6 +20,7 @@ export type PubSubEventType =
   | 'chat:new'
   | 'chat:member_added'
   | 'chat:member_removed'
+  | 'chat:deleted'
   | 'presence:update'
   | 'sender_key:received';
 

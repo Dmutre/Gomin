@@ -17,6 +17,7 @@ import type {
   RemoveChatMemberRequest,
   UpdateMemberRoleRequest,
   TransferOwnershipRequest,
+  DeleteChatRequest,
   StatusResponse,
   SendMessageRequest,
   MessageResponse,
@@ -60,6 +61,10 @@ export interface ICommunicationService {
   ): Observable<ChatMemberResponse>;
   transferOwnership(
     data: TransferOwnershipRequest,
+    metadata?: Metadata,
+  ): Observable<StatusResponse>;
+  deleteChat(
+    data: DeleteChatRequest,
     metadata?: Metadata,
   ): Observable<StatusResponse>;
   sendMessage(
@@ -166,6 +171,13 @@ export class CommunicationGrpcClient implements OnModuleInit {
     metadata?: Metadata,
   ): Promise<StatusResponse> {
     return firstValueFrom(this.service.transferOwnership(data, metadata));
+  }
+
+  deleteChat(
+    data: DeleteChatRequest,
+    metadata?: Metadata,
+  ): Promise<StatusResponse> {
+    return firstValueFrom(this.service.deleteChat(data, metadata));
   }
 
   sendMessage(

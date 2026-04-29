@@ -105,6 +105,10 @@ export class ChatRepository {
     return ChatMapper.toDomain(row);
   }
 
+  async deleteById(id: string): Promise<void> {
+    await this.knex<ChatDb>(this.table).where({ id }).delete();
+  }
+
   async incrementKeyVersion(id: string): Promise<void> {
     await this.knex<ChatDb>(this.table)
       .where({ id })

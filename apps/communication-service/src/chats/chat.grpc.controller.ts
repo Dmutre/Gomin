@@ -20,6 +20,7 @@ import type {
   RemoveChatMemberRequest,
   UpdateMemberRoleRequest,
   TransferOwnershipRequest,
+  DeleteChatRequest,
   StatusResponse,
 } from '@gomin/grpc';
 
@@ -125,6 +126,13 @@ export class ChatGrpcController {
       data.currentOwnerId,
       data.newOwnerId,
     );
+    return { success: true };
+  }
+
+  @GrpcMethod('CommunicationService', 'DeleteChat')
+  @RequirePermission(Permission.COMMUNICATION_CHATS_WRITE)
+  async deleteChat(data: DeleteChatRequest): Promise<StatusResponse> {
+    await this.chatService.deleteChat(data.chatId, data.requestingUserId);
     return { success: true };
   }
 }
