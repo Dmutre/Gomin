@@ -48,7 +48,7 @@ export function ReauthOverlay() {
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          <input type="text" autoComplete="username" className="hidden" readOnly />
+          <input type="text" id="username" name="username" autoComplete="username" className="hidden" readOnly />
           <Input
             label="Password"
             type="password"
