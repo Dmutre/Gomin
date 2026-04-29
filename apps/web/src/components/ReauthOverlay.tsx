@@ -48,12 +48,14 @@ export function ReauthOverlay() {
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <input type="text" autoComplete="username" className="hidden" readOnly />
           <Input
             label="Password"
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="Enter your password"
+            autoComplete="current-password"
             autoFocus
             required
           />

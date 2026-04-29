@@ -40,6 +40,7 @@ import { Badge } from '../components/ui/badge';
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogFooter,
@@ -1069,6 +1070,9 @@ export function ChatPage() {
         <DialogContent className="max-w-sm">
           <DialogHeader>
             <DialogTitle>Add Member</DialogTitle>
+            <DialogDescription>
+              Enter the user ID of the person you want to add.
+            </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col gap-4 py-2">
             <Input
@@ -1113,11 +1117,11 @@ export function ChatPage() {
         <DialogContent className="max-w-sm">
           <DialogHeader>
             <DialogTitle>Delete chat</DialogTitle>
+            <DialogDescription>
+              This will permanently delete the chat, all messages, and all
+              encryption keys. This action cannot be undone.
+            </DialogDescription>
           </DialogHeader>
-          <p className="text-sm text-muted-foreground py-2">
-            This will permanently delete the chat, all messages, and all
-            encryption keys. This action cannot be undone.
-          </p>
           <DialogFooter className="gap-2 mt-2">
             <Button variant="outline" onClick={() => setDeleteChatOpen(false)}>
               Cancel

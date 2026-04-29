@@ -13,6 +13,7 @@ import { Input } from '../components/ui/input';
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogFooter,
@@ -185,6 +186,9 @@ export function ChatsPage() {
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>New Chat</DialogTitle>
+            <DialogDescription>
+              Choose a type and add members to start a conversation.
+            </DialogDescription>
           </DialogHeader>
 
           <div className="flex flex-col gap-4 py-2">
