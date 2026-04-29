@@ -2,11 +2,7 @@ import { useState } from 'react';
 import { Copy, Check, KeyRound, User } from 'lucide-react';
 import { useAuthStore } from '../store/auth.store';
 import { authApi } from '../lib/api';
-import {
-  unwrapPrivateKey,
-  wrapPrivateKey,
-  generateKeyPair,
-} from '../lib/crypto';
+import { decryptPrivateKeyBytes } from '../lib/crypto';
 import { toast } from '../store/toast.store';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -18,7 +14,7 @@ import {
 } from '../components/ui/card';
 
 export function SettingsPage() {
-  const { user, publicKeyB64, e2eeKeys, privateKey, login, sessionToken } =
+  const { user, publicKeyB64, e2eeKeys, login, sessionToken } =
     useAuthStore();
 
   const [copied, setCopied] = useState(false);
@@ -36,7 +32,7 @@ export function SettingsPage() {
 
   async function handleChangePassword(e: React.FormEvent) {
     e.preventDefault();
-    if (!e2eeKeys || !privateKey || !user || !sessionToken) return;
+    if (!e2eeKeys || !user || !sessionToken) return;
 
     if (newPassword !== confirmPassword) {
       toast.error('New passwords do not match');
@@ -49,38 +45,16 @@ export function SettingsPage() {
 
     setChangingPassword(true);
     try {
-      // Verify current password by trying to decrypt private key
+      // Decrypt current private key bytes — throws if password wrong
+      let oldKeyBuf: ArrayBuffer;
       try {
-        await unwrapPrivateKey(e2eeKeys, currentPassword);
+        oldKeyBuf = await decryptPrivateKeyBytes(e2eeKeys, currentPassword);
       } catch {
         toast.error('Current password is incorrect');
         return;
       }
 
-      // Re-wrap the existing private key with the new password
-      // We need to export and re-import the private key to wrap it
-      const newKeyPair = await generateKeyPair();
-
-      // Export the current private key via a fresh key pair would be wrong;
-      // instead, re-wrap using the current e2eeKeys bundle:
-      // derive old private key bytes → re-wrap with new password
-      const oldKeyBuf = await crypto.subtle
-        .exportKey('pkcs8', privateKey)
-        .catch(() => null);
-      if (!oldKeyBuf) {
-        toast.error('Cannot export private key — please re-login');
-        return;
-      }
-
-      const importedPrivateKey = await crypto.subtle.importKey(
-        'pkcs8',
-        oldKeyBuf,
-        { name: 'RSA-OAEP', hash: 'SHA-256' },
-        true,
-        ['decrypt'],
-      );
-
-      // Re-wrap with new password
+      // Re-wrap raw key bytes with new password
       const keyMaterial = await crypto.subtle.importKey(
         'raw',
         new TextEncoder().encode(newPassword),
@@ -120,8 +94,15 @@ export function SettingsPage() {
         e2eeKeys: newE2eeKeys,
       });
 
-      // Update auth store with new e2eeKeys
-      login(user, sessionToken, importedPrivateKey, publicKeyB64!, newE2eeKeys);
+      const newPrivateKey = await crypto.subtle.importKey(
+        'pkcs8',
+        oldKeyBuf,
+        { name: 'RSA-OAEP', hash: 'SHA-256' },
+        false,
+        ['decrypt'],
+      );
+
+      login(user, sessionToken, newPrivateKey, publicKeyB64!, newE2eeKeys);
 
       setCurrentPassword('');
       setNewPassword('');
