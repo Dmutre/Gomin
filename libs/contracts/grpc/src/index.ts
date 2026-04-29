@@ -55,6 +55,7 @@ export type {
   RemoveChatMemberRequest,
   UpdateMemberRoleRequest,
   TransferOwnershipRequest,
+  DeleteChatRequest,
   ChatResponse,
   ChatsResponse,
   ChatMemberResponse,
