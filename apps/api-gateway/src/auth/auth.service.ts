@@ -6,7 +6,6 @@ import type {
   RegisterResponse,
   LoginResponse,
   LogoutResponse,
-  GetActiveSessionsResponse,
   TerminateSessionResponse,
   TerminateAllOtherSessionsResponse,
   GetUserPublicKeyResponse,
@@ -32,6 +31,32 @@ function toProtoDeviceType(deviceType: DeviceTypeDto): DeviceType {
     case DeviceTypeDto.WEB:
       return DeviceType.DEVICE_TYPE_WEB;
   }
+}
+
+function fromProtoDeviceType(
+  dt: DeviceType,
+): 'MOBILE' | 'DESKTOP' | 'TABLET' | 'WEB' {
+  switch (dt) {
+    case DeviceType.DEVICE_TYPE_MOBILE:
+      return 'MOBILE';
+    case DeviceType.DEVICE_TYPE_DESKTOP:
+      return 'DESKTOP';
+    case DeviceType.DEVICE_TYPE_TABLET:
+      return 'TABLET';
+    default:
+      return 'WEB';
+  }
+}
+
+function toIso(ts: unknown): string | undefined {
+  if (!ts) return undefined;
+  if (ts instanceof Date) return ts.toISOString();
+  if (typeof ts === 'object' && ts !== null && 'seconds' in ts) {
+    const secs = (ts as { seconds: number | bigint }).seconds;
+    return new Date(Number(secs) * 1000).toISOString();
+  }
+  if (typeof ts === 'string') return ts;
+  return undefined;
 }
 
 @Injectable()
@@ -101,11 +126,31 @@ export class AuthService {
     return this.userAuthClient.logout({ sessionToken }, metadata);
   }
 
-  async getActiveSessions(
-    sessionToken: string,
-  ): Promise<GetActiveSessionsResponse> {
+  async getActiveSessions(sessionToken: string) {
     const metadata = await this.buildMetadata();
-    return this.userAuthClient.getActiveSessions({ sessionToken }, metadata);
+    const response = await this.userAuthClient.getActiveSessions(
+      { sessionToken },
+      metadata,
+    );
+    return {
+      sessions: (response.sessions ?? []).map((s) => ({
+        sessionToken: s.sessionToken,
+        ipAddress: s.ipAddress,
+        createdAt: toIso(s.createdAt),
+        expiresAt: toIso(s.expiresAt),
+        lastActivityAt: toIso(s.lastActivityAt),
+        isCurrent: s.isCurrent,
+        deviceInfo: {
+          deviceId: '',
+          deviceName: s.deviceName ?? '',
+          deviceType: fromProtoDeviceType(s.deviceType),
+          os: s.os ?? '',
+          browser: s.browser ?? '',
+          appVersion: '',
+          userAgent: '',
+        },
+      })),
+    };
   }
 
   async terminateSession(
