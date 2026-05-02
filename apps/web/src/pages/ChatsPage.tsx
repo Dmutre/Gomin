@@ -224,6 +224,7 @@ export function ChatsPage() {
                 value={chatName}
                 onChange={(e) => setChatName(e.target.value)}
                 placeholder="e.g. Project Gomin"
+                maxLength={255}
               />
             )}
 
@@ -242,6 +243,7 @@ export function ChatsPage() {
                   value={memberInput}
                   onChange={(e) => setMemberInput(e.target.value)}
                   placeholder="Enter username"
+                  maxLength={50}
                   onKeyDown={(e) =>
                     e.key === 'Enter' && (e.preventDefault(), addMember())
                   }

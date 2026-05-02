@@ -174,6 +174,7 @@ export function RegisterPage() {
               onChange={(e) => setUsername(e.target.value)}
               placeholder="cooluser"
               autoComplete="username"
+              maxLength={50}
               error={errors.username}
               required
             />
@@ -184,6 +185,7 @@ export function RegisterPage() {
               onChange={(e) => setEmail(e.target.value)}
               placeholder="you@example.com"
               autoComplete="email"
+              maxLength={254}
               error={errors.email}
               required
             />
@@ -194,6 +196,7 @@ export function RegisterPage() {
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Min 8 chars, uppercase, lowercase, digit"
               autoComplete="new-password"
+              maxLength={128}
               error={errors.password}
               required
             />
@@ -204,6 +207,7 @@ export function RegisterPage() {
               onChange={(e) => setConfirmPassword(e.target.value)}
               placeholder="Repeat password"
               autoComplete="new-password"
+              maxLength={128}
               error={errors.confirmPassword}
               required
             />

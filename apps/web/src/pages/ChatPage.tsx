@@ -788,6 +788,10 @@ export function ChatPage() {
 
   async function handleAddMember() {
     if (!chatId || !newMemberUserId.trim() || !user || !privateKey) return;
+    if (!UUID_REGEX.test(newMemberUserId.trim())) {
+      toast.error('Invalid user ID — paste a valid UUID from the Settings page');
+      return;
+    }
     setAddingMember(true);
     try {
       await chatsApi.addMember(chatId, newMemberUserId.trim(), newMemberRole);
@@ -1049,6 +1053,7 @@ export function ChatPage() {
               }
             }}
             placeholder={editingMessage ? 'Edit message…' : 'Type a message…'}
+            maxLength={4000}
             className={cn(
               'flex-1 rounded-xl border border-input bg-card px-4 py-2.5 text-sm',
               'placeholder:text-muted-foreground',
@@ -1092,6 +1097,7 @@ export function ChatPage() {
               value={newMemberUserId}
               onChange={(e) => setNewMemberUserId(e.target.value)}
               placeholder="Paste user UUID"
+              maxLength={36}
             />
             <div className="flex flex-col gap-1.5">
               <label className="text-sm font-medium">Role</label>

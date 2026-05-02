@@ -98,7 +98,10 @@ export function SessionsPage() {
   const [terminateAllOpen, setTerminateAllOpen] = useState(false);
   const [password, setPassword] = useState('');
   const [terminating, setTerminating] = useState(false);
-  const [terminatingToken, setTerminatingToken] = useState<string | null>(null);
+  const [terminateSingleOpen, setTerminateSingleOpen] = useState(false);
+  const [singlePassword, setSinglePassword] = useState('');
+  const [pendingToken, setPendingToken] = useState<string | null>(null);
+  const [terminatingSingle, setTerminatingSingle] = useState(false);
 
   const { data, isLoading } = useQuery({
     queryKey: ['sessions'],
@@ -108,18 +111,26 @@ export function SessionsPage() {
 
   const sessions = data?.sessions ?? [];
 
-  async function handleTerminate(token: string) {
-    const pw = prompt('Enter your password to terminate this session:');
-    if (!pw) return;
-    setTerminatingToken(token);
+  function handleTerminate(token: string) {
+    setPendingToken(token);
+    setSinglePassword('');
+    setTerminateSingleOpen(true);
+  }
+
+  async function handleTerminateSingle() {
+    if (!pendingToken || !singlePassword) return;
+    setTerminatingSingle(true);
     try {
-      await authApi.terminateSession(token, pw);
+      await authApi.terminateSession(pendingToken, singlePassword);
       queryClient.invalidateQueries({ queryKey: ['sessions'] });
+      setTerminateSingleOpen(false);
+      setPendingToken(null);
+      setSinglePassword('');
       toast.success('Session terminated');
     } catch {
       toast.error('Failed to terminate session — check your password');
     } finally {
-      setTerminatingToken(null);
+      setTerminatingSingle(false);
     }
   }
 
@@ -203,6 +214,50 @@ export function SessionsPage() {
         </Card>
       </div>
 
+      {/* Terminate Single Session Dialog */}
+      <Dialog
+        open={terminateSingleOpen}
+        onOpenChange={(v) => {
+          setTerminateSingleOpen(v);
+          if (!v) setSinglePassword('');
+        }}
+      >
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Terminate Session</DialogTitle>
+            <DialogDescription>
+              Confirm your password to sign out this device.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-2">
+            <Input
+              label="Password"
+              type="password"
+              value={singlePassword}
+              onChange={(e) => setSinglePassword(e.target.value)}
+              placeholder="Enter your password"
+              maxLength={128}
+              onKeyDown={(e) => e.key === 'Enter' && handleTerminateSingle()}
+            />
+          </div>
+          <DialogFooter className="gap-2 mt-2">
+            <Button
+              variant="outline"
+              onClick={() => setTerminateSingleOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleTerminateSingle}
+              loading={terminatingSingle}
+            >
+              Terminate
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Terminate All Dialog */}
       <Dialog open={terminateAllOpen} onOpenChange={setTerminateAllOpen}>
         <DialogContent className="max-w-sm">
@@ -220,6 +275,7 @@ export function SessionsPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Enter your password"
+              maxLength={128}
               onKeyDown={(e) => e.key === 'Enter' && handleTerminateAll()}
             />
           </div>

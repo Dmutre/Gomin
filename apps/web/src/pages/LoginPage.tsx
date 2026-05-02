@@ -93,6 +93,7 @@ export function LoginPage() {
               onChange={(e) => setEmail(e.target.value)}
               placeholder="you@example.com"
               autoComplete="email"
+              maxLength={254}
               required
             />
             <Input
@@ -102,6 +103,7 @@ export function LoginPage() {
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Your password"
               autoComplete="current-password"
+              maxLength={128}
               required
             />
 

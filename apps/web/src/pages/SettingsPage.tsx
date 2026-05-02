@@ -203,6 +203,7 @@ export function SettingsPage() {
               onChange={(e) => setCurrentPassword(e.target.value)}
               placeholder="••••••••••••"
               autoComplete="current-password"
+              maxLength={128}
               required
             />
             <Input
@@ -212,6 +213,7 @@ export function SettingsPage() {
               onChange={(e) => setNewPassword(e.target.value)}
               placeholder="Min 12 characters"
               autoComplete="new-password"
+              maxLength={128}
               required
             />
             <Input
@@ -221,6 +223,7 @@ export function SettingsPage() {
               onChange={(e) => setConfirmPassword(e.target.value)}
               placeholder="Repeat new password"
               autoComplete="new-password"
+              maxLength={128}
               required
             />
             <p className="text-xs text-muted-foreground">
