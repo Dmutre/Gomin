@@ -5,6 +5,17 @@ import {
   UserSessionDomainModel,
 } from '../user-sessions/types/user-session.domain.model';
 
+function toTimestamp(date: Date | null | undefined): Date | undefined {
+  if (!date) return undefined;
+  // proto-loader encodes google.protobuf.Timestamp from {seconds, nanos};
+  // passing a plain Date object results in zeros. Cast so TypeScript is happy.
+  const ms = date.getTime();
+  return {
+    seconds: Math.floor(ms / 1000),
+    nanos: (ms % 1000) * 1_000_000,
+  } as unknown as Date;
+}
+
 export function toUserProfile(user: UserDomainModel): UserProfile {
   return {
     id: user.id,
@@ -16,7 +27,7 @@ export function toUserProfile(user: UserDomainModel): UserProfile {
     emailVerified: user.emailVerified,
     phoneVerified: user.phoneVerified,
     isActive: user.isActive,
-    createdAt: user.createdAt,
+    createdAt: toTimestamp(user.createdAt),
   };
 }
 
@@ -68,9 +79,9 @@ export function toSessionInfo(
     ipAddress: session.ipAddress,
     country: session.country ?? '',
     city: session.city ?? '',
-    createdAt: session.createdAt,
-    lastActivityAt: session.lastActivityAt,
-    expiresAt: session.expiresAt,
+    createdAt: toTimestamp(session.createdAt),
+    lastActivityAt: toTimestamp(session.lastActivityAt),
+    expiresAt: toTimestamp(session.expiresAt),
     isCurrent,
   };
 }
