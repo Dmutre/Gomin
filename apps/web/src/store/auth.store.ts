@@ -55,7 +55,7 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: 'auth-storage',
-      // Only persist safe fields — privateKey is CryptoKey (not serialisable) and must stay in memory
+      // Only persist safe fields — privateKey is CryptoKey (not serialisable)
       partialize: (state) => ({
         user: state.user,
         sessionToken: state.sessionToken,

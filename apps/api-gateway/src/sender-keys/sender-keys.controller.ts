@@ -3,6 +3,7 @@ import {
   Controller,
   Get,
   Param,
+  ParseUUIDPipe,
   Post,
   Query,
   UseGuards,
@@ -38,7 +39,7 @@ export class SenderKeysController {
       'with the recipient RSA-OAEP public key. Server upserts on (chatId, senderId, recipientId).',
   })
   storeSenderKeys(
-    @Param('chatId') chatId: string,
+    @Param('chatId', ParseUUIDPipe) chatId: string,
     @Body() dto: StoreSenderKeysDto,
   ) {
     return this.senderKeysService.storeSenderKeys(chatId, dto);
@@ -53,7 +54,7 @@ export class SenderKeysController {
   })
   getChatSenderKeys(
     @CurrentUser() user: CurrentUserType,
-    @Param('chatId') chatId: string,
+    @Param('chatId', ParseUUIDPipe) chatId: string,
   ) {
     return this.senderKeysService.getChatSenderKeys(chatId, user.userId);
   }
@@ -67,8 +68,8 @@ export class SenderKeysController {
   })
   getSenderKey(
     @CurrentUser() user: CurrentUserType,
-    @Param('chatId') chatId: string,
-    @Param('senderId') senderId: string,
+    @Param('chatId', ParseUUIDPipe) chatId: string,
+    @Param('senderId', ParseUUIDPipe) senderId: string,
     @Query('recipientId') recipientId?: string,
   ) {
     return this.senderKeysService.getSenderKey(

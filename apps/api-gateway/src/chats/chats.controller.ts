@@ -1,9 +1,12 @@
 import {
   Body,
   Controller,
+  DefaultValuePipe,
   Delete,
   Get,
   Param,
+  ParseIntPipe,
+  ParseUUIDPipe,
   Patch,
   Post,
   Query,
@@ -46,8 +49,8 @@ export class ChatsController {
   @ApiQuery({ name: 'offset', required: false, type: Number })
   getChats(
     @CurrentUser() user: CurrentUserType,
-    @Query('limit') limit?: number,
-    @Query('offset') offset?: number,
+    @Query('limit', new DefaultValuePipe(20), ParseIntPipe) limit: number,
+    @Query('offset', new DefaultValuePipe(0), ParseIntPipe) offset: number,
   ) {
     return this.chatsService.getChats(user.userId, limit, offset);
   }
@@ -56,7 +59,7 @@ export class ChatsController {
   @ApiOperation({ summary: 'Get a single chat with its members' })
   getChat(
     @CurrentUser() user: CurrentUserType,
-    @Param('chatId') chatId: string,
+    @Param('chatId', ParseUUIDPipe) chatId: string,
   ) {
     return this.chatsService.getChat(user.userId, chatId);
   }
@@ -65,7 +68,7 @@ export class ChatsController {
   @ApiOperation({ summary: 'Add a member to a group/channel chat' })
   addMember(
     @CurrentUser() user: CurrentUserType,
-    @Param('chatId') chatId: string,
+    @Param('chatId', ParseUUIDPipe) chatId: string,
     @Body() dto: AddMemberDto,
   ) {
     return this.chatsService.addMember(user.userId, chatId, dto);
@@ -75,8 +78,8 @@ export class ChatsController {
   @ApiOperation({ summary: 'Remove a member from a group/channel chat' })
   removeMember(
     @CurrentUser() user: CurrentUserType,
-    @Param('chatId') chatId: string,
-    @Param('targetUserId') targetUserId: string,
+    @Param('chatId', ParseUUIDPipe) chatId: string,
+    @Param('targetUserId', ParseUUIDPipe) targetUserId: string,
   ) {
     return this.chatsService.removeMember(user.userId, chatId, targetUserId);
   }
@@ -85,8 +88,8 @@ export class ChatsController {
   @ApiOperation({ summary: 'Update a member role (ADMIN or MEMBER)' })
   updateMemberRole(
     @CurrentUser() user: CurrentUserType,
-    @Param('chatId') chatId: string,
-    @Param('targetUserId') targetUserId: string,
+    @Param('chatId', ParseUUIDPipe) chatId: string,
+    @Param('targetUserId', ParseUUIDPipe) targetUserId: string,
     @Body() dto: UpdateMemberRoleDto,
   ) {
     return this.chatsService.updateMemberRole(
@@ -101,7 +104,7 @@ export class ChatsController {
   @ApiOperation({ summary: 'Transfer chat ownership to another member' })
   transferOwnership(
     @CurrentUser() user: CurrentUserType,
-    @Param('chatId') chatId: string,
+    @Param('chatId', ParseUUIDPipe) chatId: string,
     @Body() dto: TransferOwnershipDto,
   ) {
     return this.chatsService.transferOwnership(user.userId, chatId, dto);
@@ -111,7 +114,7 @@ export class ChatsController {
   @ApiOperation({ summary: 'Delete a chat and all its messages and keys' })
   deleteChat(
     @CurrentUser() user: CurrentUserType,
-    @Param('chatId') chatId: string,
+    @Param('chatId', ParseUUIDPipe) chatId: string,
   ) {
     return this.chatsService.deleteChat(user.userId, chatId);
   }

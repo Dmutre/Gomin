@@ -48,6 +48,9 @@ import {
 
 const QUICK_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🔥'];
 
+const UUID_REGEX =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 // ── Message bubble ────────────────────────────────────────────────────────────
 
 interface MessageBubbleProps {
@@ -305,6 +308,7 @@ function normalizeMessageReactions(msg: Message): Message {
 
 export function ChatPage() {
   const { chatId } = useParams<{ chatId: string }>();
+  const isValidChatId = !!chatId && UUID_REGEX.test(chatId);
   const navigate = useNavigate();
   const { user, privateKey } = useAuthStore();
   const cryptoStore = useCryptoStore();
@@ -343,7 +347,7 @@ export function ChatPage() {
   const { data: chatData } = useQuery({
     queryKey: ['chat', chatId],
     queryFn: () => chatsApi.getChat(chatId!),
-    enabled: !!chatId,
+    enabled: isValidChatId,
   });
 
   const chat = chatData?.chat;
@@ -395,7 +399,7 @@ export function ChatPage() {
   );
 
   const fetchMessages = useCallback(async () => {
-    if (!chatId) return;
+    if (!chatId || !UUID_REGEX.test(chatId)) return;
     const fetchingFor = chatId;
     try {
       try {
@@ -856,6 +860,14 @@ export function ChatPage() {
     const lastMessage = messages[messages.length - 1];
     messagesApi.markRead(chatId, lastMessage.id).catch(() => undefined);
   }, [chatId, messages.length]);
+
+  if (!isValidChatId) {
+    return (
+      <div className="flex flex-1 items-center justify-center">
+        <p className="text-muted-foreground">Chat not found.</p>
+      </div>
+    );
+  }
 
   // ── Chat header icon ──────────────────────────────────────────────────────────
 

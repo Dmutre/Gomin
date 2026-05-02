@@ -4,6 +4,7 @@ import {
   Delete,
   Get,
   Param,
+  ParseUUIDPipe,
   Post,
   Req,
   UseGuards,
@@ -121,7 +122,7 @@ export class AuthController {
   })
   getUserPublicKey(
     @CurrentUser() user: CurrentUserType,
-    @Param('userId') userId: string,
+    @Param('userId', ParseUUIDPipe) userId: string,
   ) {
     return this.authService.getUserPublicKey(user.sessionToken, userId);
   }

@@ -1,9 +1,12 @@
 import {
   Body,
   Controller,
+  DefaultValuePipe,
   Delete,
   Get,
   Param,
+  ParseIntPipe,
+  ParseUUIDPipe,
   Patch,
   Post,
   Query,
@@ -43,7 +46,7 @@ export class MessagesController {
   })
   sendMessage(
     @CurrentUser() user: CurrentUserType,
-    @Param('chatId') chatId: string,
+    @Param('chatId', ParseUUIDPipe) chatId: string,
     @Body() dto: SendMessageDto,
   ) {
     return this.messagesService.sendMessage(
@@ -62,8 +65,8 @@ export class MessagesController {
   @ApiQuery({ name: 'beforeMessageId', required: false, type: String })
   getMessages(
     @CurrentUser() user: CurrentUserType,
-    @Param('chatId') chatId: string,
-    @Query('limit') limit?: number,
+    @Param('chatId', ParseUUIDPipe) chatId: string,
+    @Query('limit', new DefaultValuePipe(50), ParseIntPipe) limit: number,
     @Query('beforeMessageId') beforeMessageId?: string,
   ) {
     return this.messagesService.getMessages(
@@ -81,8 +84,8 @@ export class MessagesController {
   })
   updateMessage(
     @CurrentUser() user: CurrentUserType,
-    @Param('chatId') chatId: string,
-    @Param('messageId') messageId: string,
+    @Param('chatId', ParseUUIDPipe) chatId: string,
+    @Param('messageId', ParseUUIDPipe) messageId: string,
     @Body() dto: UpdateMessageDto,
   ) {
     return this.messagesService.updateMessage(
@@ -97,8 +100,8 @@ export class MessagesController {
   @ApiOperation({ summary: 'Delete a message (soft delete)' })
   deleteMessage(
     @CurrentUser() user: CurrentUserType,
-    @Param('chatId') chatId: string,
-    @Param('messageId') messageId: string,
+    @Param('chatId', ParseUUIDPipe) chatId: string,
+    @Param('messageId', ParseUUIDPipe) messageId: string,
   ) {
     return this.messagesService.deleteMessage(user.userId, chatId, messageId);
   }
@@ -107,7 +110,7 @@ export class MessagesController {
   @ApiOperation({ summary: 'Mark messages up to a given ID as read' })
   markAsRead(
     @CurrentUser() user: CurrentUserType,
-    @Param('chatId') chatId: string,
+    @Param('chatId', ParseUUIDPipe) chatId: string,
     @Body() dto: MarkAsReadDto,
   ) {
     return this.messagesService.markAsRead(user.userId, chatId, dto);
@@ -117,8 +120,8 @@ export class MessagesController {
   @ApiOperation({ summary: 'Add an emoji reaction to a message' })
   addReaction(
     @CurrentUser() user: CurrentUserType,
-    @Param('chatId') chatId: string,
-    @Param('messageId') messageId: string,
+    @Param('chatId', ParseUUIDPipe) chatId: string,
+    @Param('messageId', ParseUUIDPipe) messageId: string,
     @Body() dto: AddReactionDto,
   ) {
     return this.messagesService.addReaction(
@@ -133,8 +136,8 @@ export class MessagesController {
   @ApiOperation({ summary: 'Remove an emoji reaction from a message' })
   removeReaction(
     @CurrentUser() user: CurrentUserType,
-    @Param('chatId') chatId: string,
-    @Param('messageId') messageId: string,
+    @Param('chatId', ParseUUIDPipe) chatId: string,
+    @Param('messageId', ParseUUIDPipe) messageId: string,
     @Param('emoji') emoji: string,
   ) {
     return this.messagesService.removeReaction(
