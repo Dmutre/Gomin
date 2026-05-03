@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { MicroserviceException } from '@gomin/app';
 import { status } from '@grpc/grpc-js';
 import { ConfigService } from '@nestjs/config';
-import * as argon2 from 'argon2';
+import * as bcrypt from 'bcrypt';
 import { createSign } from 'crypto';
 import type {
   AuthenticateServiceIdentityResponse,
@@ -65,7 +65,7 @@ export class ServiceIdentityService {
     serviceIdentity: ServiceIdentityDomainModel,
     rawSecret: string,
   ): Promise<void> {
-    const isValid = await argon2.verify(serviceIdentity.secretHash, rawSecret);
+    const isValid = await bcrypt.compare(rawSecret, serviceIdentity.secretHash);
 
     if (!isValid) {
       throw new MicroserviceException(

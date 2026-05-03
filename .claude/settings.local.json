@@ -1,6 +1,18 @@
 {
   "permissions": {
-    "defaultMode": "bypassPermissions",
-    "allow": ["*"]
+    "allow": [
+      "*",
+      "Bash(npx nx *)",
+      "Bash(npx eslint *)",
+      "Bash(xargs grep *)",
+      "Bash(xargs cat *)",
+      "Bash(kubectl get pods *)",
+      "Bash(kubectl logs *)",
+      "Bash(kubectl top pods *)",
+      "Bash(kubectl get *)",
+      "Bash(pnpm add *)",
+      "Bash(pnpm remove *)"
+    ],
+    "defaultMode": "bypassPermissions"
   }
 }

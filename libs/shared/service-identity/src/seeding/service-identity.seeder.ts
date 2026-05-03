@@ -1,5 +1,5 @@
 import type { Knex } from 'knex';
-import * as argon2 from 'argon2';
+import * as bcrypt from 'bcrypt';
 import { PERMISSIONS_REGISTRY } from '../permissions/permissions.registry';
 import { SERVICES_SEED_CONFIG } from './seeding.config';
 
@@ -38,7 +38,7 @@ export async function seedServiceIdentities(knex: Knex): Promise<void> {
 
     if (!existing) {
       const secret = getServiceSecret(config.serviceName);
-      const secretHash = await argon2.hash(secret);
+      const secretHash = await bcrypt.hash(secret, 10);
       await knex(SERVICE_IDENTITIES_TABLE).insert({
         serviceName: config.serviceName,
         secretHash,

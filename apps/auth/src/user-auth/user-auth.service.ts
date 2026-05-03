@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PinoLogger } from 'nestjs-pino';
 import { LogAllMethods, MicroserviceException } from '@gomin/app';
 import { status } from '@grpc/grpc-js';
-import * as argon2 from 'argon2';
+import * as bcrypt from 'bcrypt';
 import { randomUUID } from 'crypto';
 import { maskFields } from '@gomin/logger';
 import { UserService } from '../users/user.service';
@@ -359,7 +359,7 @@ export class UserAuthService {
   }
 
   private async hashPassword(password: string): Promise<string> {
-    return argon2.hash(password);
+    return bcrypt.hash(password, 10);
   }
 
   private async verifyPassword(
@@ -367,7 +367,7 @@ export class UserAuthService {
     hash: string,
   ): Promise<boolean> {
     try {
-      return await argon2.verify(hash, password);
+      return await bcrypt.compare(password, hash);
     } catch {
       return false;
     }
