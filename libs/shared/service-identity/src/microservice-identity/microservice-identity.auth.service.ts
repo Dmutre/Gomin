@@ -22,11 +22,20 @@ export class MicroserviceIdentityAuthService {
     private readonly store: MicroserviceIdentityStore,
   ) {}
 
+  private inflightAuthenticate: Promise<string | null> | null = null;
+
   async getAccessToken(): Promise<string | null> {
     if (this.isTokenValid()) {
       return this.store.getAuthToken()?.accessToken ?? null;
     }
-    return this.authenticate();
+    // Deduplicate concurrent re-auth: only one call reaches the auth service;
+    // all others await the same promise instead of stampeding.
+    if (!this.inflightAuthenticate) {
+      this.inflightAuthenticate = this.authenticate().finally(() => {
+        this.inflightAuthenticate = null;
+      });
+    }
+    return this.inflightAuthenticate;
   }
 
   private isTokenValid(): boolean {
