@@ -1,5 +1,5 @@
 import type { Knex } from 'knex';
-import * as argon2 from 'argon2';
+import * as bcrypt from 'bcrypt';
 import * as dotenv from 'dotenv';
 
 dotenv.config();
@@ -126,7 +126,7 @@ export async function seed(knex: Knex): Promise<void> {
       .where({ serviceName: svc.name })
       .first();
     if (!existing) {
-      const secretHash = await argon2.hash(getServiceSecret(svc.name));
+      const secretHash = await bcrypt.hash(getServiceSecret(svc.name), 10);
       await knex(SERVICE_IDENTITIES_TABLE).insert({
         serviceName: svc.name,
         secretHash,
