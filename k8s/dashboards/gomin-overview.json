@@ -39,10 +39,126 @@
   },
   "panels": [
     {
+      "id": 20,
+      "title": "Gateway — Inbound Requests",
+      "type": "row",
+      "collapsed": false,
+      "gridPos": { "x": 0, "y": 0, "w": 24, "h": 1 }
+    },
+    {
+      "id": 21,
+      "title": "Inbound RPS by Route",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 1, "w": 16, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "custom": { "lineWidth": 2, "fillOpacity": 8 }
+        }
+      },
+      "options": { "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["mean", "max"] } },
+      "targets": [
+        {
+          "expr": "sum(rate(traces_spanmetrics_calls_total{span_kind=\"SPAN_KIND_SERVER\", service=\"api-gateway\"}[$interval])) by (span_name)",
+          "legendFormat": "{{span_name}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 22,
+      "title": "Inbound RPS",
+      "type": "stat",
+      "gridPos": { "x": 16, "y": 1, "w": 4, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [ { "color": "blue", "value": null } ] }
+        }
+      },
+      "options": { "reduceOptions": { "calcs": ["mean"] }, "graphMode": "area" },
+      "targets": [
+        {
+          "expr": "sum(rate(traces_spanmetrics_calls_total{span_kind=\"SPAN_KIND_SERVER\", service=\"api-gateway\"}[$interval]))",
+          "legendFormat": "RPS",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 23,
+      "title": "Inbound Total (1h)",
+      "type": "stat",
+      "gridPos": { "x": 20, "y": 1, "w": 4, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [ { "color": "blue", "value": null } ] }
+        }
+      },
+      "options": { "reduceOptions": { "calcs": ["sum"] }, "graphMode": "area" },
+      "targets": [
+        {
+          "expr": "sum(increase(traces_spanmetrics_calls_total{span_kind=\"SPAN_KIND_SERVER\", service=\"api-gateway\"}[1h]))",
+          "legendFormat": "total",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 24,
+      "title": "Inbound Error Rate",
+      "type": "stat",
+      "gridPos": { "x": 16, "y": 5, "w": 4, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "red", "value": 1 } ] }
+        }
+      },
+      "options": { "reduceOptions": { "calcs": ["mean"] } },
+      "targets": [
+        {
+          "expr": "100 * sum(rate(traces_spanmetrics_calls_total{span_kind=\"SPAN_KIND_SERVER\", status_code=\"STATUS_CODE_ERROR\", service=\"api-gateway\"}[$interval])) / sum(rate(traces_spanmetrics_calls_total{span_kind=\"SPAN_KIND_SERVER\", service=\"api-gateway\"}[$interval]))",
+          "legendFormat": "error %",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 25,
+      "title": "Inbound p99 Latency",
+      "type": "stat",
+      "gridPos": { "x": 20, "y": 5, "w": 4, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "yellow", "value": 200 }, { "color": "red", "value": 500 } ] }
+        }
+      },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.99, sum(rate(traces_spanmetrics_latency_bucket{span_kind=\"SPAN_KIND_SERVER\", service=\"api-gateway\"}[$interval])) by (le))",
+          "legendFormat": "p99",
+          "refId": "A"
+        }
+      ]
+    },
+    {
       "id": 1,
       "title": "Request Rate (RPS) — HTTP",
       "type": "timeseries",
-      "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 },
+      "gridPos": { "x": 0, "y": 9, "w": 12, "h": 8 },
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
       "fieldConfig": {
         "defaults": {
@@ -63,7 +179,7 @@
       "id": 2,
       "title": "Error Rate (%)",
       "type": "timeseries",
-      "gridPos": { "x": 12, "y": 0, "w": 12, "h": 8 },
+      "gridPos": { "x": 12, "y": 9, "w": 12, "h": 8 },
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
       "fieldConfig": {
         "defaults": {
@@ -93,7 +209,7 @@
       "id": 3,
       "title": "Latency p50 / p95 / p99 — HTTP",
       "type": "timeseries",
-      "gridPos": { "x": 0, "y": 8, "w": 16, "h": 8 },
+      "gridPos": { "x": 0, "y": 17, "w": 16, "h": 8 },
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
       "fieldConfig": {
         "defaults": {
@@ -124,7 +240,7 @@
       "id": 4,
       "title": "Stat: Avg RPS",
       "type": "stat",
-      "gridPos": { "x": 16, "y": 8, "w": 4, "h": 4 },
+      "gridPos": { "x": 16, "y": 17, "w": 4, "h": 4 },
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
       "fieldConfig": { "defaults": { "unit": "reqps", "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [ { "color": "blue", "value": null } ] } } },
       "options": { "reduceOptions": { "calcs": ["mean"] } },
@@ -140,7 +256,7 @@
       "id": 5,
       "title": "Stat: p99 Latency",
       "type": "stat",
-      "gridPos": { "x": 20, "y": 8, "w": 4, "h": 4 },
+      "gridPos": { "x": 20, "y": 17, "w": 4, "h": 4 },
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
       "fieldConfig": { "defaults": { "unit": "ms", "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "yellow", "value": 200 }, { "color": "red", "value": 500 } ] } } },
       "options": { "reduceOptions": { "calcs": ["lastNotNull"] } },
@@ -156,7 +272,7 @@
       "id": 6,
       "title": "Stat: Error Rate",
       "type": "stat",
-      "gridPos": { "x": 16, "y": 12, "w": 4, "h": 4 },
+      "gridPos": { "x": 16, "y": 21, "w": 4, "h": 4 },
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
       "fieldConfig": { "defaults": { "unit": "percent", "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "red", "value": 1 } ] } } },
       "options": { "reduceOptions": { "calcs": ["mean"] } },
@@ -172,7 +288,7 @@
       "id": 7,
       "title": "Stat: Total Requests",
       "type": "stat",
-      "gridPos": { "x": 20, "y": 12, "w": 4, "h": 4 },
+      "gridPos": { "x": 20, "y": 21, "w": 4, "h": 4 },
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
       "fieldConfig": { "defaults": { "unit": "short", "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [ { "color": "blue", "value": null } ] } } },
       "options": { "reduceOptions": { "calcs": ["sum"] } },
@@ -188,7 +304,7 @@
       "id": 8,
       "title": "Top Slowest Endpoints (p99)",
       "type": "table",
-      "gridPos": { "x": 0, "y": 16, "w": 12, "h": 10 },
+      "gridPos": { "x": 0, "y": 25, "w": 12, "h": 10 },
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
       "fieldConfig": {
         "defaults": { "unit": "ms" },
@@ -215,7 +331,7 @@
       "id": 9,
       "title": "gRPC Inter-Service Calls (api-gateway → downstream)",
       "type": "timeseries",
-      "gridPos": { "x": 12, "y": 16, "w": 12, "h": 10 },
+      "gridPos": { "x": 12, "y": 25, "w": 12, "h": 10 },
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
       "fieldConfig": { "defaults": { "unit": "reqps", "custom": { "lineWidth": 2 } } },
       "options": { "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["mean", "max"] } },
@@ -231,7 +347,7 @@
       "id": 10,
       "title": "DB & Redis Latency p99 (service graph)",
       "type": "timeseries",
-      "gridPos": { "x": 0, "y": 26, "w": 12, "h": 8 },
+      "gridPos": { "x": 0, "y": 35, "w": 12, "h": 8 },
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
       "fieldConfig": { "defaults": { "unit": "s", "custom": { "lineWidth": 2 } } },
       "options": { "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["mean", "max"] } },
@@ -247,7 +363,7 @@
       "id": 11,
       "title": "Service Graph — Request Rate",
       "type": "timeseries",
-      "gridPos": { "x": 12, "y": 26, "w": 12, "h": 8 },
+      "gridPos": { "x": 12, "y": 35, "w": 12, "h": 8 },
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
       "fieldConfig": { "defaults": { "unit": "reqps", "custom": { "lineWidth": 2 } } },
       "options": { "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["mean"] } },
