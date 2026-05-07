@@ -55,6 +55,9 @@ runs:
           activeDeadlineSeconds: 300
           ttlSecondsAfterFinished: 600
           template:
+            metadata:
+              annotations:
+                linkerd.io/inject: disabled
             spec:
               restartPolicy: Never
               containers:

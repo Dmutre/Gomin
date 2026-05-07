@@ -18,6 +18,8 @@ spec:
       labels:
         {{- include "auth.selectorLabels" . | nindent 8 }}
         app.kubernetes.io/component: migration
+      annotations:
+        linkerd.io/inject: disabled
     spec:
       restartPolicy: Never
       containers:
