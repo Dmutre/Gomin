@@ -59,6 +59,7 @@ const msgDuration    = new Trend('gomin_message_send_ms', true);
 
 // ─── Scenarios / thresholds ───────────────────────────────────────────────────
 export const options = {
+  setupTimeout: `${Math.ceil(SETUP_USERS * 0.6 + 60)}s`,
   scenarios: {
     gomin: {
       executor: 'ramping-vus',
