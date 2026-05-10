@@ -1,0 +1,101 @@
+Loading profile: large (.\.env.large)
+BASE_URL=https://api.84.247.133.45.nip.io  VUs=120  Users=200  Sustain=5m
+
+         /\      Grafana   /‾‾/  
+    /\  /  \     |\  __   /  /   
+   /  \/    \    | |/ /  /   ‾‾\ 
+  /          \   |   (  |  (‾)  |
+ / __________ \  |_|\_\  \_____/ 
+
+
+     execution: local
+        script: .\gomin-load-test.js
+        output: -
+
+     scenarios: (100.00%) 1 scenario, 160 max VUs, 11m0s max duration (incl. graceful stop):
+              * gomin: Up to 160 looping VUs for 10m30s over 5 stages (gracefulRampDown: 30s, gracefulStop: 30s)
+
+INFO[0000] [setup] Registering 200 users…                source=console
+INFO[0051] [setup] Registered 200/200                    source=console
+INFO[0051] [setup] Logging in 200 users (token cache)…   source=console
+WARN[0088] [login:setup_149] → 502: Bad Gateway          source=console
+INFO[0101] [setup] Cached tokens for 199/200 users       source=console
+INFO[0101] [setup] Creating 7 group chats…               source=console
+INFO[0101]   chat[1] e1443bdd-2990-4f34-af4f-df8de0511964 — 31 members  source=console
+INFO[0101]   chat[2] 8ee630fd-1ed4-4fcf-b4c6-aad8cdc34d5f — 38 members  source=console
+INFO[0101]   chat[3] 75fb7170-bb2b-4eb6-b761-a18ec6c2ceaa — 37 members  source=console
+INFO[0102]   chat[4] b66b2735-d6c3-414b-bf50-c2e055e1a704 — 33 members  source=console
+INFO[0102]   chat[5] 57f6119f-0569-4170-94a1-aacff26f447b — 33 members  source=console
+INFO[0102]   chat[6] 9de9c4cc-4f91-4517-ae6e-4ca8958ca0a7 — 39 members  source=console
+INFO[0102]   chat[7] a907c199-50af-4669-86c3-f8038bbae41e — 36 members  source=console
+INFO[0103] [setup] Done — 199 users, 7 chats, ready      source=console
+
+
+  █ THRESHOLDS
+
+    gomin_auth_error_rate
+    ✓ 'rate<0.10' rate=0.50%
+
+    gomin_messages_failed
+    ✗ 'count<100' count=178
+
+    http_req_duration
+    ✓ 'p(95)<2000' p(95)=504.26ms
+
+    http_req_failed
+    ✓ 'rate<0.05' rate=0.83%
+
+
+  █ TOTAL RESULTS
+
+    checks_total.......: 42456  57.084637/s
+    checks_succeeded...: 99.08% 42068 out of 42456
+    checks_failed......: 0.91%  388 out of 42456
+
+    ✓ register 201
+    ✓ create chat 201
+    ✗ get chats 200
+      ↳  98% — ✓ 5262 / ✗ 71
+    ✗ get messages 200
+      ↳  98% — ✓ 5271 / ✗ 62
+    ✗ ws handshake 101
+      ↳  98% — ✓ 5256 / ✗ 77
+    ✗ message 201
+      ↳  99% — ✓ 26072 / ✗ 178
+
+    CUSTOM
+    gomin_auth_error_rate..........: 0.50%   1 out of 200
+    gomin_message_send_ms..........: avg=236.4ms  min=45ms     med=205ms    max=1.78s  p(90)=392ms    p(95)=476ms
+    gomin_messages_failed..........: 178     0.239332/s
+    gomin_messages_sent............: 26072   35.055367/s
+    gomin_ws_connected.............: 5256    7.067007/s
+
+    HTTP
+    http_req_duration..............: avg=252.67ms min=43.12ms  med=220.58ms max=3.7s   p(90)=420.29ms p(95)=504.26ms
+      { expected_response:true }...: avg=254.37ms min=62.58ms  med=221.8ms  max=3.7s   p(90)=421.03ms p(95)=505.28ms
+    http_req_failed................: 0.83%   312 out of 37323
+    http_reqs......................: 37323   50.183011/s
+
+    EXECUTION
+    iteration_duration.............: avg=13.58s   min=1.24s    med=13.73s   max=17.18s p(90)=14.02s   p(95)=14.15s
+    iterations.....................: 5333    7.170538/s
+    vus............................: 3       min=0            max=160
+    vus_max........................: 160     min=160          max=160
+
+    NETWORK
+    data_received..................: 1.8 GB  2.4 MB/s
+    data_sent......................: 26 MB   35 kB/s
+
+    WEBSOCKET
+    ws_connecting..................: avg=178.29ms min=141.57ms med=166.29ms max=1.5s   p(90)=207.63ms p(95)=233.56ms
+    ws_msgs_received...............: 1282201 1723.996118/s
+    ws_msgs_sent...................: 68268   91.790419/s
+    ws_session_duration............: avg=11.99s   min=143.41ms med=12.16s   max=13.5s  p(90)=12.2s    p(95)=12.23s
+    ws_sessions....................: 5333    7.170538/s
+
+
+
+                                                                                                                                                                                                                    
+running (12m23.7s), 000/160 VUs, 5333 complete and 0 interrupted iterations                                                                                                                                         
+gomin ✓ [======================================] 000/160 VUs  10m30s                                                                                                                                                
+ERRO[0744] thresholds on metrics 'gomin_messages_failed' have been crosse

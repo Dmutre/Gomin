@@ -1,0 +1,88 @@
+         /\      Grafana   /‾‾/  
+    /\  /  \     |\  __   /  /   
+   /  \/    \    | |/ /  /   ‾‾\ 
+  /          \   |   (  |  (‾)  |
+ / __________ \  |_|\_\  \_____/ 
+
+
+     execution: local
+        script: .\gomin-load-test.js
+        output: -
+
+     scenarios: (100.00%) 1 scenario, 50 max VUs, 6m0s max duration (incl. graceful stop):
+              * gomin: Up to 50 looping VUs for 5m30s over 5 stages (gracefulRampDown: 30s, gracefulStop: 30s)
+
+INFO[0000] [setup] Registering 20 users…                 source=console
+INFO[0005] [setup] Registered 20/20                      source=console
+INFO[0005] [setup] Logging in 20 users (token cache)…    source=console
+INFO[0010] [setup] Cached tokens for 20/20 users         source=console
+INFO[0010] [setup] Creating 3 group chats…               source=console
+INFO[0010]   chat[1] 42ed71bd-85b1-4fe8-b711-2d61150c10b0 — 9 members  source=console
+INFO[0010]   chat[2] ff85c50b-a3ac-4288-af28-1e2d252a21ad — 8 members  source=console
+INFO[0010]   chat[3] 43fc6881-aa89-4125-8627-0bc4910fd426 — 8 members  source=console
+INFO[0011] [setup] Done — 20 users, 3 chats, ready       source=console
+
+
+  █ THRESHOLDS
+
+    gomin_auth_error_rate
+    ✓ 'rate<0.10' rate=0.00%
+
+    gomin_messages_failed
+    ✓ 'count<100' count=0
+
+    http_req_duration
+    ✓ 'p(95)<2000' p(95)=287.08ms
+
+    http_req_failed
+    ✓ 'rate<0.05' rate=0.00%
+
+
+  █ TOTAL RESULTS
+
+    checks_total.......: 5266    14.992691/s
+    checks_succeeded...: 100.00% 5266 out of 5266
+    checks_failed......: 0.00%   0 out of 5266
+
+    ✓ register 201
+    ✓ create chat 201
+    ✓ get chats 200
+    ✓ get messages 200
+    ✓ message 201
+    ✓ ws handshake 101
+
+    CUSTOM
+    gomin_auth_error_rate..........: 0.00%  0 out of 20
+    gomin_message_send_ms..........: avg=149.22ms min=61ms     med=131ms    max=485ms    p(90)=227ms    p(95)=282.29ms
+    gomin_messages_failed..........: 0      0/s
+    gomin_messages_sent............: 3275   9.324167/s
+    gomin_ws_connected.............: 656    1.86768/s
+
+    HTTP
+    http_req_duration..............: avg=155.85ms min=60.3ms   med=134.4ms  max=484.53ms p(90)=235.62ms p(95)=287.08ms
+      { expected_response:true }...: avg=155.85ms min=60.3ms   med=134.4ms  max=484.53ms p(90)=235.62ms p(95)=287.08ms
+    http_req_failed................: 0.00%  0 out of 4630
+    http_reqs......................: 4630   13.181952/s
+
+    EXECUTION
+    iteration_duration.............: avg=13.49s   min=1.66s    med=13.49s   max=13.88s   p(90)=13.64s   p(95)=13.68s
+    iterations.....................: 656    1.86768/s
+    vus............................: 1      min=0         max=50
+    vus_max........................: 50     min=50        max=50
+
+    NETWORK
+    data_received..................: 75 MB  213 kB/s
+    data_sent......................: 3.2 MB 9.2 kB/s
+
+    WEBSOCKET
+    ws_connecting..................: avg=160.4ms  min=134.38ms med=152.02ms max=321.49ms p(90)=193.72ms p(95)=206.62ms
+    ws_msgs_received...............: 106271 302.561383/s
+    ws_msgs_sent...................: 8518   24.251375/s
+    ws_session_duration............: avg=12.14s   min=369.88ms med=12.15s   max=12.32s   p(90)=12.19s   p(95)=12.21s
+    ws_sessions....................: 656    1.86768/s
+
+
+
+                                                                                                                                                                                                                    
+running (5m51.2s), 00/50 VUs, 656 complete and 0 interrupted iterations                                                                                                                                             
+gomin ✓ [======================================] 00/50 VUs  5m30s                                                                                                                                                   
