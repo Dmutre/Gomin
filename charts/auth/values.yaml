@@ -33,13 +33,13 @@ resources:
     cpu: 400m
     memory: 256Mi
   limits:
-    cpu: 1500m
+    cpu: 800m
     memory: 512Mi
 
 hpa:
   enabled: true
   minReplicas: 1
-  maxReplicas: 4
+  maxReplicas: 6
   targetCPUUtilizationPercentage: 70
 
 env:
