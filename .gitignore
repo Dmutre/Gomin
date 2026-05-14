@@ -51,3 +51,6 @@ charts/*/Chart.lock
 
 # Local test scripts (not committed)
 load-test.js
+
+# AI Agents
+settings.local.json

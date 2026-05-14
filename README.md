@@ -8,6 +8,8 @@ Developed as a **bachelor diploma project**, released as open-source.
 - [Architecture](#architecture)
 - [Technology Stack](#technology-stack)
 - [Security](#security)
+- [API Reference](#api-reference)
+- [WebSocket Protocol](#websocket-protocol)
 - [Getting Started](#getting-started)
 - [Deployment](#deployment)
   - [First-time cluster setup](#first-time-cluster-setup)
@@ -42,7 +44,9 @@ Developed as a **bachelor diploma project**, released as open-source.
 │                  PostgreSQL                   │
 ├───────────────────────────────────────────────┤
 │  auth DB: users, sessions, service_identities │
-│  comm DB: chats, messages, sender_keys        │
+│  comm DB: chats, chat_members, messages,      │
+│           sender_keys, message_status,        │
+│           message_reactions                   │
 └───────────────────────────────────────────────┘
 ┌───────────────────────────────────────────────┐
 │                    Redis                      │
@@ -61,7 +65,7 @@ Developed as a **bachelor diploma project**, released as open-source.
 |---|---|---|
 | `api-gateway` | 3000 (HTTP/WS) | HTTP routing, WebSocket, session auth |
 | `auth` | 5000 (gRPC) | Registration, login, JWT, sessions, E2EE key storage |
-| `communication-service` | 5001 (gRPC) | Chats, messages, reactions, sender keys |
+| `communication-service` | 5001 (gRPC) | Chats (DIRECT/GROUP/CHANNEL), messages, reactions, sender keys |
 
 ---
 
@@ -222,6 +226,101 @@ Pods mount secrets via `envFrom.secretRef` — the application reads them as env
 ### 8. CI/CD Least-Privilege
 
 The GitHub Actions ServiceAccount (`github-actions`) has **write access only to `gomin-apps` and `gomin-infra`**. It cannot read or modify `kube-system`, create namespaces, or access any cluster-wide resource. See the [CI/CD ServiceAccount](#cicd-serviceaccount) section.
+
+---
+
+## API Reference
+
+All routes are prefixed with `/api`. Authenticated routes require `Authorization: Bearer <sessionToken>`.
+
+### Authentication (`/api/auth`)
+
+| Method | Path | Description |
+|---|---|---|
+| `POST` | `/register` | Register a new user with E2EE key bundle |
+| `POST` | `/login` | Authenticate; returns session token + encrypted private key bundle |
+| `POST` | `/logout` | Invalidate the current session |
+| `GET` | `/sessions` | List all active sessions for the current user |
+| `DELETE` | `/sessions` | Terminate all sessions except the current one |
+| `DELETE` | `/sessions/:targetSessionToken` | Terminate a specific session |
+| `POST` | `/change-password` | Change password and rotate E2EE keys |
+| `GET` | `/users/:userId/public-key` | Fetch another user's RSA public key for key exchange |
+
+### Chats (`/api/chats`)
+
+| Method | Path | Description |
+|---|---|---|
+| `POST` | `/` | Create a new chat (DIRECT, GROUP, or CHANNEL) |
+| `GET` | `/` | List all chats for the current user (cursor-paginated) |
+| `GET` | `/:chatId` | Get chat details and member list |
+| `POST` | `/:chatId/members` | Add a member (with optional history cutoff) |
+| `DELETE` | `/:chatId/members/:targetUserId` | Remove a member |
+| `PATCH` | `/:chatId/members/:targetUserId/role` | Update a member's role (ADMIN or MEMBER) |
+| `POST` | `/:chatId/transfer-ownership` | Transfer chat ownership to another member |
+| `DELETE` | `/:chatId` | Delete the chat and all associated data |
+
+### Messages (`/api/chats/:chatId/messages`)
+
+| Method | Path | Description |
+|---|---|---|
+| `POST` | `/` | Send an encrypted message |
+| `GET` | `/` | Fetch messages (cursor-paginated by `beforeMessageId`) |
+| `PATCH` | `/:messageId` | Edit an encrypted message |
+| `DELETE` | `/:messageId` | Soft-delete a message |
+| `POST` | `/:messageId/reactions` | Add an emoji reaction |
+| `DELETE` | `/:messageId/reactions/:emoji` | Remove an emoji reaction |
+| `POST` | `/read` | Mark messages as read up to `upToMessageId` |
+
+### Sender Keys (`/api/chats/:chatId/sender-keys`)
+
+| Method | Path | Description |
+|---|---|---|
+| `POST` | `/` | Store (or rotate) sender chain keys for group members |
+| `GET` | `/` | Get all sender keys stored for the current user in this chat |
+| `GET` | `/:senderId` | Get a specific sender's chain key for the current user |
+
+---
+
+## WebSocket Protocol
+
+The API Gateway exposes a Socket.IO endpoint for real-time messaging. The session token is passed at handshake time via `auth.token` or the `token` query parameter.
+
+### Channels
+
+| Channel | Pattern | Description |
+|---|---|---|
+| User channel | `user:<userId>` | Personal events: presence updates, sender-key deliveries |
+| Chat channel | `chat:<chatId>` | Shared chat events: messages, reactions, typing indicators |
+
+Clients are auto-subscribed to their user channel on connection. Chat channels require an explicit `chat:subscribe` event.
+
+### Client → Server Events
+
+| Event | Payload | Description |
+|---|---|---|
+| `chat:subscribe` | `{ chatId }` | Subscribe to real-time updates for a chat |
+| `chat:subscribe_many` | `{ chatIds[] }` | Subscribe to multiple chats at once |
+| `chat:unsubscribe` | `{ chatId }` | Unsubscribe from a chat channel |
+| `chat:unsubscribe_many` | `{ chatIds[] }` | Unsubscribe from multiple chats |
+| `typing:start` | `{ chatId }` | Broadcast "user is typing" to chat members |
+| `typing:stop` | `{ chatId }` | Broadcast "user stopped typing" |
+| `presence:ping` | _(none)_ | Keep-alive; re-broadcasts online status |
+| `sender_key:distribute` | `{ chatId, recipientId, encryptedSenderKey, keyVersion }` | Deliver an RSA-encrypted sender key to a specific recipient |
+
+### Server → Client Events
+
+| Event | Channel | Description |
+|---|---|---|
+| `message:new` | chat | New encrypted message |
+| `message:updated` | chat | Message content edited |
+| `message:deleted` | chat | Message soft-deleted |
+| `message:read_receipt` | chat | Messages marked as read |
+| `message:reaction_added` | chat | Emoji reaction added |
+| `message:reaction_removed` | chat | Emoji reaction removed |
+| `typing:start` | chat | A member is typing (`chatId`, `userId`, `username`) |
+| `typing:stop` | chat | A member stopped typing |
+| `presence:update` | user | User came online or went offline (`userId`, `online: bool`) |
+| `sender_key:received` | user | Encrypted sender key delivered (`chatId`, `senderId`, `encryptedSenderKey`, `keyVersion`) |
 
 ---
 
@@ -471,9 +570,10 @@ helm rollback  auth -n gomin-apps
 # Port-forward MinIO console
 kubectl port-forward -n gomin-infra svc/minio 9001:9001
 
-# Manual migration
-kubectl create job --from=cronjob/auth-migrate auth-migrate-manual -n gomin-apps
-kubectl wait --for=condition=complete job/auth-migrate-manual -n gomin-apps --timeout=120s
+# Migrations run automatically as Helm pre-upgrade hooks.
+# To trigger them without a full re-deploy:
+helm upgrade auth ./charts/auth --namespace gomin-apps --reuse-values
+helm upgrade communication-service ./charts/communication-service --namespace gomin-apps --reuse-values
 ```
 
 ---
